@@ -158,7 +158,6 @@ async function sendUnauthorizedAttemptAlert(email, uid) {
 }
 
 window.doLogout = async () => {
-  stopScan();
   if (state.partNotifUnsub) { state.partNotifUnsub(); state.partNotifUnsub = null; }
   await logActivity('خرج من التطبيق');
   stopPresence();

@@ -17,9 +17,6 @@ export const state = {
   todayAttendance: {},
   allAttendance: {}, // { date: { studentId: true } }
   todayAttendanceUnsub: null, // realtime listener لحضور النهارده — بيخلي أي خادم تاني يشوف الحضور لحظياً
-  scanning: false,
-  stream: null,
-  scanInterval: null,
   currentAttGrade: 'الكل',
   currentStuGrade: 'الكل',
   selectedDates: [],

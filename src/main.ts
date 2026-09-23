@@ -23,7 +23,6 @@ import '@/features/students/students';
 import '@/features/students/maintenance';
 import '@/features/students/stars';
 import '@/features/attendance/attendance';
-import '@/features/attendance/qr-scanner';
 import '@/features/import-export/export';
 import '@/features/import-export/id-cards';
 import '@/features/dashboard/dashboard';

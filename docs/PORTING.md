@@ -40,7 +40,7 @@ must be recorded in this file (see "Change log") so it can be ported later. Noth
 6. Do not switch GitHub Pages / live hosting until the test channel is verified.
 
 ## Change log
-Status: C1-C3 are commit `ee6f2d1`; C4-C8 are the second commit on the branch (`git log refactor/vite-modules`).
+Status: C1-C3 are commit `ee6f2d1`; C4-C8 the second commit; C9 the third (`git log refactor/vite-modules`).
 
 ### C1. Vite + TypeScript, single file split into modules (committed)
 - `index.html` reduced to markup + `<script type="module" src="/src/main.ts">`. Script body split into 41 modules
@@ -95,6 +95,26 @@ Status: C1-C3 are commit `ee6f2d1`; C4-C8 are the second commit on the branch (`
   scrolls it, a drag never "clicks" a chip. Rows: `#active-grade-bar` (ends with الخدام/الخادمات), `#main-tabs`,
   `.grade-filter`. Touch/pen are left to native scrolling. CSS at the end of `src/styles/app.css`
   (`overscroll-behavior-x: contain`, `user-select: none`, grab cursor for mouse only). RTL-aware.
+
+### C9. QR feature removed completely (committed)
+QR turned out to be unnecessary, so both generating and scanning QR codes were removed. Nothing in Firestore changes
+(the QR only ever encoded the student document id; no QR-related fields or collections exist).
+- Deleted `src/features/attendance/qr-scanner.ts` (camera, jsQR CDN loader, `startScan`/`stopScan`/`handleQR`) and its
+  import in `src/main.ts`. Removed `scanning`, `stream`, `scanInterval` from `src/core/state.ts` and the `stopScan()`
+  call in `doLogout` (`src/features/auth/auth.ts`).
+- `index.html`: removed the whole scan section of the attendance tab (title "مسح QR", camera button, video/scan zone);
+  login subtitle now "تسجيل الحضور بسرعة وسهولة". Print-all button now calls `printAllCards()`.
+- `src/features/students/students.ts`: student list no longer shows a QR image (it was also the placeholder when a student
+  had no photo) or the "⬇ QR" button; it uses `avatarBox(s, 64)` from `photos.ts` instead. Removed `downloadQR`.
+  CSS classes renamed `qr-card|info|name|grade|actions` -> `stu-card|info|name|grade|actions`.
+- `src/features/import-export/id-cards.ts`: ID cards are KEPT (avatar + name + class + reward stars) but no longer
+  contain a QR code; `printOneQR`/`printAllQR` renamed `printOneCard`/`printAllCards`.
+- `src/styles/app.css`: removed `.scan-*`, `#video-container`, `.stop-btn`, `@keyframes scan`, `.qr-img-wrap`.
+- No longer used anywhere: jsQR (jsdelivr) and `api.qrserver.com`. Student photo capture (`capture="environment"`
+  file inputs) is unrelated and stays.
+- Open question for the user: keep or also remove the ID cards (they only made sense with a QR). Unused assets that
+  could go if cards are removed: `public/avatar1-10.png` (only used by the cards). `public/nb-print-*.png` are
+  unused by any code even before this change.
 
 ## Not done yet (planned, will also need porting)
 - Firestore review/backup and cleanup of unused collections (data is per-project, do it separately for each).

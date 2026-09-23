@@ -56,22 +56,8 @@
   /* SECTION */
   .section-title { font-size: 13px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
 
-  /* SCAN */
-  .scan-zone { background: var(--surface); border: 2px dashed var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 20px; transition: border-color 0.3s; cursor: pointer; }
-  .scan-zone.active { border-color: var(--accent); border-style: solid; }
-  #video-container { display: none; position: relative; border-radius: 12px; overflow: hidden; background: #000; margin: 0 -4px; }
-  #video-container video { width: 100%; display: block; max-height: 280px; object-fit: cover; }
-  .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .scan-frame { width: 180px; height: 180px; border: 3px solid var(--accent); border-radius: 16px; position: relative; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); }
-  .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: scan 2s ease-in-out infinite; }
   .voice-pulse-dot { width:10px; height:10px; border-radius:50%; background:#8e44ad; display:inline-block; animation: voicePulse 1.2s ease-in-out infinite; }
   @keyframes voicePulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.4); } }
-  @keyframes scan { 0% { top: 0; } 50% { top: calc(100% - 2px); } 100% { top: 0; } }
-  .scan-zone-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .scan-big-icon { font-size: 40px; }
-  .scan-hint { color: var(--text-dim); font-size: 14px; }
-  .scan-btn-text { font-size: 15px; font-weight: 600; color: var(--accent); }
-  .stop-btn { margin-top: 12px; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); border-radius: var(--radius-sm); color: var(--danger); font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 600; padding: 10px 20px; cursor: pointer; width: 100%; }
 
   /* TOAST */
   #toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 20px; font-size: 15px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 999; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4); pointer-events: none; }
@@ -121,13 +107,11 @@
   .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0; }
   .form-2col .field-input, .form-2col .field-select { margin-bottom: 0; }
   .form-row { display: flex; gap: 10px; }
-  .qr-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
-  .qr-img-wrap { width: 64px; height: 64px; background: #fff; border-radius: 8px; padding: 3px; flex-shrink: 0; }
-  .qr-img-wrap img { width: 100%; height: 100%; }
-  .qr-info { flex: 1; min-width: 0; }
-  .qr-name { font-size: 15px; font-weight: 700; }
-  .qr-grade { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-  .qr-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .stu-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
+  .stu-info { flex: 1; min-width: 0; }
+  .stu-name { font-size: 15px; font-weight: 700; }
+  .stu-grade { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .stu-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
   .action-btn { background: rgba(var(--accent-rgb),0.12); border: 1px solid rgba(var(--accent-rgb),0.25); border-radius: 8px; color: var(--accent); font-family: 'Cairo', sans-serif; font-size: 11px; font-weight: 700; padding: 6px 10px; cursor: pointer; white-space: nowrap; text-align: center; }
   .action-btn.green { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.25); color: var(--success); }
   .action-btn.red { background: rgba(231,76,60,0.1); border-color: rgba(231,76,60,0.25); color: var(--danger); }

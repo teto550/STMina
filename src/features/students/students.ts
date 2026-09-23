@@ -6,6 +6,7 @@ import { db } from '@/core/firebase';
 import { inCurrentSection, sectionTag } from '@/core/section';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
+import { avatarBox } from '@/features/students/photos';
 import { todayKey } from '@/core/utils';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 
@@ -121,40 +122,20 @@ window.renderStudentsList = () => {
     return;
   }
   cont.innerHTML = list.map(s =>
-    `<div class="qr-card">
-      <div style="position:relative;flex-shrink:0">
-        <div class="qr-img-wrap"${s.photo ? ` onclick="openLightboxFor('${s.id}')" style="cursor:zoom-in"` : ''}>
-          <img src="${s.photo ? s.photo : `https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(s.id)}`}" loading="lazy" style="${s.photo ? 'object-fit:cover' : ''}">
-        </div>
-        ${!s.photo ? `<div onclick="triggerQuickPhoto('${s.id}')" style="position:absolute;bottom:-4px;left:-4px;background:var(--accent);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;box-shadow:0 0 0 2px var(--surface)" title="ارفع صورة">📷</div>` : ''}
-      </div>
-      <div class="qr-info">
-        <div class="qr-name">${s.name}</div>
-        <div class="qr-grade">${s.deacon || 'بدون خادم'}</div>
+    `<div class="stu-card">
+      ${avatarBox(s, 64)}
+      <div class="stu-info">
+        <div class="stu-name">${s.name}</div>
+        <div class="stu-grade">${s.deacon || 'بدون خادم'}</div>
         <div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:700">✅ حضر ${s.attendanceCount || 0} مرة</div>
       </div>
-      <div class="qr-actions">
+      <div class="stu-actions">
         <button class="action-btn" onclick="openProfile('${s.id}')">👤 ملف</button>
-        <button class="action-btn" onclick="downloadQR('${s.id}','${s.name}')">⬇ QR</button>
-        <button class="action-btn green" onclick="printOneQR('${s.id}')">🪪 كارت</button>
+        <button class="action-btn green" onclick="printOneCard('${s.id}')">🪪 كارت</button>
         <button class="action-btn red" onclick="deleteStudent('${s.id}','${s.name}')">🗑 حذف</button>
       </div>
     </div>`
   ).join('');
-};
-
-// ===== DOWNLOAD QR =====
-window.downloadQR = async (id, name) => {
-  const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}`;
-  try {
-    const res  = await fetch(url);
-    const blob = await res.blob();
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = `QR-${name}.png`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch { showToast('تعذّر التحميل', 'error'); }
 };
 
 // ===== DELETE STUDENT =====

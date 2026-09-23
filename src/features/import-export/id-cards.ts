@@ -2,7 +2,7 @@
 import { state } from '@/core/state';
 import { filteredStudents } from '@/features/students/students';
 
-// ===== PRINT ID CARD (photo + name + QR) =====
+// ===== PRINT ID CARD (avatar + name + class + reward stars) =====
 const CARD_PALETTE = ['#4f8ef7', '#f39c12', '#2ecc71', '#ff6b9d', '#00b4d8', '#7c5cbf'];
 
 const APP_LOGO_URL = new URL('icon-192.png', document.baseURI).href;
@@ -43,7 +43,6 @@ function buildIdCardHTML(s) {
         ${s.grade ? `<div class="pgrade" style="color:${color}">${s.grade}</div>` : ''}
       </div>
       ${starsRight}
-      <img class="pqr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(s.id)}">
     </div>
   </div>`;
 }
@@ -71,7 +70,6 @@ function buildPrintDocument(cardsHtml) {
   .pstar { flex:1 1 0; width:100%; height:34px; }
   .pname { font-size:15px; font-weight:800; color:#222; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
   .pgrade { display:inline-block; margin-top:5px; background:#f1f4ff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
-  .pqr { width:70px; height:70px; flex-shrink:0; border:1px solid #eee; border-radius:8px; padding:3px; }
   @media print { @page { margin:10mm; } }
 </style></head>
 <body>
@@ -102,13 +100,13 @@ function openPrintWindow(cardsHtml) {
   setTimeout(waitAndPrint, 50);
 }
 
-window.printOneQR = (id) => {
+window.printOneCard = (id) => {
   const s = state.allStudents.find(x => x.id === id);
   if (!s) return;
   openPrintWindow(buildIdCardHTML(s));
 };
 
-window.printAllQR = () => {
+window.printAllCards = () => {
   const list = filteredStudents(state.currentStuGrade);
   if (!list.length) { showToast('مفيش مخدومين للطباعة', 'info'); return; }
   openPrintWindow(list.map(buildIdCardHTML).join(''));
