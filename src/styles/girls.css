@@ -1,0 +1,24 @@
+  /* ===== ثيم حساب البنات: نفس الغامق الهادي بس الألوان اللي جوه وردي/لافندر واضحة ===== */
+  html.girls {
+    --bg: #171216;
+    --surface: #221b22;
+    --surface2: #2e242f;
+    --accent: #f27aa9;
+    --accent2: #b58cf0;
+    --accent-rgb: 242,122,169;
+    --accent2-rgb: 181,140,240;
+    --text: #f4ebf0;
+    --text-dim: #ae9ea9;
+    --border: rgba(242,122,169,0.26);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+  html.girls #auth-screen { background: radial-gradient(ellipse at 50% 0%, rgba(242,122,169,0.10) 0%, transparent 65%); }
+  html.girls .auth-title::after { content: ' 🌸'; }
+  html.girls .top-bar { background: var(--surface); border-bottom: 1px solid rgba(242,122,169,0.35); border-radius: 0 0 18px 18px; }
+  html.girls .btn-primary { box-shadow: none; }
+  html.girls .grade-chip, html.girls .date-chip, html.girls .action-btn { border-radius: 999px; }
+  html.girls .icon-btn { border-radius: 50%; }
+  html.girls .grade-chip.active, html.girls .date-chip.active { background: rgba(242,122,169,0.22); }
+  html.girls .date-chip.all { color: #c9a6f5; }
+  html.girls #splash-screen { background: #171216 !important; }
