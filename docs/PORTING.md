@@ -103,12 +103,13 @@ QR turned out to be unnecessary, so both generating and scanning QR codes were r
   import in `src/main.ts`. Removed `scanning`, `stream`, `scanInterval` from `src/core/state.ts` and the `stopScan()`
   call in `doLogout` (`src/features/auth/auth.ts`).
 - `index.html`: removed the whole scan section of the attendance tab (title "مسح QR", camera button, video/scan zone);
-  login subtitle now "تسجيل الحضور بسرعة وسهولة". Print-all button now calls `printAllCards()`.
+  login subtitle now "تسجيل الحضور بسرعة وسهولة". The print-all-cards button was removed.
 - `src/features/students/students.ts`: student list no longer shows a QR image (it was also the placeholder when a student
   had no photo) or the "⬇ QR" button; it uses `avatarBox(s, 64)` from `photos.ts` instead. Removed `downloadQR`.
   CSS classes renamed `qr-card|info|name|grade|actions` -> `stu-card|info|name|grade|actions`.
 - `src/features/import-export/id-cards.ts`: ID cards are KEPT (avatar + name + class + reward stars) but no longer
-  contain a QR code; `printOneQR`/`printAllQR` renamed `printOneCard`/`printAllCards`.
+  contain a QR code; `printOneQR` renamed `printOneCard`. The "🖨 طباعة كل الكروت" (print all cards) button and
+  `printAllQR`/`printAllCards` were removed as well (only the per-student "🪪 كارت" print remains).
 - `src/styles/app.css`: removed `.scan-*`, `#video-container`, `.stop-btn`, `@keyframes scan`, `.qr-img-wrap`.
 - No longer used anywhere: jsQR (jsdelivr) and `api.qrserver.com`. Student photo capture (`capture="environment"`
   file inputs) is unrelated and stays.

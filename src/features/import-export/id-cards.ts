@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { state } from '@/core/state';
-import { filteredStudents } from '@/features/students/students';
 
 // ===== PRINT ID CARD (avatar + name + class + reward stars) =====
 const CARD_PALETTE = ['#4f8ef7', '#f39c12', '#2ecc71', '#ff6b9d', '#00b4d8', '#7c5cbf'];
@@ -104,10 +103,4 @@ window.printOneCard = (id) => {
   const s = state.allStudents.find(x => x.id === id);
   if (!s) return;
   openPrintWindow(buildIdCardHTML(s));
-};
-
-window.printAllCards = () => {
-  const list = filteredStudents(state.currentStuGrade);
-  if (!list.length) { showToast('مفيش مخدومين للطباعة', 'info'); return; }
-  openPrintWindow(list.map(buildIdCardHTML).join(''));
 };

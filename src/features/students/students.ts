@@ -75,7 +75,7 @@ window.setStuGrade = (g, btn) => {
   renderStudentsList();
 };
 
-export function filteredStudents(grade) {
+function filteredStudents(grade) {
   if (grade === 'الكل') return state.allStudents;
   if (grade === 'بدون خادم') return state.allStudents.filter(s => !s.deacon);
   return state.allStudents.filter(s => s.grade === grade);
