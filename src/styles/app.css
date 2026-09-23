@@ -14,6 +14,12 @@
     --border: rgba(79,142,247,0.15);
     --radius: 16px;
     --radius-sm: 10px;
+    /* top banner only (strip, badge, bar tint): overridden by html.girls */
+    --section-a: #4f8ef7;
+    --section-b: #7c5cbf;
+    --section-rgb: 79,142,247;
+    --section-text: #9dc0ff;
+    --section-tint: 0.16;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
@@ -236,3 +242,17 @@
   .prof-key { font-size:12px; color:var(--text-dim); margin-bottom:2px; }
   .prof-val { font-size:14px; font-weight:600; }
 @keyframes splashPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.75; transform:scale(0.96); } }
+
+  /* ===== Account indicator: colour strip across the very top + badge next to the title.
+     Colours come from --section-*, which html.girls overrides. ===== */
+  body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: 5px; z-index: 10000; pointer-events: none; background: linear-gradient(90deg, var(--section-a), var(--section-b)); }
+  .section-badge { font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 999px; white-space: nowrap; color: var(--section-text); background: rgba(var(--section-rgb), 0.16); border: 1px solid rgba(var(--section-rgb), 0.5); }
+  .top-bar { background: linear-gradient(180deg, rgba(var(--section-rgb), var(--section-tint)), var(--surface) 75%); }
+
+  /* Horizontal chip/tab rows: drag-to-scroll for mouse (see src/core/drag-scroll.ts), native swipe for touch */
+  #active-grade-bar, #main-tabs, .grade-filter { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; user-select: none; }
+  @media (hover: hover) and (pointer: fine) {
+    #active-grade-bar, #main-tabs, .grade-filter { cursor: grab; }
+    #active-grade-bar.is-dragging, #main-tabs.is-dragging, .grade-filter.is-dragging { cursor: grabbing; }
+    #active-grade-bar.is-dragging *, #main-tabs.is-dragging *, .grade-filter.is-dragging * { cursor: grabbing; }
+  }

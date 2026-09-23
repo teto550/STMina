@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { state } from '@/core/state';
-import { GRADES, SECTION, setupGenderObserver } from '@/core/section';
+import { GRADES, SECTION, applySectionTheme, setupGenderObserver } from '@/core/section';
 import { canManageGrade, formatAssignedGradesLabel, getUserManagedGrades, isGradeManagerOf } from '@/core/session';
 import { saveProfileCache } from '@/core/firestore-helpers';
 import { clearSplashWatchdog } from '@/core/splash';
@@ -43,7 +43,7 @@ export async function enterApp(user, snapData) {
     const secBtn = document.getElementById('section-toggle-btn');
     if (secBtn) secBtn.innerHTML = SECTION === 'girls' ? '🔄 حساب بنين' : '🔄 حساب بنات';
     setupGenderObserver();
-    if (SECTION === 'girls') document.title = 'خدمة ابتدائي 🌸 بنات';
+    applySectionTheme(true);
 
     // Show/hide tabs based on role
     applyRoleUI();

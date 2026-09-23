@@ -1,5 +1,13 @@
 // @ts-nocheck
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  if (import.meta.env.PROD) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  } else {
+    // Dev: the production SW serves files cache-first, which makes the dev server look stale. Never keep one here.
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
+  }
+}
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {

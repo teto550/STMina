@@ -12,10 +12,10 @@ npm run build                # type-check + production build into dist/
 ```
 
 ### App Check on localhost
-The reCAPTCHA Enterprise key doesn't work on `localhost`, so `npm run dev` uses an App Check **debug token**.
-Open the browser console, copy the printed `App Check debug token`, and register it in
-Firebase console → App Check → your web app → Manage debug tokens. Put it in `.env.local`
-as `VITE_APPCHECK_DEBUG_TOKEN` to keep it stable between sessions.
+Production uses reCAPTCHA Enterprise. In `npm run dev` App Check is **skipped** unless `VITE_APPCHECK_DEBUG_TOKEN` is set
+in `.env.local`, which is only needed if App Check enforcement is switched on in the Firebase console
+(then register the same value under App Check → your web app → Manage debug tokens).
+After changing `.env.local`, stop and start `npm run dev` (don't rely on Vite's auto-restart).
 
 ## Layout
 - `src/core/` – Firebase init, shared state, session/permissions, helpers.

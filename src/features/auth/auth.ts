@@ -5,7 +5,7 @@ import { state } from '@/core/state';
 import { loadDeaconsList } from '@/features/servants/deacons';
 import { populateUniversitySelect } from '@/features/servants/servants';
 import { auth, db } from '@/core/firebase';
-import { SECTION } from '@/core/section';
+import { SECTION, applySectionTheme } from '@/core/section';
 import { notifyManagersPush } from '@/features/shell/push';
 import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadConfig } from '@/core/config';
 import { logActivity, stopPresence } from '@/core/presence';
@@ -39,6 +39,7 @@ window.doLogin = async () => {
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
+    console.error('login failed:', e.code, e.message);
     err.textContent = 'بيانات خاطئة، حاول تاني';
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'دخول';
@@ -194,6 +195,7 @@ onAuthStateChanged(auth, async user => {
       }, { merge: true }).catch(() => {});
     } else if (snapData) {
       if (snapData.status === 'pending') {
+        applySectionTheme(false);
         clearSplashWatchdog();
         document.getElementById('splash-screen').style.display  = 'none';
         document.getElementById('auth-screen').style.display    = 'none';
@@ -222,6 +224,7 @@ onAuthStateChanged(auth, async user => {
       // اتصال حقيقية مع جهاز مادخلش بيه قبل كده. في الحالتين الصح إننا منديش دخول
       // تلقائي بافتراض إنه "خادم عادي" — ده كان الثغرة اللي بتسمح لأي حد يعمل حساب
       // في Firebase مباشرة (من غير ما يعدي على فورم التسجيل) ويدخل البرنامج كخادم.
+      applySectionTheme(false);
       clearSplashWatchdog();
       document.getElementById('splash-screen').style.display  = 'none';
       document.getElementById('app-screen').style.display     = 'none';
@@ -246,6 +249,7 @@ onAuthStateChanged(auth, async user => {
 
     // خادم/أدمن لسه بياناته الأساسية (تليفون/عنوان/ميلاد/حالة دراسية) ناقصة؟ يتاخد منه أول حاجة قبل ما يكمل
     if (isProfileIncomplete(snapData)) {
+      applySectionTheme(false);
       clearSplashWatchdog();
         document.getElementById('splash-screen').style.display  = 'none';
       document.getElementById('auth-screen').style.display    = 'none';
@@ -264,6 +268,7 @@ onAuthStateChanged(auth, async user => {
     state.currentUserIsPhaseLead = false;
     state.activeGrade = null;
     window.__loginLogged = false;
+    applySectionTheme(false);
     stopPresence();
     if (state.todayAttendanceUnsub) { state.todayAttendanceUnsub(); state.todayAttendanceUnsub = null; }
     clearSplashWatchdog();

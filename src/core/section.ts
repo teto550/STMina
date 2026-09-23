@@ -90,7 +90,6 @@ export function setupGenderObserver() {
 
 window.toggleAppSection = () => {
   const goingTo = SECTION === 'girls' ? 'boys' : 'girls';
-  if (!confirm(goingTo === 'girls' ? 'هتتنقل لحساب البنات (الفصول هتبقى فاضية). متأكد؟' : 'هتتنقل لحساب البنين. متأكد؟')) return;
   try { localStorage.setItem('appSection', goingTo); } catch(e) {}
   location.reload();
 };
@@ -100,3 +99,20 @@ export const GRADE_SEQUENCE = [
   'سنة أولى ابتدائي', 'سنة تانية ابتدائي', 'سنة تالتة ابتدائي',
   'سنة رابعة ابتدائي', 'سنة خامسة ابتدائي', 'سنة سادسة ابتدائي'
 ];
+
+// Always-visible "which account am I on" badge in the top bar (the coloured strip is pure CSS).
+const sectionBadge = document.getElementById('section-badge');
+if (sectionBadge) sectionBadge.textContent = SECTION === 'girls' ? '🌸 حساب البنات' : '👦 حساب البنين';
+
+// The girls look only applies inside the app (after login). Login / pending / complete-profile screens
+// always use the default blue. `appSessionHint` lets the inline <head> script apply the right theme
+// before first paint on a reload, so a girls session doesn't flash blue.
+const THEME_COLOR = { boys: '#1a1f2e', girls: '#2a2033' };
+export function applySectionTheme(inApp) {
+  const girls = inApp && SECTION === 'girls';
+  document.documentElement.classList.toggle('girls', girls);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', girls ? THEME_COLOR.girls : THEME_COLOR.boys);
+  document.title = girls ? 'خدمة ابتدائي 🌸 بنات' : 'خدمة ابتدائي';
+  try { if (inApp) localStorage.setItem('appSessionHint', '1'); else localStorage.removeItem('appSessionHint'); } catch (e) {}
+}

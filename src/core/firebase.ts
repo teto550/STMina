@@ -17,15 +17,17 @@ const firebaseConfig = {
 export const app  = initializeApp(firebaseConfig);
 
 // ===== APP CHECK (reCAPTCHA Enterprise) =====
-// On localhost the reCAPTCHA key isn't valid, so in `npm run dev` we use an App Check
-// debug token instead (see .env.example). Must be set before initializeAppCheck().
-if (env.DEV) {
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = env.VITE_APPCHECK_DEBUG_TOKEN || true;
+// Production always uses reCAPTCHA. In `npm run dev` the reCAPTCHA key can't be used, and an
+// unregistered debug token makes Auth fail before the request is even sent. So in dev App Check
+// is skipped unless VITE_APPCHECK_DEBUG_TOKEN is set (needed only if enforcement is turned on
+// in the Firebase console; register the token under App Check -> Manage debug tokens).
+if (!env.DEV || env.VITE_APPCHECK_DEBUG_TOKEN) {
+  if (env.DEV) self.FIREBASE_APPCHECK_DEBUG_TOKEN = env.VITE_APPCHECK_DEBUG_TOKEN;
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY),
+    isTokenAutoRefreshEnabled: true
+  });
 }
-initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY),
-  isTokenAutoRefreshEnabled: true
-});
 
 export const auth = getAuth(app);
 

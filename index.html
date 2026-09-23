@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1f2e">
-<script>try{if(localStorage.getItem('appSection')==='girls'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#221b22');}}catch(e){}</script>
+<script>try{if(localStorage.getItem('appSection')==='girls'&&localStorage.getItem('appSessionHint')==='1'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#2a2033');}}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="خدمة ابتدائي">
@@ -150,7 +150,7 @@
 <div id="app-screen">
   <div class="top-bar">
     <div>
-      <div class="top-bar-title" style="display:flex;align-items:center;gap:8px"><img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;object-fit:cover">خدمة ابتدائي</div>
+      <div class="top-bar-title" style="display:flex;align-items:center;gap:8px"><img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;object-fit:cover">خدمة ابتدائي<span class="section-badge" id="section-badge"></span></div>
       <div class="top-bar-sub" id="user-email-display"></div>
     </div>
     <button class="icon-btn" id="assistant-mic-btn" onclick="toggleVoiceAssistant()" title="المساعد الصوتي" style="margin-left:8px">🎤</button>
