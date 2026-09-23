@@ -129,6 +129,33 @@ QR turned out to be unnecessary, so both generating and scanning QR codes were r
   (it used to sit below the add buttons, the sort dropdown and the full servants list). Markup move only, no code change
   (`loadPendingDeacons()` in `src/features/servants/approvals.ts` still fills it).
 
+## Firestore data notes (data is per project, but the same checks apply to the other project)
+Findings for THIS project on 2026-09-24 (Spark plan, database `(default)`). Nothing here is ported by copying data;
+re-run `node tools/firestore/analyze.cjs` in the other project and compare with the collections used in `src/`.
+- Collections the app uses: `users`, `students`, `attendance`, `deacons`, `deaconAttendance`, `activity_log`,
+  `student_secrets` (kept on purpose: links to another data source, to be handled later), `parts_distribution`, `config`
+  (single doc `settings`), plus `part_notifications` (see below).
+- Legacy collections found, referenced by no code on `main` or on `refactor/vite-modules`: `paragraphs` (11 docs, old
+  name of parts distribution) and `deacon_attendance` (6 docs, old name of `deaconAttendance`). Both are also blocked by
+  the security rules. Backed up locally under `backups/` (git-ignored) and removed with
+  `tools/firestore/cleanup-legacy.cjs --apply`. Status: see "Status of the Firestore cleanup" below.
+- Leftover fields not read by any code: `students.lastVisit`, `students.waPhoneField`, `config/settings.currentGrade`
+  (same script removes them). `users.pushNotifiedAt` is NOT unused: the push worker writes it.
+- `part_notifications` is used by the code but has no security rule (default deny) and the collection does not exist, so
+  parts-distribution notifications fail with `permission-denied`. Decision postponed by the user ("revisit later").
+- `deaconAttendance` holds two shapes (older docs have no `type`); the code handles both.
+- Servant names carry the prefix "مستر" in `deacons.name` (47/49), `users.name` (16), `students.deacon` (134),
+  `deaconAttendance.name` (65), `parts_distribution.deaconName` (4) and `activity_log.name`/`details` (453/146). Names are
+  join keys, so all must change together. A verified plan (865 field changes, no collisions) is saved in
+  `backups/2026-09-24-firestore-cleanup/remove-mister-plan-NOT-APPLIED.json`. **NOT applied yet** (the tool
+  permission check blocked bulk writes; waiting for the user). Rule: remove the whole word, collapse double spaces, trim.
+- Backups: on the Spark plan there are no managed Firestore backups, so dump what you delete to `backups/` (git-ignored,
+  contains personal data, never commit).
+
+### Status of the Firestore cleanup (update this line when done)
+Backup taken and dry run verified; deletion/field removal NOT yet executed (blocked by the permission check; the user
+runs `node tools/firestore/cleanup-legacy.cjs --apply` or approves it). "مستر" rename: NOT applied.
+
 ## Not done yet (planned, will also need porting)
-- Firestore review/backup and cleanup of unused collections (data is per-project, do it separately for each).
+- Applying the Firestore cleanup and the "مستر" rename (see Firestore data notes). Data is per project: do it separately for each.
 - Step 2: TypeScript types for the data model, remove `@ts-nocheck`. Later: React + Tailwind, routes.

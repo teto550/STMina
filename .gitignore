@@ -4,3 +4,6 @@ dist
 .DS_Store
 .idea
 .firebase
+
+# Local Firestore backups (personal data) - never commit
+backups/

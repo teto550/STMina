@@ -18,3 +18,6 @@ Nothing is ported yet and the user did not ask to port now; only keep the log ac
 - Never publish to GitHub Pages or live Firebase Hosting without an explicit request; the test channel
   (`npm run deploy:test`) is the place to try things. The Pages link is already shared, keep it unchanged.
 - Take a backup before any Firestore deletion; delete nothing without explicit approval.
+- Local Firestore backups live in `backups/` (git-ignored, personal data). Reusable helper scripts: `tools/firestore/`.
+- The Claude Code permission check may block bulk Firestore writes/deletes; if so, stop and hand the user the exact
+  script/command instead of working around it.
