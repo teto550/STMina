@@ -138,23 +138,35 @@ re-run `node tools/firestore/analyze.cjs` in the other project and compare with 
 - Legacy collections found, referenced by no code on `main` or on `refactor/vite-modules`: `paragraphs` (11 docs, old
   name of parts distribution) and `deacon_attendance` (6 docs, old name of `deaconAttendance`). Both are also blocked by
   the security rules. Backed up locally under `backups/` (git-ignored) and removed with
-  `tools/firestore/cleanup-legacy.cjs --apply`. Status: see "Status of the Firestore cleanup" below.
+  a one-off script (removed after use, see git history `cd33c1c`). Status: see "Status of the Firestore cleanup" below.
 - Leftover fields not read by any code: `students.lastVisit`, `students.waPhoneField`, `config/settings.currentGrade`
-  (same script removes them). `users.pushNotifiedAt` is NOT unused: the push worker writes it.
+  (removed by the same script). `users.pushNotifiedAt` is NOT unused: the push worker writes it.
 - `part_notifications` is used by the code but has no security rule (default deny) and the collection does not exist, so
   parts-distribution notifications fail with `permission-denied`. Decision postponed by the user ("revisit later").
 - `deaconAttendance` holds two shapes (older docs have no `type`); the code handles both.
 - Servant names carry the prefix "مستر" in `deacons.name` (47/49), `users.name` (16), `students.deacon` (134),
   `deaconAttendance.name` (65), `parts_distribution.deaconName` (4) and `activity_log.name`/`details` (453/146). Names are
   join keys, so all must change together. A verified plan (865 field changes, no collisions) is saved in
-  `backups/2026-09-24-firestore-cleanup/remove-mister-plan-NOT-APPLIED.json`. **NOT applied yet** (the tool
-  permission check blocked bulk writes; waiting for the user). Rule: remove the whole word, collapse double spaces, trim.
+  `backups/2026-09-24-firestore-cleanup/remove-mister-plan-NOT-APPLIED.json` (now applied, see status below). Rule: remove the
+  whole word, collapse double spaces, trim.
 - Backups: on the Spark plan there are no managed Firestore backups, so dump what you delete to `backups/` (git-ignored,
   contains personal data, never commit).
 
 ### Status of the Firestore cleanup (update this line when done)
-Backup taken and dry run verified; deletion/field removal NOT yet executed (blocked by the permission check; the user
-runs `node tools/firestore/cleanup-legacy.cjs --apply` or approves it). "مستر" rename: NOT applied.
+DONE on 2026-09-24 for this project, run by the user in their own terminal (the assistant's tool permission check blocks
+bulk writes/deletes):
+- Legacy cleanup: `paragraphs` and `deacon_attendance` deleted (17 docs); fields `lastVisit`, `waPhoneField`,
+  `config/settings.currentGrade` removed; verified read-only (9 collections left, counts unchanged).
+- "مستر" rename: `node tools/firestore/remove-word.cjs --apply` (reusable, `--word` parameter, dry run by default). The first
+  full run hit the script's old 4 minute limit half-way and was re-run; it is idempotent. The user reported the data
+  migrated; a final read-only verification could not be done because the project's free read quota was used up that night
+  (see the quota warning in `tools/firestore/README.md`).
+- Backups: `backups/` (git-ignored). Both still to do in the OTHER project (run `tools/firestore/analyze.cjs` first).
+
+### Planned: link servants by id, not by name
+The user wants every link to a servant to be an id so a name change never breaks anything. Full plan in
+`docs/ID-MIGRATION.md` (data model, staged migration, code touch points). Not started; the same migration is needed in the
+other project.
 
 ## Not done yet (planned, will also need porting)
 - Applying the Firestore cleanup and the "مستر" rename (see Firestore data notes). Data is per project: do it separately for each.

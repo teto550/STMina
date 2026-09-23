@@ -21,3 +21,7 @@ Nothing is ported yet and the user did not ask to port now; only keep the log ac
 - Local Firestore backups live in `backups/` (git-ignored, personal data). Reusable helper scripts: `tools/firestore/`.
 - The Claude Code permission check may block bulk Firestore writes/deletes; if so, stop and hand the user the exact
   script/command instead of working around it.
+- **Firestore free-plan quota:** 50,000 reads/day for the whole project (the live app included). Scans of every document
+  (`activity_log` ~2,800 docs) add up fast; on 2026-09-24 repeated full scans exhausted it and the app showed
+  "Quota exceeded". Never loop or repeat full scans; prefer small targeted reads.
+

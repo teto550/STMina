@@ -12,6 +12,7 @@ const call = async (tool, args) => { const r = await send('tools/call', { name: 
 const init = async () => { await send('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'tools', version: '1' } }); p.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n'); };
 const done = code => { p.kill(); process.exit(code); };
 async function listAll(col) { const docs = []; let tok; do { const r = await call('firestore_list_documents', { parent: P, collectionId: col, pageSize: 300, pageToken: tok }); if (r.error) throw new Error(col + ': ' + r.error); docs.push(...(r.documents || [])); tok = r.nextPageToken; } while (tok); return docs; }
-setTimeout(() => { console.error('timeout'); done(1); }, 240000);
+const TIMEOUT_MS = Number(process.env.TIMEOUT_MS) || 20 * 60 * 1000;   // safety net so a hung run never lingers
+setTimeout(() => { console.error('timeout after ' + TIMEOUT_MS / 1000 + 's'); done(1); }, TIMEOUT_MS);
 
 module.exports = { call, init, done, listAll, P };
