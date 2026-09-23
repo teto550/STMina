@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1f2e">
-<script>try{if(localStorage.getItem('appSection')==='girls'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#221b22');}}catch(e){}</script>
+<script>try{if(localStorage.getItem('appSection')==='girls'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#ffffff');}}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="خدمة ابتدائي">
@@ -258,27 +258,36 @@
 </style>
 
 <style id="girls-theme">
-  /* ===== ثيم حساب البنات (هادي) ===== */
+  /* ===== ثيم حساب البنات (فاتح وهادي) ===== */
   html.girls {
-    --bg: #171216;
-    --surface: #221b22;
-    --surface2: #2c232d;
-    --accent: #d78fb1;
-    --accent2: #a58bc6;
-    --accent-rgb: 215,143,177;
-    --accent2-rgb: 165,139,198;
-    --text: #f2eaef;
-    --text-dim: #a89aa4;
-    --border: rgba(215,143,177,0.16);
+    color-scheme: light;
+    --bg: #fbf6f8;
+    --surface: #ffffff;
+    --surface2: #f7edf1;
+    --accent: #b8527d;
+    --accent2: #8f6bb3;
+    --accent-rgb: 184,82,125;
+    --accent2-rgb: 143,107,179;
+    --success: #2e9e63;
+    --warning: #d9822b;
+    --danger: #d04a4a;
+    --text: #3b2a33;
+    --text-dim: #866f7b;
+    --border: rgba(184,82,125,0.16);
     --radius: 18px;
     --radius-sm: 12px;
   }
-  html.girls #auth-screen { background: radial-gradient(ellipse at 50% 0%, rgba(215,143,177,0.08) 0%, transparent 65%); }
+  html.girls #auth-screen { background: radial-gradient(ellipse at 50% 0%, rgba(184,82,125,0.08) 0%, transparent 65%); }
   html.girls .auth-title::after { content: ' 🌸'; }
-  html.girls .top-bar { background: var(--surface); border-radius: 0 0 18px 18px; }
+  html.girls .auth-card, html.girls .top-bar { box-shadow: 0 2px 14px rgba(120,60,90,0.07); }
+  html.girls .top-bar { border-radius: 0 0 18px 18px; }
   html.girls .btn-primary { box-shadow: none; }
   html.girls .grade-chip, html.girls .date-chip, html.girls .action-btn { border-radius: 999px; }
   html.girls .icon-btn { border-radius: 50%; }
+  html.girls .date-chip.all { color: #7a55a8; }
+  html.girls .top-bar-sub, html.girls .auth-sub { color: var(--text-dim); }
+  html.girls #splash-screen { background: #fbf6f8 !important; }
+  html.girls #splash-screen div { color: #866f7b !important; }
 </style>
 
 </head>
