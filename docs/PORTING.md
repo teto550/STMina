@@ -67,8 +67,9 @@ Status: C1-C3 are commit `ee6f2d1`; C4-C8 the second commit; C9 the third (`git 
 - `src/core/section.ts`: `toggleAppSection` no longer asks `confirm(...)`.
 
 ### C5. Girls/boys account indicator in the top banner (committed)
-- Coloured 5px strip across the top, `حساب البنات/البنين` badge next to the title, tinted top bar.
-- Files: `index.html` (`<span id="section-badge">`), `src/styles/app.css` (`--section-*` variables, strip, badge, bar tint),
+- `حساب البنات/البنين` badge next to the title and a tinted top bar. (A coloured 5px strip across the top was added first
+  and removed later, see C10.)
+- Files: `index.html` (`<span id="section-badge">`), `src/styles/app.css` (`--section-*` variables, badge, bar tint),
   `src/styles/girls.css` (girls values), `src/core/section.ts` (badge text).
 - Decision: **girls and boys share the same blue palette everywhere; only the banner differs** (girls = rose/coral).
   Original pill-shaped chips / round icon buttons for girls were kept.
@@ -116,6 +117,17 @@ QR turned out to be unnecessary, so both generating and scanning QR codes were r
 - Open question for the user: keep or also remove the ID cards (they only made sense with a QR). Unused assets that
   could go if cards are removed: `public/avatar1-10.png` (only used by the cards). `public/nb-print-*.png` are
   unused by any code even before this change.
+
+### C10. Removed the top strip and the online/offline dot (committed after C9 = pending until committed)
+- Removed the thin coloured line across the top of the page (`body::before` + `--section-a/--section-b` in
+  `app.css`/`girls.css`). The badge and the bar tint remain as the boys/girls indicator.
+- Removed the small "أونلاين/أوفلاين" indicator next to the settings gear: `#net-status` element in `index.html` and
+  `updateOnlineBanner()` in `src/features/shell/ui.ts`. The "back online / offline" toast messages were kept.
+
+### C11. Pending join requests at the top of the servants tab (pending until committed)
+- `index.html`: the `#pending-deacons-section` block (⏳ طلبات تسجيل خدام) moved to the very top of `#tab-deacons`
+  (it used to sit below the add buttons, the sort dropdown and the full servants list). Markup move only, no code change
+  (`loadPendingDeacons()` in `src/features/servants/approvals.ts` still fills it).
 
 ## Not done yet (planned, will also need porting)
 - Firestore review/backup and cleanup of unused collections (data is per-project, do it separately for each).

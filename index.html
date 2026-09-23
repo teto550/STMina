@@ -163,7 +163,6 @@
         <button onclick="closeSettingsMenu();doLogout()" style="width:100%;text-align:right;background:transparent;border:none;color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:8px">🚪 تسجيل الخروج</button>
       </div>
     </div>
-    <div id="net-status" style="position:absolute;top:10px;left:14px;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;display:flex;align-items:center;gap:5px"></div>
   </div>
 
   <!-- Active grade switcher — admin only, lets them jump between the 4 primary classes -->
@@ -329,6 +328,15 @@
     <!-- DEACONS TAB -->
     <div id="tab-deacons" style="display:none">
 
+      <!-- Pending join requests: kept at the very top of the tab so they are seen first -->
+      <div id="pending-deacons-section" style="display:none;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <p class="section-title" style="margin:0">⏳ طلبات تسجيل خدام</p>
+          <span id="pending-count" style="font-size:12px;color:var(--warning)"></span>
+        </div>
+        <div id="pending-list"></div>
+      </div>
+
       <!-- Admin: add deacon button -->
       <div id="add-deacon-btn-wrap" style="display:none;margin-bottom:16px">
         <div id="deacon-tab-grade-label" style="font-size:13px;color:var(--text-dim);margin-bottom:10px;text-align:center"></div>
@@ -360,15 +368,6 @@
       <div id="deacon-detail-header" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px">
         <button onclick="backToDeaconList()" style="font-family:Cairo,sans-serif;font-size:13px;font-weight:700;border-radius:8px;padding:8px 13px;cursor:pointer;border:1px solid rgba(var(--accent-rgb),0.3);background:rgba(var(--accent-rgb),0.1);color:var(--accent);flex-shrink:0">→ كل الخدام</button>
         <div id="deacon-detail-name" style="font-family:Cairo,sans-serif;font-size:15px;font-weight:700;color:var(--text)"></div>
-      </div>
-
-      <!-- Admin: pending deacons -->
-      <div id="pending-deacons-section" style="display:none;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <p class="section-title" style="margin:0">⏳ طلبات تسجيل خدام</p>
-          <span id="pending-count" style="font-size:12px;color:var(--warning)"></span>
-        </div>
-        <div id="pending-list"></div>
       </div>
 
       <!-- فلتر بسيط: الكل / حضور / غياب / مواليد -->
