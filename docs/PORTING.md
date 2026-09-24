@@ -232,3 +232,6 @@ other project.
 ### C16 - Roles/access: config and types (step 1, no behaviour change)
 New files `src/types/access.ts` (Gender, Section, Grade, Cell, Role, Person, Access), `src/core/access-config.ts` (`MIXED_GRADES`, cell/section helpers,
 `computeAccess`, `canSwitchSection`, ...) and `src/core/__tests__/access-config.test.ts`. Pure code, no data, no screens; copy the three files as they are.
+
+### C17 - Roles step 2: data backfill script
+`tools/firestore/backfill-access.cjs` (new fields only). Run in the other Firebase project too (after `set-gender.cjs`); the dry-run report shows what needs a manual decision there.
