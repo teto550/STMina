@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { updateDoc, doc } from 'firebase/firestore';
+import { isDeaconOf, deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { DEACONS } from '@/features/servants/deacons';
 import { avatarBox } from '@/features/students/photos';
@@ -45,7 +46,7 @@ function renderAttendanceStats() {
   const allDates = Object.keys(state.allAttendance).sort().reverse();
   const lastNDates = allDates.slice(0, attendanceCount);
 
-  let list = deacon ? state.allStudents.filter(s => s.deacon === deacon) : [...state.allStudents];
+  let list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : [...state.allStudents];
 
   // اللي حضر آخر N مرة متسجلة كلها
   const result = list.filter(s => lastNDates.length === attendanceCount && lastNDates.every(d => !!state.allAttendance[d]?.[s.id]))
@@ -72,7 +73,7 @@ function renderAttendanceStats() {
       ${avatarBox(s, 42)}
       <div class="student-info">
         <div class="student-name">${s.name}</div>
-        <div class="student-id">🙏 ${s.deacon || 'بدون خادم'}${lastLabel ? ' · آخر حضور: '+lastLabel : ''}</div>
+        <div class="student-id">🙏 ${deaconNameOf(s) || 'بدون خادم'}${lastLabel ? ' · آخر حضور: '+lastLabel : ''}</div>
       </div>
       <div style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--success);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap">✅ آخر ${attendanceCount} مرة</div>
     </div>`;
@@ -84,7 +85,7 @@ function renderStarStats() {
   const cont    = document.getElementById('stats-stars-list');
   const countEl = document.getElementById('stats-stars-count-label');
 
-  let list = deacon ? state.allStudents.filter(s => s.deacon === deacon) : [...state.allStudents];
+  let list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : [...state.allStudents];
 
   // ترتيب تنازلي: الأكتر نجوم الأول، وعند التساوي الأبجدي بالاسم
   list.sort((a, b) => (b.starCount || 0) - (a.starCount || 0) || a.name.localeCompare(b.name, 'ar'));
@@ -102,7 +103,7 @@ function renderStarStats() {
       ${avatarBox(s, 42)}
       <div class="student-info">
         <div class="student-name">${i < 3 && count > 0 ? ['🥇','🥈','🥉'][i]+' ' : ''}${s.name}</div>
-        <div class="student-id">🙏 ${s.deacon || 'بدون خادم'}</div>
+        <div class="student-id">🙏 ${deaconNameOf(s) || 'بدون خادم'}</div>
       </div>
       <div style="background:rgba(241,196,15,0.15);border:1px solid rgba(241,196,15,0.35);color:#f1c40f;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap">⭐ ${count} / 6</div>
     </div>`;
@@ -127,7 +128,7 @@ function renderBirthdayStats() {
     if (isNaN(d.getTime())) return false;
     return (d.getMonth() + 1) === parseInt(month);
   });
-  if (deacon) list = list.filter(s => s.deacon === deacon);
+  if (deacon) list = list.filter(s => isDeaconOf(s, deacon));
 
   // ترتيب حسب يوم الميلاد
   list.sort((a, b) => new Date(a.dob).getDate() - new Date(b.dob).getDate());
@@ -149,7 +150,7 @@ function renderBirthdayStats() {
         ${avatarBox(s, 42)}
         <div class="student-info">
           <div class="student-name">${s.name}</div>
-          <div class="student-id">🙏 ${s.deacon || 'بدون خادم'}</div>
+          <div class="student-id">🙏 ${deaconNameOf(s) || 'بدون خادم'}</div>
         </div>
       </div>
       <div style="background:rgba(243,156,18,0.15);border:1px solid rgba(243,156,18,0.3);color:var(--warning);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap">🎂 ${dayLabel}</div>
@@ -188,7 +189,7 @@ function renderAbsenceStats() {
   // كل تواريخ الحضور المسجلة في النظام، مرتبة تنازليًا (الأحدث أولاً)
   const allDates = Object.keys(state.allAttendance).sort().reverse();
 
-  let list = deacon ? state.allStudents.filter(s => s.deacon === deacon) : [...state.allStudents];
+  let list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : [...state.allStudents];
 
   const result = list.filter(s => {
     // آخر N تواريخ حضور مسجلة — هل كان غايب في كل التواريخ دي؟
@@ -219,7 +220,7 @@ function renderAbsenceStats() {
       ${avatarBox(s, 42)}
       <div class="student-info">
         <div class="student-name">${s.name}</div>
-        <div class="student-id">🙏 ${s.deacon || 'بدون خادم'}</div>
+        <div class="student-id">🙏 ${deaconNameOf(s) || 'بدون خادم'}</div>
       </div>
       <div style="background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.3);color:var(--danger);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;white-space:nowrap;text-align:center">آخر حضور:<br>${lastLabel}</div>
     </div>`;

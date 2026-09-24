@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { doc, updateDoc, query, collection, where } from 'firebase/firestore';
+import { deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { credsEsc } from '@/features/import-export/import-creds';
 import { getDocFast, getDocsTtl } from '@/core/firestore-helpers';
@@ -111,7 +112,7 @@ window.openProfile = (id) => {
     { icon:'📍', key:'العنوان', val: '', html: geoRowHtml, phone: false },
     ...phones.map(p => ({ ...p, phone: true })),
     { icon:'✝️', key:'أب الاعتراف',   val: s.confessor || '',   phone: false },
-    { icon:'🙏', key:'خادم الافتقاد', val: s.deacon || '',      phone: false },
+    { icon:'🙏', key:'خادم الافتقاد', val: deaconNameOf(s) || '',      phone: false },
     { icon:'📞', key:'آخر افتقاد تليفوني', val: s.lastVisitPhone ? (() => { const d=new Date(s.lastVisitPhone); const m=(new Date().getFullYear()-d.getFullYear())*12+(new Date().getMonth()-d.getMonth()); return d.toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) + (m===0?' (هذا الشهر)':' · منذ '+m+' شهر'); })() : '', phone: false },
     { icon:'🏠', key:'آخر افتقاد منزلي',   val: s.lastVisitHome  ? (() => { const d=new Date(s.lastVisitHome);  const m=(new Date().getFullYear()-d.getFullYear())*12+(new Date().getMonth()-d.getMonth()); return d.toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) + (m===0?' (هذا الشهر)':' · منذ '+m+' شهر'); })() : '', phone: false },
     { icon:'📝', key:'ملاحظات',          val: s.notes || '',         phone: false },

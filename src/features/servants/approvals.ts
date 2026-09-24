@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { updateDoc, doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
+import { isDeaconOf } from '@/core/servants-index';
 import { findApprovalPatch } from '@/core/access-link';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
@@ -22,7 +23,7 @@ window.updateDeaconsTabLabel = function() {
   } else {
     label.textContent = 'افتقاد';
     const notVisitedCount = (typeof state.allStudents !== 'undefined' ? state.allStudents : [])
-      .filter(s => s.deacon === state.currentUserName && !isVisitedThisMonth(s)).length;
+      .filter(s => isDeaconOf(s, state.currentUserName) && !isVisitedThisMonth(s)).length;
     badge.innerHTML = `<span style="background:rgba(231,76,60,0.85);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-inline-start:5px">${notVisitedCount}</span>`;
   }
 };

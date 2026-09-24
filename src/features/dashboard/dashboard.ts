@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { state } from '@/core/state';
+import { isDeaconOf, deaconNameOf } from '@/core/servants-index';
 import { DEACONS } from '@/features/servants/deacons';
 import { DEACON_ATTENDANCE } from '@/features/servants/deacon-attendance';
 import { studentPhonesLabel } from '@/features/students/students';
@@ -55,7 +56,7 @@ window.closeDashModalOutside = (e) => { if (e.target.id === 'dash-modal') closeD
 function computeDashStats() {
   const stats = {};
   DEACONS.forEach(d => {
-    const mine = state.allStudents.filter(s => s.deacon === d);
+    const mine = state.allStudents.filter(s => isDeaconOf(s, d));
     const called  = mine.filter(s => !!s.lastVisitPhone).length;
     const visited = mine.filter(s => !!s.lastVisitHome).length;
     const touched = mine.filter(s => s.lastVisitPhone || s.lastVisitHome).length;
@@ -118,7 +119,7 @@ function buildDashboardHTML() {
   const names = DEACONS.slice();
   const totalStudents = state.allStudents.length;
   const noDeaconList = state.allStudents
-    .filter(s => !(s.deacon || '').trim())
+    .filter(s => !(deaconNameOf(s) || '').trim())
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   let out = '';
 

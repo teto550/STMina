@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { state } from '@/core/state';
+import { sectionTag } from '@/core/section';
+import { deaconIdOfName, deaconNameOf } from '@/core/servants-index';
 import { db } from '@/core/firebase';
 
 // ===== EDIT STUDENT =====
@@ -25,7 +27,7 @@ window.openEdit = (id) => {
   document.getElementById('edit-phone-mom').value      = s.phoneMom || '';
   document.getElementById('edit-phone-student').value  = s.phoneStudent || '';
   document.getElementById('edit-confessor').value      = s.confessor || '';
-  document.getElementById('edit-deacon').value         = s.deacon || '';
+  document.getElementById('edit-deacon').value         = deaconNameOf(s) || '';
   document.getElementById('edit-last-visit-phone').value = s.lastVisitPhone || '';
   document.getElementById('edit-last-visit-home').value  = s.lastVisitHome  || '';
   document.getElementById('edit-notes').value          = s.notes || '';
@@ -55,6 +57,7 @@ window.saveEdit = async () => {
     phoneStudent:  document.getElementById('edit-phone-student').value.trim() || '',
     confessor:     document.getElementById('edit-confessor').value.trim() || '',
     deacon:        document.getElementById('edit-deacon').value || '',
+    deaconId:      deaconIdOfName(document.getElementById('edit-deacon').value, sectionTag()), // link by id (name kept for compatibility)
     lastVisitPhone: document.getElementById('edit-last-visit-phone').value || '',
     lastVisitHome:  document.getElementById('edit-last-visit-home').value  || '',
     notes:          document.getElementById('edit-notes').value.trim() || '',

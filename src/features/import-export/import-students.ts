@@ -177,7 +177,7 @@ window.startImportStudentsData = async () => {
       if (!rawName || typeof rawName !== 'string' || !rawName.trim()) { skipped++; continue; }
       const name = rawName.trim();
       const fields = {};
-      if (colMap.deacon !== -1 && row[colMap.deacon])             fields.deacon       = row[colMap.deacon].toString().trim();
+      if (colMap.deacon !== -1 && row[colMap.deacon])             { fields.deacon = row[colMap.deacon].toString().trim(); fields.deaconId = deaconIdOfName(fields.deacon, sectionTag()); }
       if (colMap.phoneDad !== -1 && row[colMap.phoneDad])         fields.phoneDad     = row[colMap.phoneDad].toString().trim();
       if (colMap.phoneMom !== -1 && row[colMap.phoneMom])         fields.phoneMom     = row[colMap.phoneMom].toString().trim();
       if (colMap.phoneStudent !== -1 && row[colMap.phoneStudent]) fields.phoneStudent = row[colMap.phoneStudent].toString().trim();
@@ -193,7 +193,7 @@ window.startImportStudentsData = async () => {
         const ref = doc(collection(db, 'students'));
         batchOps.push({ type: 'set', ref, data: {
           name, grade: state.activeGrade, sid,
-          dob: '', address: '', phoneDad: '', phoneMom: '', phoneStudent: '', confessor: '', deacon: '',
+          dob: '', address: '', phoneDad: '', phoneMom: '', phoneStudent: '', confessor: '', deacon: '', deaconId: null,
           attendanceCount: 0, starCount: 0, photo: '', section: sectionTag(), createdAt: serverTimestamp(),
           ...(newKidFields(sectionTag(), state.activeGrade) || {}), // gender + cell when they can be told (not for grades 1-2 of the girls' section)
           ...fields

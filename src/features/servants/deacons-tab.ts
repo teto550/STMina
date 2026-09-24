@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { deleteDoc, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { isDeaconOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { DEACONS, DEACON_ADMIN_MAP, DEACON_DOC_IDS, applyActiveGradeDeacons, loadDeaconUsersMap } from '@/features/servants/deacons';
 import { formatAssignedGradesLabel } from '@/core/session';
@@ -29,7 +30,7 @@ window.buildDeaconChips = async function() {
     // احسب إحصائيات كل خادم (عدد المخدومين اللي كلمهم تليفونيًا وعدد اللي زارهم في بيتهم)
     const deaconStats = {};
     DEACONS.forEach(d => {
-      const mine = state.allStudents.filter(s => s.deacon === d);
+      const mine = state.allStudents.filter(s => isDeaconOf(s, d));
       deaconStats[d] = {
         notCalledThisMonth: mine.filter(s => !isVisitedThisMonth(s)).length,
         neverContacted: mine.filter(s => !s.lastVisitPhone && !s.lastVisitHome).length,
@@ -239,7 +240,7 @@ window.renderDeaconList = () => {
     return;
   }
 
-  const base = state.allStudents.filter(s => s.deacon === state.currentDeacon);
+  const base = state.allStudents.filter(s => isDeaconOf(s, state.currentDeacon));
   let list = base;
   let itemLine = null; // custom function(s) -> secondary line html, null = default
 

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { http } from '@/core/http';
+import { isDeaconOf, deaconNameOf } from '@/core/servants-index';
 import { updateDoc, doc } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { bestVoiceMatch, normalizeArabicVoice, speakAr } from '@/features/assistant/voice';
@@ -147,7 +148,7 @@ function assistantOpenByMatch(match) {
 function buildAssistantDataSummary() {
   const todayStr = todayKey();
   const deaconsSummary = DEACONS.map(d => {
-    const mine = state.allStudents.filter(s => s.deacon === d);
+    const mine = state.allStudents.filter(s => isDeaconOf(s, d));
     const notVisited = mine.filter(s => !isVisitedThisMonth(s));
     return {
       اسم_الخادم: d,
@@ -160,7 +161,7 @@ function buildAssistantDataSummary() {
   const studentsSummary = state.allStudents.map(s => ({
     الاسم: s.name,
     الصف: s.grade || '',
-    الخادم: s.deacon || 'بدون خادم',
+    الخادم: deaconNameOf(s) || 'بدون خادم',
     عدد_مرات_الحضور: s.attendanceCount || 0,
     اتفتقد_الشهر_ده: isVisitedThisMonth(s),
     حضر_اليوم: !!state.todayAttendance[s.id]
@@ -336,7 +337,7 @@ function handleAssistantCommand(rawTranscript) {
     const variants = extractAssistantNameVariants(rawTranscript, ['كام','مخدوم','عند','تحت','عدد','مخدومين','مستر','الخادم','خادم']);
     const dMatch = matchAssistantName(variants, [asNameCandidates(DEACONS)]);
     if (dMatch) {
-      const count = state.allStudents.filter(s => s.deacon === dMatch.name).length;
+      const count = state.allStudents.filter(s => isDeaconOf(s, dMatch.name)).length;
       const msg = `عند ${dMatch.name} ${count} مخدوم`;
       showToast('📊 ' + msg, 'success');
       speakAr(msg);

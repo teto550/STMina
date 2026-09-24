@@ -16,6 +16,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Decide what to do with `part_notifications` (needs a rule or removal of the feature).
 
 ## B. Project hygiene
+- [ ] ID migration steps 5-6 (docs/ID-MIGRATION.md): after a quiet period, read/write ids only and remove the name link fields; delete `tools/firestore/backfill-deacon-ids.cjs` once run here and in the other project.
 - [ ] Switch GitHub Pages to the build (`deploy:ghpages`, source = `gh-pages`) and bump the service worker cache version at go-live.
 - [ ] Replace the runtime CDN scripts (EmailJS, SheetJS, ExcelJS) with bundled packages loaded on demand.
 - [ ] Type the data model and remove `// @ts-nocheck` file by file (React code is already strict).

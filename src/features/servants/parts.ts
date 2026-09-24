@@ -167,7 +167,7 @@ window.saveNewPart = async () => {
   if (!date) { showToast('اختر ميعاد الفقرة', 'error'); return; }
   try {
     await addDoc(collection(db, 'parts_distribution'), {
-      grade: state.activeGrade, type, deaconName, title, date, section: sectionTag(),
+      grade: state.activeGrade, type, deaconName, deaconId: deaconIdOfName(deaconName, sectionTag()), title, date, section: sectionTag(),
       createdByUid: auth.currentUser.uid, createdByName: state.currentUserName,
       createdAt: serverTimestamp()
     });

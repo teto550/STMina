@@ -61,6 +61,7 @@ window.addStudent = async () => {
     phoneStudent:    document.getElementById('new-phone-student').value.trim() || '',
     confessor:       document.getElementById('new-confessor').value.trim() || '',
     deacon:          document.getElementById('new-deacon').value.trim() || '',
+    deaconId:        deaconIdOfName(document.getElementById('new-deacon').value, sectionTag()), // link by id (name kept for compatibility)
     attendanceCount: parseInt(document.getElementById('new-att-count').value) || 0,
     starCount:       0,
     photo:           state.newPhotoData || '',
@@ -98,7 +99,7 @@ window.setStuGrade = (g, btn) => {
 
 function filteredStudents(grade) {
   if (grade === 'الكل') return state.allStudents;
-  if (grade === 'بدون خادم') return state.allStudents.filter(s => !s.deacon);
+  if (grade === 'بدون خادم') return state.allStudents.filter(s => !deaconNameOf(s));
   return state.allStudents.filter(s => s.grade === grade);
 }
 
@@ -147,7 +148,7 @@ window.renderStudentsList = () => {
       ${avatarBox(s, 64)}
       <div class="stu-info">
         <div class="stu-name">${s.name}</div>
-        <div class="stu-grade">${s.deacon || 'بدون خادم'}</div>
+        <div class="stu-grade">${deaconNameOf(s) || 'بدون خادم'}</div>
         <div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:700">✅ حضر ${s.attendanceCount || 0} مرة</div>
       </div>
       <div class="stu-actions">

@@ -180,7 +180,7 @@ window.markDeaconAttendance = async (name, type) => {
   if (selectedDeaconAttDate === key) renderDeaconAttDayDetail();
   if (searchEl) searchEl.focus();
 
-  setDoc(ref, { name, date: key, type: t, section: sectionTag(), ts: serverTimestamp() })
+  setDoc(ref, { name, deaconId: deaconIdOfName(name, sectionTag()), date: key, type: t, section: sectionTag(), ts: serverTimestamp() })
     .catch(e => console.warn('markDeaconAttendance sync error (هيتزامن لما النت يرجع):', e));
   if (typeof logActivity === 'function') logActivity('سجّل حضور خادم', `${name} — ${DEACON_ATT_TYPES[t].short}`);
 };

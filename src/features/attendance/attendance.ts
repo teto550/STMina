@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore';
+import { deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { getDocsTtl, countSnapshot } from '@/core/firestore-helpers';
 import { db } from '@/core/firebase';
@@ -126,8 +127,8 @@ export function renderTodayList() {
     const present = !!state.todayAttendance[s.id];
     const bdayStr = s.dob ? new Date(s.dob + 'T00:00:00').toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) : '';
     const subLine = isBirthdayFilter
-      ? `${s.deacon || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• 🎂 ${bdayStr || 'بدون تاريخ ميلاد'}</span>`
-      : `${s.deacon || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• حضر ${s.attendanceCount || 0} مرة</span>`;
+      ? `${deaconNameOf(s) || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• 🎂 ${bdayStr || 'بدون تاريخ ميلاد'}</span>`
+      : `${deaconNameOf(s) || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• حضر ${s.attendanceCount || 0} مرة</span>`;
     return `<div class="student-item ${present?'present':''}">
       ${avatarBox(s, 42)}
       <div class="student-info">
