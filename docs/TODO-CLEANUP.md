@@ -24,7 +24,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Delete `tools/monolith-split/` after the other project has been ported (it is kept only for that).
 - [ ] Prune old `activity_log` entries (older than ~90 days) with a script, if the log grows.
 - [ ] Verify the "مستر" rename left 0 occurrences (read-only scan).
-- [ ] Run the gender script on the existing servants (`tools/firestore/set-gender.cjs`) and the same steps in the OTHER Firebase project.
+- [ ] Run the gender script (`tools/firestore/set-gender.cjs`) in the OTHER Firebase project (done here on 2026-09-24: 49 servants + 32 accounts = male).
 
 ## C. Decisions pending / postponed (roles design)
 - [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just
