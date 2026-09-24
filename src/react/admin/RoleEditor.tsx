@@ -46,15 +46,17 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
   }
 
   return (
-    <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:flex-col tw:gap-5 tw:px-4 tw:pt-5 tw:pb-32">
-      <h2 className="tw:text-xl tw:font-bold">{role ? 'تعديل دور' : 'دور جديد'}</h2>
-      <label className="tw:flex tw:flex-col tw:gap-2 tw:text-sm tw:font-bold">اسم الدور
-        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: تالتة بنين" />
-      </label>
+    <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:flex-col tw:gap-6 tw:px-4 tw:pt-6 tw:pb-36">
+      <h2 className="tw:px-1 tw:text-xl tw:font-bold">{role ? 'تعديل دور' : 'دور جديد'}</h2>
+      <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
+        <label className="tw:flex tw:flex-col tw:gap-3 tw:text-sm tw:font-bold">اسم الدور
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: تالتة بنين" />
+        </label>
+      </section>
       <SwitchCard checked={admin} onChange={setAdmin} title="دور أدمن" hint="الأدمن بيشوف ويعدّل كل حاجة في القسمين" />
 
       {!admin && (
-        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4" aria-label="الفصول">
+        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5" aria-label="الفصول">
           <h3 className="tw:text-sm tw:font-bold">الفصول</h3>
           <p className="tw:mt-1 tw:mb-4 tw:text-xs tw:text-dim">بتشمل المخدومين والخدام بتوع الفصل</p>
           <div className="tw:flex tw:flex-col tw:gap-2">
@@ -76,7 +78,7 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
         </section>
       )}
 
-      <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4">
+      <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
         <div className="tw:mb-3 tw:flex tw:items-center tw:justify-between">
           <h3 className="tw:text-sm tw:font-bold">الأعضاء ({members.size})</h3>
           <Button size="sm" variant="secondary" onClick={() => setPicking(true)}>+ إضافة أشخاص</Button>
