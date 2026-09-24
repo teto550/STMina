@@ -275,3 +275,6 @@ Also in C24: an admin can rename a servant who has not registered yet (the edit 
 
 ### C29 - ID migration, dual mode (servants linked by id, name kept)
 New `src/core/servants-index.ts` (+ test): `deaconNameOf`, `isDeaconOf`, `deaconIdOfName`. Read sites now resolve the servant through the id when a record has one (assistant, attendance list, dashboard, stats, approvals, deacons tab, students list/profile/edit). Write sites add `deaconId` next to the name: `students/students.ts` (new kid), `students/student-edit.ts`, `import-export/import-students.ts`, `servants/deacon-attendance.ts`, `servants/parts.ts`. Data: run `tools/firestore/backfill-deacon-ids.cjs` (dry run first; the `ALIASES` map holds a misspelling found here, check the other project's dry-run report for its own). The name fields are NOT removed yet (docs/ID-MIGRATION.md steps 5-6).
+
+### C30 - Missing imports fix + the undefined-name check
+C29 shipped without the `servants-index` imports in `students/students.ts`, `servants/parts.ts`, `servants/deacon-attendance.ts` and `import-export/import-students.ts` (the kids list kept loading: "deaconNameOf is not defined"). Fixed, and new `tools/check-undefined-names.cjs` (`npm run check:names`, now part of `npm run build`) reports names used but never defined in the `@ts-nocheck` files. Copy the tool to the other project and run it after porting.

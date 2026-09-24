@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { query, collection, where, addDoc, serverTimestamp, deleteDoc, doc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { deaconIdOfName } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { getDocsFast } from '@/core/firestore-helpers';
 import { auth, db } from '@/core/firebase';

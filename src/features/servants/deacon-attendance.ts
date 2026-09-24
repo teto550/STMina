@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { getDocs, collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { deaconIdOfName } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
 import { todayKey } from '@/core/utils';

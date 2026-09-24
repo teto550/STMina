@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run typecheck && npm run check:names && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.strict.json",
     "deploy:test": "npm run build && firebase hosting:channel:deploy test --expires 30d",
     "deploy:live": "npm run build && firebase deploy --only hosting",
     "deploy:ghpages": "npm run build && gh-pages -d dist --dotfiles --message \"Deploy build\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:names": "node tools/check-undefined-names.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { query, collection, orderBy, where, serverTimestamp, addDoc } from 'firebase/firestore';
+import { deaconIdOfName, deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
 import { ensureAttendance } from '@/core/data';

@@ -14,6 +14,8 @@ Nothing is ported yet and the user did not ask to port now; only keep the log ac
 - Data (Firestore contents, rules, console/Google Cloud settings) is per project and never ported.
 
 ## Working agreements
+- The old plain files keep `// @ts-nocheck`, so a forgotten import is NOT caught by `tsc`: `npm run check:names` (also part of `npm run build`)
+  finds names that are used but never defined. Run it after editing old files (2026-09-25: a missing import broke the kids list).
 - Stop and start the dev server after changing `.env.local` (don't rely on Vite auto-restart).
 - Never publish to GitHub Pages or live Firebase Hosting without an explicit request; the test channel
   (`npm run deploy:test`) is the place to try things. The Pages link is already shared, keep it unchanged.

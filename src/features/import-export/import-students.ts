@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { doc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { deaconIdOfName } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { newKidFields } from '@/core/access';
 import { buildColumnDateMap, ensureXLSXLoaded, normalizeName } from '@/features/import-export/import-attendance';
