@@ -26,7 +26,7 @@
 }
 
 /* the root element of every island (added by mountIsland) */
-.rx-root { font-family: 'Cairo', sans-serif; color: var(--text); }
+.rx-root { font-family: 'Cairo', sans-serif; color: var(--text); color-scheme: dark; }
 .rx-root button, .rx-root input, .rx-root select, .rx-root textarea { font: inherit; color: inherit; }
 .rx-root ul, .rx-root ol { list-style: none; margin: 0; padding: 0; }
 .rx-root button { background: none; border: 0; padding: 0; } /* plain buttons are not the browser's grey; utilities (important) still win */

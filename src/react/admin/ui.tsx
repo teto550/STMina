@@ -74,3 +74,16 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
 }
 
 export const inputClass = 'tw:h-11 tw:w-full tw:rounded-field tw:border tw:border-line tw:bg-surface-2 tw:px-3 tw:text-sm tw:text-fg';
+
+/** A big pill that toggles one class (a real checkbox underneath, so it works with keyboard and screen readers). */
+export function CellToggle({ checked, onChange, label, tone, children }: { checked: boolean; onChange: (v: boolean) => void; label: string; tone: 'girls' | 'boys'; children: ReactNode }) {
+  return (
+    <label className="tw:block tw:cursor-pointer">
+      <input type="checkbox" className="tw:peer tw:sr-only" aria-label={label} checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className={cn('tw:flex tw:min-h-11 tw:items-center tw:justify-center tw:gap-1 tw:rounded-field tw:border tw:text-sm tw:font-bold tw:transition-colors tw:peer-focus-visible:ring-2 tw:peer-focus-visible:ring-accent',
+        checked ? (tone === 'girls' ? 'tw:border-accent tw:bg-accent tw:text-white' : 'tw:border-fg tw:bg-fg tw:text-bg') : 'tw:border-line tw:bg-surface-2 tw:text-dim')}>
+        {checked && <span aria-hidden="true">✓</span>}{children}
+      </span>
+    </label>
+  );
+}

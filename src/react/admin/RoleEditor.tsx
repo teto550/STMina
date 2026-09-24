@@ -6,7 +6,7 @@ import { commit, newId } from './data';
 import { membersOf, planRoleDelete, planRoleSave } from './logic';
 import { PersonList } from './PersonList';
 import type { AdminData, AdminRole } from './types';
-import { CheckRow, Chip, Sheet, inputClass } from './ui';
+import { CellToggle, CheckRow, Chip, Sheet, inputClass } from './ui';
 
 const GRADE_NAMES = ['', 'أولى', 'تانية', 'تالتة', 'رابعة', 'خامسة', 'سادسة'];
 
@@ -54,23 +54,26 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
       <CheckRow checked={admin} onChange={setAdmin} hint="الأدمن بيشوف ويعدّل كل حاجة في القسمين">دور أدمن</CheckRow>
 
       {!admin && (
-        <fieldset className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3">
-          <legend className="tw:px-1 tw:text-sm tw:font-bold">الفصول (المخدومين + الخدام)</legend>
-          <div className="tw:grid tw:grid-cols-2 tw:gap-x-2">
-            <div className="tw:text-center tw:text-xs tw:font-bold tw:text-accent">بنات</div>
-            <div className="tw:text-center tw:text-xs tw:font-bold tw:text-dim">بنين</div>
-            {GRADES.map((g: Grade) => isMixedGrade(g) ? (
-              <div key={g} className="tw:col-span-2">
-                <CheckRow checked={has(mixedGradeCells(g))} onChange={(v) => toggle(mixedGradeCells(g), v)} hint="بنات وأولاد في نفس الفصل، وخادمات بس">{GRADE_NAMES[g]} — بنات وأولاد</CheckRow>
-              </div>
-            ) : (
-              <div key={g} className="tw:contents">
-                <CheckRow checked={cells.has(cellOf('female', g))} onChange={(v) => toggle([cellOf('female', g)], v)}>{GRADE_NAMES[g]} بنات</CheckRow>
-                <CheckRow checked={cells.has(cellOf('male', g))} onChange={(v) => toggle([cellOf('male', g)], v)}>{GRADE_NAMES[g]} بنين</CheckRow>
+        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3" aria-label="الفصول">
+          <h3 className="tw:mb-1 tw:text-sm tw:font-bold">الفصول</h3>
+          <p className="tw:mb-3 tw:text-xs tw:text-dim">بتشمل المخدومين والخدام بتوع الفصل</p>
+          <div className="tw:flex tw:flex-col tw:gap-2">
+            {GRADES.map((g: Grade) => (
+              <div key={g} className="tw:grid tw:grid-cols-[4.5rem_1fr_1fr] tw:items-center tw:gap-2">
+                <span className="tw:text-sm tw:font-bold">{GRADE_NAMES[g]}</span>
+                {isMixedGrade(g) ? (
+                  <div className="tw:col-span-2"><CellToggle label={`${GRADE_NAMES[g]} بنات وأولاد`} checked={has(mixedGradeCells(g))} onChange={(v) => toggle(mixedGradeCells(g), v)} tone="girls">بنات وأولاد</CellToggle></div>
+                ) : (
+                  <>
+                    <CellToggle label={`${GRADE_NAMES[g]} بنات`} checked={cells.has(cellOf('female', g))} onChange={(v) => toggle([cellOf('female', g)], v)} tone="girls">بنات</CellToggle>
+                    <CellToggle label={`${GRADE_NAMES[g]} بنين`} checked={cells.has(cellOf('male', g))} onChange={(v) => toggle([cellOf('male', g)], v)} tone="boys">بنين</CellToggle>
+                  </>
+                )}
               </div>
             ))}
           </div>
-        </fieldset>
+          <p className="tw:mt-2 tw:text-xs tw:text-dim">أولى وتانية: بنات وأولاد في نفس الفصل، وخادمات بس.</p>
+        </section>
       )}
 
       <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3">
