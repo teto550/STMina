@@ -26,6 +26,12 @@ time, or never.
 - Available colour tokens: `bg`, `surface`, `surface-2`, `accent`, `accent-2`, `fg`, `dim`, `line`, `ok`, `warn`, `bad`
   (e.g. `tw:bg-surface`, `tw:text-dim`, `tw:border-line`, `tw:rounded-card`, `tw:rounded-field`).
 
+## Rule for this project
+**All new screens are built in React.** Existing (plain) screens are migrated one at a time when they change substantially, and each migration
+is verified (behaviour, mobile and desktop, tests) before the next one starts. The first real React screen is the admin "users and roles" screen.
+Screens are **mobile first** (most users are on phones) and work on desktop: design the phone layout first, add breakpoints (`tw:md:`) for wider
+screens, touch targets at least 44px, RTL-safe (logical utilities).
+
 ## Adding a React screen
 1. Create `src/react/screens/MyScreen.tsx` with a default export component (props: `{ close?: () => void }`).
 2. Register it in `src/react/screens/registry.ts`: `'my-screen': () => import('./MyScreen')`.

@@ -27,9 +27,10 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Run the gender script on the existing servants (`tools/firestore/set-gender.cjs`) and the same steps in the OTHER Firebase project.
 
 ## C. Questions waiting for the user (roles design)
-- [ ] Membership on people (roster) rather than accounts only, and a person record for admin accounts not in the roster.
-- [ ] Which actions stay admin-only (imports, passwords, promotion/cleanup, activity log) and which any servant of the class may do.
-- [ ] The in-class "servants" tab: everybody, or only people with servant cells?
+- [ ] Cross-class operations (promotion, imports, attendance clean-up) and kids' passwords: admin only or class servants? (`docs/ROLES-DESIGN.md` §9)
+- [ ] Access cache lifetime (24 h proposed) and whether role changes may wait for the next load.
+- [ ] Add-admin flow through a person with an email (§6b), person without a role, deleting a role with members.
+- [ ] Approve the mobile-first mockups of the roles screens.
 
 ## Done
 - [x] QR feature removed (scanner, generation, print-all cards).

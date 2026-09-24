@@ -2,35 +2,45 @@
 
 Status: **design only, nothing implemented.** Decisions below come from the user (2026-09-25). Open questions are at the end.
 
-## 1. Decisions
-1. One checkbox per item: "can see" and "can manage" are the same thing. No extra permission levels.
+## 1. Decisions (updated 2026-09-25, second round)
+1. **One checkbox per class**, and it means everything. A class cell covers the kids AND the servants of that class: a servant of a class can do
+   anything in that class and sees everything about it, including its servants, and nothing outside it. There are no separate "servants"
+   columns and no separate "manage" level. (Cross-class operations, e.g. moving kids up a grade, are an open question below.)
 2. A person may have several roles. The admin UI must make it easy to see who is in each role and to add/remove many people at once.
-3. A servant's **class and audience live only in roles** (never per servant). Moving a servant, or the yearly graduation, means editing the role once.
-   The servant's **gender stays on the person** (a fact about them, needed before any role is known: default section, sanity checks).
-4. Admins are a role flag (`admin`). Two admins exist and both can repair access from the Firebase console, so lock-out is a low risk;
-   we still keep one cheap guard (the UI refuses to remove the last admin).
-5. Do the ID migration together with roles, but only through **new fields** that do not break production; keep a clean-up to-do list
-   (`docs/TODO-CLEANUP.md`) and revisit it regularly.
-6. Grades 1 and 2: boys and girls share the same class, with female servants only. The boys are `male`; they appear in the girls' section
-   for grades 1-2 and move to the boys' section when they reach grade 3. Kids keep their gender, only the class changes.
-7. At login: a male servant goes to the boys' section, a female servant to the girls' section (by the person's gender).
-   The "switch section" menu item is visible only to admins and to people whose roles span both sections (grades 1-2 do NOT count as
-   mixed, because they all belong to the girls' section).
-8. The servants directory (the "الخدام/الخادمات" chip next to the class chips) is visible only to admins.
+3. A servant's **class lives only in roles** (never per servant). Moving a servant or the yearly graduation = edit the role once.
+   The servant's **gender is a separate field on the person**; a role cell is gender + grade ("3rd grade boys" = `male:3`), and a role cell's
+   gender must match the servant's gender. A servant assigned to grade 1-2 is treated and shown as female.
+4. Lock-out protection is NOT wanted (two admins can repair access in the Firebase console). No guard.
+5. IDs and roles are done together, only through **new fields**; the clean-up list is `docs/TODO-CLEANUP.md` and is revisited regularly.
+6. Grades 1-2: boys and girls share one class with female servants only; the boys are `male`, shown in the girls' section for grades 1-2, and
+   move to the boys' section at grade 3 (only their class changes).
+7. At login a male servant starts in the boys' section and a female servant in the girls' section (by the person's gender). The "switch
+   section" menu item is visible only to admins and to people whose roles span both sections (grades 1-2 do not count as mixed).
+8. The servants directory (the chip next to the class chips) is visible only to admins; the in-class servants tab shows the class's servants
+   to every servant of that class.
+9. **Access is loaded right after login and before anything is shown**, and can be cached for a longer period (see 3b below).
+10. **Roles apply to the people in the servants list** (the roster), whether or not they already have a login.
+11. **An admin can add another admin** from the admin screen (see 6b).
+12. **All new screens are built in React** (`docs/REACT.md`); existing screens are migrated incrementally when they change substantially,
+    each one verified before the next. The roles/users admin screen is the first React screen. It is **mobile first** (mostly used on
+    phones) and desktop friendly.
 
 ## 2. Concepts
-- **Cell** = gender + grade number, written `male:3`, `female:1` ... Kids and servants are both described by cells.
-- **Section** (boys / girls) of a KID cell comes from one small config, not from the kid's gender alone:
+- **Cell** = gender + grade number, written `male:3`, `female:1` ... Both kids and servants of a class are covered by its cell.
+- **Section** (boys / girls) of a KID cell comes from one small config, not from the gender alone:
   `MIXED_GRADES = [1, 2]` -> a kid of grades 1-2 (male or female) is in the **girls'** section; from grade 3, male -> boys, female -> girls.
-  A SERVANT's section is simply their gender (male -> boys, female -> girls); servants of grades 1-2 must be female.
-  The config is a constant in code (`src/core/access-config.ts`) so it is easy to change; a Firestore override can come later.
-- **Person** = a servant in the roster (`deacons` collection). May or may not have a login yet. Holds name, gender, roles.
+  A SERVANT's section is their gender (male -> boys, female -> girls); servants of grades 1-2 must be female.
+  The config is a constant in code (`src/core/access-config.ts`), easy to change; a Firestore override can come later.
+- **Person** = a servant in the roster (`deacons` collection). May or may not have a login. Holds name, gender, roles.
   An account (`users`) is linked to its person (`deaconId`).
-- **Role** = `{ id, name, admin: boolean, kids: [cells], servants: [cells] }`.
-  Examples: "3rd grade boys servant" = kids [`male:3`]; "3rd grade boys coordinator" = kids [`male:3`] + servants [`male:3`];
-  "3rd and 4th boys" = kids [`male:3`,`male:4`] (+ servants); "All boys" = all boys cells + all male-servant cells; "Grade 1" = kids
-  [`female:1`,`male:1`] + servants [`female:1`]; "Admin" = `admin: true` (everything, both sections).
-- **Access** of a person = union of their roles: `{ admin, kids:Set, servants:Set, sections:Set }`.
+- **Role** = `{ id, name, admin: boolean, cells: [cells] }`. Examples: "3rd grade boys" = [`male:3`]; "3rd and 4th boys" = [`male:3`,`male:4`];
+  "Grade 1" = [`female:1`,`male:1`] (one linked checkbox "girls and boys"); "All boys" = every boys cell; "Admin" = `admin: true`.
+- **Access** of a person = union of their roles: `{ admin, cells:Set, sections:Set }`.
+
+### 3b. Loading access after login (cached)
+Login -> read the person's access snapshot (one document, stored on the account) -> only then show the app. It is cached in the browser
+(localStorage) so a reload is instant and works offline; the cache is validated in the background with one read, and role changes apply on the
+next load (or as soon as the validation returns). Cache lifetime: to be confirmed with the user (proposal: valid 24 hours, revalidated on every load).
 
 ## 3. Where membership lives (recommendation: on the person)
 The roster has ~49 people but only ~29 accounts, and people without an account are still assigned kids and appear in class lists.
@@ -41,7 +51,7 @@ roster get a person record created for them (migration step).
 ## 4. Data model (all additive; old fields stay until clean-up)
 | Data | New field | Notes |
 | --- | --- | --- |
-| `roles/{id}` (new) | `name`, `admin`, `kids[]`, `servants[]`, `createdAt`, `updatedAt` | edited only by admins |
+| `roles/{id}` (new) | `name`, `admin`, `cells[]`, `createdAt`, `updatedAt` | edited only by admins |
 | `deacons/{id}` | `gender` (done), `roleIds[]`, `uid` | person; `grade`/`section` become legacy |
 | `users/{uid}` | `deaconId`, `access` (computed snapshot) | snapshot lets login and (later) security rules read one document |
 | `students` | `gender` (all existing = male), `cell` (`male:4`), `deaconId` | `section` stays (denormalised, recomputed at promotion) |
@@ -49,21 +59,28 @@ roster get a person record created for them (migration step).
 
 Saving a role writes the role and refreshes `access` of every member in ONE atomic batch, so changes apply immediately.
 
-## 5. Screens (React islands, admin-only menu entry "إعدادات الأدمن" -> "المستخدمين والأدوار")
-1. **Roles matrix.** Rows = roles, columns grouped under sticky headers: Kids (Girls 1-6 | Boys 3-6) and Servants (Female 1-6 | Male 3-6) and
-   an Admin column. For grades 1-2 there is a single linked checkbox "girls & boys" (they are one class). Create / rename / duplicate /
-   delete role (a role with members cannot be deleted). Save = batch.
-2. **People & roles.** For each role: its members, with search; tick many people and "add to role" / "remove from role". Per person: role chips.
-   Shows gender, whether they have a login, and warnings (male servant in a grades 1-2 role, person without any role).
-3. **Consistency check** (later): kids assigned to a servant whose roles do not cover the kid's class; roles without members.
-4. **Year rollover helper** (later): "move this role up one grade" (cells shift 3 -> 4; grade 6 drops), and the existing promote-kids tool also
-   recomputes each kid's `cell` and `section` (boys leave the girls' section at 2 -> 3).
+## 5. Screens (React, admin-only menu entry "إعدادات الأدمن"; mobile first, desktop friendly)
+Mobile (default): a screen with two tabs, "الأدوار" and "الأشخاص".
+1. **Roles list**: one card per role (name, class chips, member count); "+ دور جديد".
+2. **Role editor** (full screen on a phone): name, an "admin" switch (hides the grid), then a small grid, rows = grades and columns = girls | boys
+   (grades 1-2 are one wide "girls and boys" checkbox), big touch targets, a line "changes apply to N people now", Save / Cancel, and the
+   members of the role.
+3. **People**: search + filters (all, no role, boys, girls, by role); rows with a checkbox, name, gender, role chips and login status; when rows
+   are selected a bottom bar offers "add to role" / "remove from role" for all of them. "+ add admin" (see 6b).
+Desktop (wider screens): the same data as one **matrix**: rows = roles, columns = Girls 1-2 (together), 3-6 | Boys 3-6 | Admin, sticky header
+rows and a sticky first column, with a side panel listing and editing the members of the selected role.
+Later: consistency check, "move this role up one grade" for the yearly graduation.
+
+### 6b. Adding an admin
+A client cannot create another person's login, so: "add admin" creates (or picks) a **person** (name, gender, email) and gives them the Admin
+role. When that person registers or logs in with that email, the account links to the person and gets admin access. An existing person can
+simply be given the Admin role.
 
 ## 6. What each part of the app uses
-- Class chips and data: only the classes in the person's kid cells; students are loaded per cell (`where cell == ...`, one query per cell).
-- In-class servants tab: servants of the active class are those whose roles include that class; seeing OTHER servants needs servant cells.
-- Servants directory: admin only. Section switch menu: admin or mixed-section access. Everything else follows the cells.
-- Admin-only stays admin-only (imports, passwords, promotion/cleanup, activity log, roles) unless a decision below says otherwise.
+- Class chips and data: only the classes in the person's cells; students are loaded per cell (`where cell == ...`, one query per cell).
+- In-class servants tab: every servant of the class sees the class's servants. Servants directory: admin only.
+- Section switch menu: admin or mixed-section access. Roles/users admin screen: admin only.
+- Anything inside a class is allowed for its servants (decision 1); operations that reach into another class stay open questions.
 
 ## 7. Migration plan (safe order, rollback = redeploy the old code)
 The live site still runs the OLD code, so every data step must be harmless to it: only new fields, dry-run scripts, backups.
@@ -82,5 +99,11 @@ The live site still runs the OLD code, so every data step must be harmless to it
 - Firestore rules need queries constrained like the rules (one query per cell); tested in the emulator before deploy.
 - Roles edited by mistake affect many people at once: a confirmation with the number of affected people, and an "undo" via the role's previous value.
 
-## 9. Open questions (asked to the user)
-See the end of the conversation of 2026-09-25 and the list in `docs/TODO-CLEANUP.md` -> "Questions".
+## 9. Open questions
+1. Cross-class operations: promoting kids to the next grade moves them into ANOTHER class; bulk imports and attendance clean-up can touch many
+   kids. Admin only, or allowed for the class's servants? And may every servant of a class see the kids' passwords (student_secrets)?
+2. Cache lifetime for access (24 h proposed) and whether a role change may wait until the next page load.
+3. Adding an admin through a person with an email that links on registration (6b): OK?
+4. A person without any role: sees a "no access yet" screen after login?
+5. Deleting a role that still has members: block it (proposal) or ask to reassign?
+6. Roles matrix on desktop and cards/editor on mobile: confirm after looking at the mockups.
