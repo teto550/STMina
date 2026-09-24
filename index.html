@@ -769,40 +769,6 @@
   </div>
 </div>
 
-<!-- EDIT DEACON PROFILE MODAL -->
-<div id="edit-deacon-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:430;overflow-y:auto;padding:20px">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:480px;margin:0 auto;padding:24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:18px;font-weight:700">✏️ تعديل بيانات الخادم</div>
-      <button onclick="closeEditDeaconProfile()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
-    </div>
-    <input type="hidden" id="edp-uid">
-    <input type="hidden" id="edp-name-ref">
-    <label class="field-label">رقم التليفون</label>
-    <div id="edp-phones" class="phone-list"></div>
-    <button type="button" onclick="addPhoneRow('edp-phones')" style="width:100%;background:rgba(var(--accent-rgb),0.08);border:1px dashed rgba(var(--accent-rgb),0.35);border-radius:8px;color:var(--accent);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;padding:9px;cursor:pointer;margin-bottom:14px">➕ إضافة رقم تليفون تاني</button>
-    <label class="field-label">العنوان</label>
-    <input type="text" id="edp-address" class="field-input">
-    <label class="field-label">تاريخ الميلاد</label>
-    <input type="date" id="edp-dob" class="field-input">
-    <label class="field-label">الحالة الدراسية</label>
-    <select id="edp-grad-status" class="field-select" onchange="toggleEdpGradFields()">
-      <option value="student">لسه بيدرس</option>
-      <option value="graduated">متخرج</option>
-    </select>
-    <div id="edp-grad-fields-wrap">
-      <label class="field-label">الكلية</label>
-      <input type="text" id="edp-college" class="field-input">
-      <label class="field-label">الجامعة</label>
-      <select id="edp-university" class="field-select"></select>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:8px">
-      <button class="btn-secondary" onclick="closeEditDeaconProfile()">إلغاء</button>
-      <button class="btn-primary" onclick="saveDeaconProfileEdit()">💾 حفظ</button>
-    </div>
-  </div>
-</div>
-
 <!-- IMPORT ATTENDANCE MODAL -->
 <div id="import-attendance-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;overflow-y:auto;padding:20px">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:520px;margin:0 auto;padding:24px">

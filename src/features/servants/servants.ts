@@ -10,22 +10,10 @@ import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
 import { sectionTag, genderOfSection } from '@/core/section';
 import { logActivity } from '@/core/presence';
+import { EGYPT_UNIVERSITIES } from '@/core/universities';
 
 // ===== قائمة الجامعات المصرية (لفورم التسجيل وتعديل بيانات الخادم) =====
-const EGYPT_UNIVERSITIES = [
-  'جامعة القاهرة', 'جامعة عين شمس', 'جامعة الإسكندرية', 'جامعة حلوان', 'جامعة المنصورة',
-  'جامعة الزقازيق', 'جامعة طنطا', 'جامعة أسيوط', 'جامعة المنيا', 'جامعة سوهاج',
-  'جامعة بنها', 'جامعة الفيوم', 'جامعة كفر الشيخ', 'جامعة بني سويف', 'جامعة دمياط',
-  'جامعة جنوب الوادي', 'جامعة قناة السويس', 'جامعة بورسعيد', 'جامعة الأزهر',
-  'جامعة السادات', 'جامعة العريش', 'جامعة الوادي الجديد', 'جامعة الأقصر', 'جامعة أسوان',
-  'جامعة دمنهور', 'جامعة مطروح', 'جامعة حلوان التكنولوجية',
-  'الجامعة الأمريكية بالقاهرة (AUC)', 'الجامعة الألمانية بالقاهرة (GUC)', 'جامعة النيل',
-  'جامعة المستقبل', 'جامعة أكتوبر للعلوم الحديثة والآداب (MSA)', 'الجامعة البريطانية بمصر (BUE)',
-  'جامعة مصر الدولية (MIU)', 'جامعة مصر للعلوم والتكنولوجيا (MUST)',
-  'جامعة النهضة', 'جامعة سيناء', 'جامعة بدر', 'جامعة الأهرام الكندية',
-  'جامعة فاروس بالإسكندرية', 'جامعة العلمين الدولية', 'جامعة زويل للعلوم والتكنولوجيا',
-  'أخرى'
-];
+
 
 export function populateUniversitySelect(selectId) {
   const sel = document.getElementById(selectId || 'reg-university');
@@ -217,57 +205,36 @@ window.openMyProfile = async () => {
   openDeaconProfile(name);
 };
 
+// "✏️ تعديل بيانات الخادم" is a React screen (src/react/screens/EditServant.tsx); this only prepares its data and applies the result
 window.openEditDeaconProfile = (name) => {
   const nm = name || document.getElementById('dprof-name').textContent;
   const u = DEACON_ADMIN_MAP[nm];
   if (!u) { showToast('الخادم ده لسه ماسجلش حساب، مينفعش نعدل بياناته', 'error'); return; }
-  document.getElementById('edp-uid').value = u.uid;
-  document.getElementById('edp-name-ref').value = nm;
-  renderPhoneRows('edp-phones', (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : ['']));
-  document.getElementById('edp-address').value = u.address || '';
-  document.getElementById('edp-dob').value = u.dob || '';
-  document.getElementById('edp-grad-status').value = u.graduated ? 'graduated' : 'student';
-  populateUniversitySelect('edp-university');
-  document.getElementById('edp-college').value = u.college || '';
-  document.getElementById('edp-university').value = u.university || '';
-  toggleEdpGradFields();
-  document.getElementById('edit-deacon-profile-modal').style.display = 'block';
-};
-
-window.closeEditDeaconProfile = () => {
-  document.getElementById('edit-deacon-profile-modal').style.display = 'none';
-};
-
-window.toggleEdpGradFields = () => {
-  const status = document.getElementById('edp-grad-status').value;
-  const wrap = document.getElementById('edp-grad-fields-wrap');
-  if (wrap) wrap.style.display = status === 'student' ? 'block' : 'none';
-};
-
-window.saveDeaconProfileEdit = async () => {
-  const uid = document.getElementById('edp-uid').value;
-  const nm  = document.getElementById('edp-name-ref').value;
-  if (!uid) { showToast('حدث خطأ، حاول تاني', 'error'); return; }
-  const phones = getPhoneValues('edp-phones');
-  if (!phones.length) { showToast('اكتب رقم تليفون واحد على الأقل', 'error'); return; }
-  const gradStatus = document.getElementById('edp-grad-status').value;
-  const data = {
-    phones, phone: phones[0],
-    address: document.getElementById('edp-address').value.trim(),
-    dob: document.getElementById('edp-dob').value,
-    graduated: gradStatus === 'graduated',
-    college: gradStatus === 'student' ? document.getElementById('edp-college').value.trim() : '',
-    university: gradStatus === 'student' ? document.getElementById('edp-university').value : ''
-  };
-  try {
-    await setDoc(doc(db, 'users', uid), data, { merge: true });
-    if (nm && DEACON_ADMIN_MAP[nm]) Object.assign(DEACON_ADMIN_MAP[nm], data);
-    closeEditDeaconProfile();
-    if (nm) openDeaconProfile(nm);
-    showToast('تم حفظ بيانات الخادم ✓', 'success');
-  } catch(e) {
-    showToast('حدث خطأ، حاول تاني', 'error');
-  }
+  const raw = state.ALL_DEACONS_RAW.find(x => x.name === nm);
+  window.openReactScreen('edit-servant', undefined, {
+    servant: {
+      name: nm, uid: u.uid, personId: raw ? raw.id : null,
+      phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []),
+      address: u.address || '', dob: u.dob || '', graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+    },
+    canRename: state.currentUserRole === 'admin',
+    onSaved: ({ name: newName, data, renamed }) => {
+      if (DEACON_ADMIN_MAP[nm]) Object.assign(DEACON_ADMIN_MAP[nm], data);
+      if (renamed) {
+        const entry = state.ALL_DEACONS_RAW.find(x => x.name === nm);
+        if (entry) entry.name = newName;
+        if (DEACON_ADMIN_MAP[nm]) { DEACON_ADMIN_MAP[newName] = DEACON_ADMIN_MAP[nm]; delete DEACON_ADMIN_MAP[nm]; }
+        (state.allStudents || []).forEach(s => { if (s.deacon === nm) s.deacon = newName; });
+        if (state.currentDeacon === nm) state.currentDeacon = newName;
+        if (state.currentUserName === nm) state.currentUserName = newName;
+        applyActiveGradeDeacons();
+        logActivity('عدّل اسم خادم', `${nm} → ${newName}`);
+      }
+      openDeaconProfile(newName);
+      if (window.renderServantsDirectory && state.servantsDirectoryOpen) window.renderServantsDirectory();
+      showToast(renamed ? `تم حفظ البيانات والاسم ✓ (اتحدّث ${renamed.counts.students} مخدوم)${renamed.partsFailed ? ' — توزيع الفقرات لسه بالاسم القديم' : ''}` : 'تم حفظ بيانات الخادم ✓', 'success');
+    }
+  });
 };
 
 window.openAddDeaconModal = () => {

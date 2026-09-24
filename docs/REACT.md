@@ -12,6 +12,7 @@ time, or never.
 | shadcn/ui-style components (Radix Slot + class-variance-authority + tailwind-merge); example: Button | `src/react/components/ui/`, `src/react/lib/utils.ts` (`cn`) |
 | Forms: `react-hook-form` + `zod` (+ `@hookform/resolvers`); icons: `lucide-react` | used by screens |
 | Mounting: `mountIsland()`, the screen registry and `window.openReactScreen(name, container?)` | `src/react/mount.tsx`, `src/react/screens/registry.ts`, `src/react/bootstrap.ts` |
+| Second screen (migrated from a plain modal): "تعديل بيانات الخادم" | `src/react/screens/EditServant.tsx` |
 | First real screen: admin "المستخدمين والأدوار" (`openReactScreen('admin-roles')`, admin-only settings menu entry) | `src/react/screens/AdminRoles.tsx`, `src/react/admin/` |
 | Tests: Vitest + Testing Library (`npm test`) | `src/react/__tests__/` |
 | Strict TypeScript for React code only (`tsconfig.strict.json`; the old code stays non-strict) | `npm run typecheck` runs both |
@@ -35,7 +36,8 @@ screens, touch targets at least 44px, RTL-safe (logical utilities).
 ## Adding a React screen
 1. Create `src/react/screens/MyScreen.tsx` with a default export component (props: `{ close?: () => void }`).
 2. Register it in `src/react/screens/registry.ts`: `'my-screen': () => import('./MyScreen')`.
-3. Open it from old code: `window.openReactScreen('my-screen')` (full-screen overlay) or
+3. Open it from old code: `window.openReactScreen('my-screen', undefined, { ...props })` (full-screen overlay; props are optional)
+   or `window.openReactScreen('my-screen')` or
    `window.openReactScreen('my-screen', document.getElementById('some-panel'))` (embedded in the old layout).
 4. Read the old state with `import { state } from '@/core/state'`; call old global functions through typed declarations in
    `src/react/globals.d.ts` (e.g. `window.showToast`). Firebase (`db`, `auth`) is imported from `@/core/firebase` like everywhere else.

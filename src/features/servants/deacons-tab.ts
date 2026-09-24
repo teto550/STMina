@@ -5,6 +5,7 @@ import { DEACONS, DEACON_ADMIN_MAP, DEACON_DOC_IDS, applyActiveGradeDeacons, loa
 import { formatAssignedGradesLabel, getPhaseGradesForGrade } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
+import { renameServant } from '@/core/servant-rename';
 import { loadPendingDeacons } from '@/features/servants/approvals';
 import { GRADES } from '@/core/section';
 import { renderTodayList } from '@/features/attendance/attendance';
@@ -336,25 +337,13 @@ window.confirmEditDeaconName = async () => {
   if (!docId) { showToast('مش لاقي الخادم في القاعدة', 'error'); return; }
   if (!confirm(`هتغيّر اسم "${oldName}" لـ "${newName}"؟ هيتحدث في كل حاجة مرتبطة بيه.`)) return;
   try {
-    // 1) تحديث اسم الخادم نفسه في مجموعة deacons
-    await setDoc(doc(db, 'deacons', docId), { name: newName }, { merge: true });
-
-    // 2) تحديث اسمه في حسابه لو عنده تسجيل دخول (users)
+    // one shared rename: the servant, their logins, their kids, their attendance and their part assignments
+    const r = await renameServant(docId, oldName, newName);
+    if (!r.ok) { showToast(r.error || 'مقدرناش نغيّر الاسم', 'error'); return; }
     const linkedUser = DEACON_ADMIN_MAP[oldName];
-    if (linkedUser) {
-      await setDoc(doc(db, 'users', linkedUser.uid), { name: newName }, { merge: true });
-      delete DEACON_ADMIN_MAP[oldName];
-      DEACON_ADMIN_MAP[newName] = { ...linkedUser };
-    }
-
-    // 3) تحديث كل المخدومين اللي خادمهم هو ده
+    if (linkedUser) { delete DEACON_ADMIN_MAP[oldName]; DEACON_ADMIN_MAP[newName] = { ...linkedUser }; }
     const affected = state.allStudents.filter(s => s.deacon === oldName);
-    if (affected.length) {
-      const batch = writeBatch(db);
-      affected.forEach(s => batch.update(doc(db, 'students', s.id), { deacon: newName }));
-      await batch.commit();
-      affected.forEach(s => { s.deacon = newName; });
-    }
+    affected.forEach(s => { s.deacon = newName; });
 
     // تحديث محلي فوري
     const rawEntry = state.ALL_DEACONS_RAW.find(x => x.id === docId);

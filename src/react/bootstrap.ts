@@ -4,7 +4,7 @@ import { screens } from './screens/registry';
 
 declare global {
   interface Window {
-    openReactScreen: (name: string, container?: HTMLElement) => Promise<void>;
+    openReactScreen: (name: string, container?: HTMLElement, props?: Record<string, unknown>) => Promise<void>;
     closeReactOverlay: () => void;
   }
 }
@@ -13,7 +13,7 @@ let overlay: HTMLElement | null = null;
 
 // Opens a React screen. Without `container` it opens full-screen over the app (with a close action); with a container
 // (an element that already exists in the page) it renders inside it, which is how a screen is embedded in the old layout.
-window.openReactScreen = async (name, container) => {
+window.openReactScreen = async (name, container, props) => {
   const load = screens[name];
   if (!load) { console.warn('unknown React screen:', name); return; }
   const [{ mountIsland }, { createElement }, mod] = await Promise.all([import('./mount'), import('react'), load()]);
@@ -27,7 +27,7 @@ window.openReactScreen = async (name, container) => {
     host = overlay;
   }
   const close = container ? undefined : () => window.closeReactOverlay();
-  mountIsland(host, createElement(mod.default, { close }));
+  mountIsland(host, createElement(mod.default, { ...props, close }));
 };
 
 window.closeReactOverlay = () => {
