@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/react/components/ui/button';
-import { commit, newId } from './data';
-import { planAddAdmin, planMembership, rolesOfPerson } from './logic';
+import { commit, loadNameLinks, newId } from './data';
+import { cleanName, planAddAdmin, planMembership, planRename, rolesOfPerson } from './logic';
 import { PersonList } from './PersonList';
-import type { AdminData } from './types';
+import type { AdminData, AdminPerson, NameLinks } from './types';
 import { Sheet, inputClass } from './ui';
 
 const adminSchema = z.object({
@@ -48,6 +48,41 @@ function AddAdminSheet({ data, onClose, onDone }: { data: AdminData; onClose: ()
   );
 }
 
+function RenameSheet({ person, data, onClose, onDone }: { person: AdminPerson; data: AdminData; onClose: () => void; onDone: (m: string) => void }) {
+  const [name, setName] = useState(person.name);
+  const [links, setLinks] = useState<NameLinks | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { loadNameLinks(person.name).then(setLinks).catch(() => setProblem('مقدرناش نجيب المرتبطين بالاسم')); }, [person.name]);
+  const plan = links ? planRename(person, name, data, links) : null;
+  async function save() {
+    if (!plan || plan.errors.length) { setProblem(plan?.errors[0] ?? null); return; }
+    setBusy(true);
+    try {
+      await commit(plan.main);
+      let note = '';
+      if (plan.parts.length) { try { await commit(plan.parts); } catch (e) { console.warn(e); note = ' (توزيع الفقرات لسه بالاسم القديم)'; } }
+      onDone(`اتغيّر الاسم لـ "${cleanName(name)}"${note}`);
+    } catch (e) { setProblem('مقدرناش نحفظ، جرّب تاني'); console.warn(e); } finally { setBusy(false); }
+  }
+  return (
+    <Sheet title="تعديل اسم الخادم" onClose={onClose}>
+      <div className="tw:flex tw:flex-col tw:gap-4">
+        <label className="tw:flex tw:flex-col tw:gap-2 tw:text-sm tw:font-bold">الاسم
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </label>
+        <p className="tw:rounded-field tw:bg-surface-2 tw:px-4 tw:py-3 tw:text-sm tw:text-dim" aria-live="polite">
+          {links && plan
+            ? <>هيتغيّر الاسم في: <b className="tw:text-fg">{plan.counts.students}</b> مخدوم، <b className="tw:text-fg">{plan.counts.attendance}</b> سجل حضور، <b className="tw:text-fg">{plan.counts.accounts}</b> حساب{plan.counts.parts ? <>، و <b className="tw:text-fg">{plan.counts.parts}</b> فقرة</> : null}.</>
+            : 'جاري حساب المرتبطين بالاسم…'}
+        </p>
+        {(problem || (plan && plan.errors[0] && name !== person.name)) && <p role="alert" className="tw:text-sm tw:text-bad">{problem ?? plan?.errors[0]}</p>}
+        <Button disabled={busy || !plan} onClick={save}>{busy ? 'جاري الحفظ…' : 'حفظ الاسم'}</Button>
+      </div>
+    </Sheet>
+  );
+}
+
 function RoleChooser({ title, roles, onPick, onClose }: { title: string; roles: { id: string; name: string }[]; onPick: (id: string) => void; onClose: () => void }) {
   return (
     <Sheet title={title} onClose={onClose}>
@@ -65,6 +100,7 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
   const [roleFilter, setRoleFilter] = useState('all');
   const [chooser, setChooser] = useState<'add' | 'remove' | null>(null);
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [renaming, setRenaming] = useState<AdminPerson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -86,7 +122,7 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
         <Button variant="secondary" size="sm" onClick={() => setSelected(selected.size ? new Set() : new Set(allIds))}>{selected.size ? 'إلغاء التحديد' : 'تحديد الكل'}</Button>
         <Button size="sm" onClick={() => setAddingAdmin(true)}>+ أدمن</Button>
       </div>
-      <PersonList data={data} selected={selected} extraFilter={{ roleId: roleFilter, setRoleId: setRoleFilter }}
+      <PersonList data={data} selected={selected} extraFilter={{ roleId: roleFilter, setRoleId: setRoleFilter }} onEdit={setRenaming}
         onToggle={(id, on) => setSelected((s) => { const n = new Set(s); if (on) n.add(id); else n.delete(id); return n; })} />
       {error && <p role="alert" className="tw:rounded-field tw:border tw:border-bad tw:p-3 tw:text-sm tw:text-bad">{error}</p>}
 
@@ -100,6 +136,7 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
         </div>
       )}
       {chooser && <RoleChooser title={chooser === 'add' ? 'إضافة المحدّدين لدور' : 'إزالة المحدّدين من دور'} roles={chooser === 'add' ? data.roles : heldRoles} onClose={() => setChooser(null)} onPick={(id) => void apply(chooser, id)} />}
+      {renaming && <RenameSheet person={renaming} data={data} onClose={() => setRenaming(null)} onDone={(m) => { setRenaming(null); onChanged(m); }} />}
       {addingAdmin && <AddAdminSheet data={data} onClose={() => setAddingAdmin(false)} onDone={(m) => { setAddingAdmin(false); onChanged(m); }} />}
     </div>
   );

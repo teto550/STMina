@@ -1,4 +1,4 @@
-import { filterPeople, filterRoles, planAddAdmin, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
+import { filterPeople, filterRoles, planAddAdmin, planRename, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
 import type { AdminData } from '@/react/admin/types';
 
 const data = (): AdminData => ({
@@ -116,5 +116,25 @@ describe('roles list', () => {
     expect(filterRoles(roles, 'رابعة أولاد').map((r) => r.id)).toEqual(['3']);
     expect(filterRoles(roles, '  أولاد ').map((r) => r.id)).toEqual(['1', '3']);
     expect(filterRoles(roles, '')).toHaveLength(3);
+  });
+});
+
+describe('planRename', () => {
+  const links = { students: ['s1', 's2'], attendance: ['a1'], parts: ['pd1'] };
+  it('renames the person, their login, kids and attendance in one batch, and the parts separately', () => {
+    const plan = planRename(data().people[0]!, '  مينا   عادل ', data(), links);
+    expect(plan.errors).toEqual([]);
+    expect(plan.main).toContainEqual({ col: 'deacons', id: 'p1', data: { name: 'مينا عادل' }, merge: true });
+    expect(plan.main).toContainEqual({ col: 'users', id: 'u1', data: { name: 'مينا عادل' }, merge: true });
+    expect(plan.main.filter((o) => o.col === 'students')).toHaveLength(2);
+    expect(plan.main.filter((o) => o.col === 'deaconAttendance')).toHaveLength(1);
+    expect(plan.parts).toEqual([{ col: 'parts_distribution', id: 'pd1', data: { deaconName: 'مينا عادل' }, merge: true }]);
+    expect(plan.counts).toEqual({ students: 2, attendance: 1, parts: 1, accounts: 1 });
+  });
+  it('refuses an empty name, the same name, and a name another servant has', () => {
+    const p = data().people[0]!;
+    expect(planRename(p, '   ', data(), links).errors).toHaveLength(1);
+    expect(planRename(p, 'مينا', data(), links).errors[0]).toContain('نفس الاسم');
+    expect(planRename(p, ' بيتر ', data(), links).errors[0]).toContain('بنفس الاسم');
   });
 });

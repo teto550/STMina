@@ -146,7 +146,8 @@ service cloud.firestore {
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       );
-      allow update: if false;
+      // only an admin, and only to rename the servant (admin screen: rename a servant)
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deaconName']);
     }
 
     // أي حاجة تانية غير كده: ممنوعة

@@ -1,9 +1,9 @@
 // Firestore access of the roles admin screen: one read of the three small collections, and ONE atomic batch per change.
-import { collection, doc, getDocs, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDocs, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/core/firebase';
 import { countReads } from '@/core/firestore-helpers';
 import type { Cell, Gender } from '@/types/access';
-import type { AdminAccount, AdminData, AdminPerson, AdminRole, WriteOp } from './types';
+import type { AdminAccount, AdminData, AdminPerson, AdminRole, NameLinks, WriteOp } from './types';
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
@@ -40,3 +40,14 @@ export async function commit(ops: WriteOp[]): Promise<void> {
 
 /** A new document id (roles and people created from the screen). */
 export const newId = (col: 'roles' | 'deacons'): string => doc(collection(db, col)).id;
+
+/** The kids, attendance records and part assignments that still refer to a servant by name. */
+export async function loadNameLinks(name: string): Promise<NameLinks> {
+  const [students, attendance, parts] = await Promise.all([
+    getDocs(query(collection(db, 'students'), where('deacon', '==', name))),
+    getDocs(query(collection(db, 'deaconAttendance'), where('name', '==', name))),
+    getDocs(query(collection(db, 'parts_distribution'), where('deaconName', '==', name))),
+  ]);
+  countReads('admin/nameLinks', Math.max(students.size + attendance.size + parts.size, 1));
+  return { students: students.docs.map((d) => d.id), attendance: attendance.docs.map((d) => d.id), parts: parts.docs.map((d) => d.id) };
+}

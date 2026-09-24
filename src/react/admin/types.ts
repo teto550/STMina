@@ -35,7 +35,11 @@ export interface AdminData {
 }
 
 /** One document write of a batch; `merge` writes only the given fields. */
+export type Collection = 'roles' | 'deacons' | 'users' | 'students' | 'deaconAttendance' | 'parts_distribution';
 export type WriteOp =
-  | { col: 'roles' | 'deacons' | 'users'; id: string; data: Record<string, unknown>; merge: true }
-  | { col: 'roles' | 'deacons' | 'users'; id: string; data: Record<string, unknown>; merge: false }
-  | { col: 'roles' | 'deacons' | 'users'; id: string; delete: true };
+  | { col: Collection; id: string; data: Record<string, unknown>; merge: true }
+  | { col: Collection; id: string; data: Record<string, unknown>; merge: false }
+  | { col: Collection; id: string; delete: true };
+
+/** Documents that still carry a servant's NAME as a link (names are join keys until the id migration, docs/ID-MIGRATION.md). */
+export interface NameLinks { students: string[]; attendance: string[]; parts: string[] }

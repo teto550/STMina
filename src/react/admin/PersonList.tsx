@@ -7,8 +7,10 @@ import type { Gender } from '@/types/access';
 type GenderFilter = Gender | 'all';
 
 /** Searchable list of ALL servants (male and female) with checkboxes; the search and the gender filter run in the browser. */
-export function PersonList({ data, selected, onToggle, forRole, showRoles = true, extraFilter }: {
+export function PersonList({ data, selected, onToggle, forRole, showRoles = true, extraFilter, onEdit }: {
   data: AdminData; selected: Set<string>; onToggle: (id: string, on: boolean) => void;
+  /** shows a rename button on every row */
+  onEdit?: (person: AdminPerson) => void;
   /** when picking members of a role: people whose gender does not fit are disabled with the reason */
   forRole?: Pick<AdminRole, 'cells' | 'admin'>; showRoles?: boolean;
   extraFilter?: { roleId: string; setRoleId: (v: string) => void };
@@ -37,14 +39,15 @@ export function PersonList({ data, selected, onToggle, forRole, showRoles = true
           const roles = showRoles ? rolesOfPerson(p, data.roles) : [];
           const linked = data.accounts.some((a) => a.deaconId === p.id);
           return (
-            <li key={p.id}>
-              <CheckRow checked={selected.has(p.id)} disabled={!!why && !selected.has(p.id)} onChange={(v) => onToggle(p.id, v)} hint={why ?? undefined}>
+            <li key={p.id} className="tw:flex tw:items-center">
+              <div className="tw:min-w-0 tw:flex-1"><CheckRow checked={selected.has(p.id)} disabled={!!why && !selected.has(p.id)} onChange={(v) => onToggle(p.id, v)} hint={why ?? undefined}>
                 <span className="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1">
                   <span className="tw:font-bold">{p.name}</span>
                   <span className="tw:text-xs tw:text-dim">{label(p)}{linked ? ' · مسجّل' : ''}</span>
                   {roles.map((r) => <Chip key={r.id} tone={r.admin ? 'admin' : 'plain'}>{r.name}</Chip>)}
                 </span>
-              </CheckRow>
+              </CheckRow></div>
+              {onEdit && <button type="button" aria-label={`تعديل اسم ${p.name}`} className="tw:size-11 tw:shrink-0 tw:cursor-pointer tw:rounded-field tw:text-dim tw:hover:bg-surface-2" onClick={() => onEdit(p)}>✎</button>}
             </li>
           );
         })}

@@ -2,7 +2,7 @@
 // what is not allowed. The screen only calls these and hands the resulting writes to one atomic batch (data.ts).
 import { computeAccess, invalidCellsFor } from '@/core/access-config';
 import type { Access, Gender } from '@/types/access';
-import type { AdminAccount, AdminData, AdminPerson, AdminRole, WriteOp } from './types';
+import type { AdminAccount, AdminData, AdminPerson, AdminRole, NameLinks, WriteOp } from './types';
 
 export const ADMIN_ROLE_ID = 'admin';
 
@@ -159,4 +159,29 @@ export function planAddAdmin(input: NewAdmin, data: AdminData): Plan {
   const existing = data.accounts.filter((a) => a.email.trim().toLowerCase() === email);
   for (const a of existing) ops.push({ col: 'users', id: a.uid, data: { deaconId: input.id, access: accessFor([roleId], roles), role: 'admin' }, merge: true });
   return { ops, affectedPeople: 1, errors };
+}
+
+/** Names are compared and stored with single spaces and no spaces at the ends. */
+export const cleanName = (name: string): string => name.replace(/\s+/g, ' ').trim();
+
+export interface RenamePlan { main: WriteOp[]; parts: WriteOp[]; errors: string[]; counts: { students: number; attendance: number; parts: number; accounts: number } }
+
+/**
+ * Renames a servant everywhere the name is used as a link. `main` is one atomic batch (the person, their logins, their kids and their
+ * attendance records); `parts` (part assignments) is separate because its security rule may not allow edits yet.
+ */
+export function planRename(person: AdminPerson, newNameRaw: string, data: AdminData, links: NameLinks): RenamePlan {
+  const newName = cleanName(newNameRaw);
+  const errors: string[] = [];
+  if (!newName) errors.push('اكتب الاسم الجديد');
+  else if (newName === person.name) errors.push('ده نفس الاسم الحالي');
+  else if (data.people.some((p) => p.id !== person.id && cleanName(p.name).toLowerCase() === newName.toLowerCase())) errors.push('فيه خادم تاني بنفس الاسم ده');
+  // logins of this person: linked by id, or (not linked yet) carrying the old name
+  const accounts = data.accounts.filter((a) => a.deaconId === person.id || (!a.deaconId && cleanName(a.name) === cleanName(person.name)));
+  const main: WriteOp[] = [{ col: 'deacons', id: person.id, data: { name: newName }, merge: true }];
+  accounts.forEach((a) => main.push({ col: 'users', id: a.uid, data: { name: newName }, merge: true }));
+  links.students.forEach((id) => main.push({ col: 'students', id, data: { deacon: newName }, merge: true }));
+  links.attendance.forEach((id) => main.push({ col: 'deaconAttendance', id, data: { name: newName }, merge: true }));
+  const parts: WriteOp[] = links.parts.map((id) => ({ col: 'parts_distribution', id, data: { deaconName: newName }, merge: true }));
+  return { main, parts, errors, counts: { students: links.students.length, attendance: links.attendance.length, parts: links.parts.length, accounts: accounts.length } };
 }

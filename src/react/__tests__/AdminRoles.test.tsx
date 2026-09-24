@@ -13,7 +13,7 @@ const data: AdminData = {
   accounts: [{ uid: 'u3', name: 'بيتر', email: 'c@x', role: 'deacon', deaconId: 'p3' }],
 };
 const commit = vi.fn(async (_ops: unknown[]) => undefined);
-vi.mock('@/react/admin/data', () => ({ loadAdminData: vi.fn(async () => structuredClone(data)), commit: (ops: unknown[]) => commit(ops), newId: () => 'newid' }));
+vi.mock('@/react/admin/data', () => ({ loadAdminData: vi.fn(async () => structuredClone(data)), loadNameLinks: vi.fn(async () => ({ students: ['s1'], attendance: ['a1', 'a2'], parts: [] })), commit: (ops: unknown[]) => commit(ops), newId: () => 'newid' }));
 
 import AdminRoles from '@/react/screens/AdminRoles';
 
@@ -83,5 +83,21 @@ describe('AdminRoles screen', () => {
     await user.click(screen.getByRole('button', { name: '+ إضافة أشخاص' }));
     expect(screen.getByRole('checkbox', { name: /ماريا/ })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /بيتر/ })).toBeEnabled();
+  });
+
+  it('rename: shows what will change and writes the new name everywhere in one batch', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: 'الأشخاص' }));
+    await user.click(screen.getByRole('button', { name: 'تعديل اسم مينا' }));
+    const dialog = screen.getByRole('dialog');
+    expect(await within(dialog).findByText(/سجل حضور/)).toHaveTextContent('1 مخدوم');
+    const input = within(dialog).getByLabelText('الاسم');
+    await user.clear(input);
+    await user.type(input, 'مينا عادل');
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ الاسم' }));
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const ops = commit.mock.calls[0]![0] as { col: string; id: string }[];
+    expect(ops.map((o) => `${o.col}/${o.id}`)).toEqual(['deacons/p1', 'students/s1', 'deaconAttendance/a1', 'deaconAttendance/a2']);
   });
 });
