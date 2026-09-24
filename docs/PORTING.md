@@ -155,6 +155,10 @@ Full explanation in `docs/READ-OPTIMIZATION.md`. Nothing is project-specific; no
   `enterApp`) writes `users.lastActive` once per page load. `lastActiveTab` is no longer written.
 - **axios:** `npm i axios`; `src/core/http.ts` is the one instance for every non-Firebase call (`push.ts` x2, `assistant.ts`
   x1 were `fetch`). CDN `<script>` loaders (EmailJS, SheetJS, ExcelJS) are still runtime downloads; candidates for npm packages.
+- **Servants directory fix** (the "🙏 الخدام" chip next to the class chips): `showServantsDirectorySection()` (`app-shell.ts`) now hides
+  every main screen (it did not know `home`, and never `parts`); `openServantsDirectory()` (`servants.ts`) loads what it shows
+  through `ensureDeacons/ensureDeaconUsers/ensureDeaconAttendance` (it used to rely on the servants list loaded at start-up).
+  Dev only: `window.__state` (`core/state.ts`).
 - Class switch: `loadStudents` captures the class it loads for (no mixing when switching during a load); home label follows.
 - Logging out clears the cache (`refreshAllData()` in the signed-out branch of `auth.ts`).
 - Dev-only read counter `window.__reads` (`core/firestore-helpers.ts`, `countSnapshot`/`countReads`).

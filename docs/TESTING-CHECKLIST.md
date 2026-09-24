@@ -18,6 +18,7 @@ daily Firestore quota was used up, so it was only checked by build, static check
 ## 2. Data per screen (note `__reads` before/after each)
 - [ ] Attendance: students of the class only (~36) + today's attendance. Mark someone present: it appears at once and on a second device.
 - [ ] Students tab: list, add student, edit, delete, stars, photo. The servant dropdowns are filled.
+- [ ] Servants DIRECTORY (the "🙏 الخدام" chip next to the classes): opens alone (no home tiles), lists all servants, the attendance tab (Sunday school / servants' meeting) works, closing returns to where you were; reachable from the home screen and after switching class.
 - [ ] Servants tab: list, pending requests at the top, filters (attended / absent / visit / birthday), a servant's page shows "attended/absent last time".
 - [ ] Stats tab: all four sub-tabs show sensible numbers (uses the last 90 days of attendance).
 - [ ] Parts tab loads; adding a part still works (notifications are known to be blocked by the rules).
@@ -26,6 +27,7 @@ daily Firestore quota was used up, so it was only checked by build, static check
 - [ ] Voice assistant: switch on from the home screen, record attendance for a student and for a servant.
 
 ## 3. Class switching (admin / leads)  <- the reported concern
+- Note: in the boys data all 144 students are in class 4, so classes 3, 5 and 6 legitimately show no students.
 - [ ] On the home screen switch class, then open Attendance: the students must be the NEW class.
 - [ ] On an open tab switch class: the tab reloads with the new class' data. Switch A -> B -> A quickly: no mixed data.
 - [ ] The home screen label and the top bar show the current class.

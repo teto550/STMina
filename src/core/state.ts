@@ -29,3 +29,6 @@ export const state = {
   currentDeaconFilter: 'all', // 'all' | 'attendance' | 'absence' | 'birthday'
   partNotifUnsub: null,
 };
+
+// Dev only: lets you inspect the state from the browser console (`__state`).
+if (import.meta.env.DEV) window.__state = state;

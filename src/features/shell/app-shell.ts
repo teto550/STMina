@@ -142,7 +142,7 @@ export function showMainAppTabs() {
 // بيخفي تابات الفصل العادية ويظهر خانة "الخدام" بدالها، في نفس مكان الصفحة (مش أوفرلاي منفصل)
 export function showServantsDirectorySection() {
   document.getElementById('main-tabs').style.display = 'none';
-  ['attendance', 'students', 'deacons', 'stats', 'online'].forEach(t => {
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.style.display = 'none';
   });

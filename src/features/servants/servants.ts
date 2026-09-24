@@ -2,6 +2,7 @@
 import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
+import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconUsersMap, loadDeaconsList } from '@/features/servants/deacons';
 import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttendance, renderDeaconAttDatesList } from '@/features/servants/deacon-attendance';
 import { formatAssignedGradesLabel } from '@/core/session';
@@ -54,9 +55,12 @@ window.openServantsDirectory = async () => {
   const listEl = document.getElementById('servants-directory-list');
   listEl.innerHTML = '<div class="loading"><div class="spinner"></div>جاري التحميل…</div>';
   try {
+    // the servants list (all classes), their accounts and their attendance: nothing is loaded at start-up any more,
+    // so this screen asks for what it shows (each one is cached for a few minutes)
     await Promise.all([
-      loadDeaconUsersMap(),  // بيانات كل الخدام اللي عندهم حساب معتمد (من كل السنين)
-      loadDeaconAttendance() // سجل حضور الخدام بنوعيه
+      ensureDeacons(),          // كل الخدام في كل الفصول
+      ensureDeaconUsers(),      // بيانات كل الخدام اللي عندهم حساب معتمد (من كل السنين)
+      ensureDeaconAttendance()  // سجل حضور الخدام بنوعيه
     ]);
   } catch(e) {
     console.error('openServantsDirectory error:', e.code || e.message || e);
