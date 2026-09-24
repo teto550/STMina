@@ -7,6 +7,8 @@ export const state = {
   currentUserName: '',
   currentUserEmail: '',
   currentUserGrade: null, // السنة الدراسية اللي الخادم مسجل يخدم فيها
+  access: null,               // Access of the logged-in account (docs/ROLES-DESIGN.md): { admin, cells, sections }
+  accessSource: null,         // 'roles' (from the stored snapshot) or 'legacy' (derived from today's fields)
   currentUserPhaseGrades: [], // الفصول اللي مسؤول المرحلة بيفتحها (مثال: تالتة/رابعة)
   currentUserIsLead: false, // هل هو "مسؤول" السنة دي
   currentUserIsPhaseLead: false, // هل هو "مسؤول" مرحلة (فصلين/أكثر)

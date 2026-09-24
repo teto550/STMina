@@ -51,11 +51,16 @@ export async function getDocsFast(q, timeoutMs = 3500) {
 // كاش بسيط لدور المستخدم في localStorage عشان لو مفيش نت ومفيش كاش
 // Firestore متاح، نقدر برضه ندخّله على آخر دور معروف له
 export function saveProfileCache(uid, data) {
-  try { localStorage.setItem('profile_' + uid, JSON.stringify(data)); } catch (e) {}
+  try { localStorage.setItem('profile_' + uid, JSON.stringify({ ...data, cachedAt: Date.now() })); } catch (e) {}
 }
 
 export function loadProfileCache(uid) {
-  try { return JSON.parse(localStorage.getItem('profile_' + uid) || 'null'); } catch (e) { return null; }
+  // The role-based access kept here is only trusted for 24 hours (offline fallback); a normal load re-reads the account anyway.
+  try {
+    const data = JSON.parse(localStorage.getItem('profile_' + uid) || 'null');
+    if (data && data.access && !(Date.now() - (data.cachedAt || 0) < 24 * 60 * 60 * 1000)) delete data.access;
+    return data;
+  } catch (e) { return null; }
 }
 
 // ===== Short-lived read cache =====

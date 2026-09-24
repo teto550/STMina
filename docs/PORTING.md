@@ -237,7 +237,10 @@ New files `src/types/access.ts` (Gender, Section, Grade, Cell, Role, Person, Acc
 `tools/firestore/backfill-access.cjs` (new fields only). Run in the other Firebase project too (after `set-gender.cjs`); the dry-run report shows what needs a manual decision there.
 
 ### C18 - Duplicate accounts
-`tools/firestore/dedupe-users.cjs` deletes duplicate `users` profiles (list is specific to this project's data; build a new list for the other project). One account per person, the most recently active one. Firebase Auth logins are not deleted.
+Duplicate `users` profiles were removed here with a one-off script that has been deleted (its list was specific to this project). In the other project: find accounts sharing an email/name with `tools/firestore/analyze.cjs` or the console, keep the most recently active one per person, back up before deleting.
 
 ### C19 - Damaged names (U+FFFD)
 `tools/firestore/_client.cjs` now decodes UTF-8 across chunk boundaries (before, Arabic text could be read with U+FFFD and a script could write it back). Copy the fixed `_client.cjs` FIRST, then run `fix-corrupted-names.cjs` (dry run) in the other project to look for damaged values.
+
+### C20 - Roles step 3: access module (dual mode)
+New `src/core/access.ts` (+ test), `state.access/accessSource` (`core/state.ts`), `resolveAccess` call in `features/auth/auth.ts` before the section gate, `access` in the offline profile cache with a 24 h limit (`core/firestore-helpers.ts`, `features/shell/app-shell.ts`). No visible change yet.

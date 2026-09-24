@@ -25,6 +25,8 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Prune old `activity_log` entries (older than ~90 days) with a script, if the log grows.
 - [ ] Run the gender script (`tools/firestore/set-gender.cjs`) in the OTHER Firebase project (done here on 2026-09-24: 49 servants + 32 accounts = male).
 
+- [ ] Delete the one-off data scripts once the OTHER project has been migrated too: `tools/firestore/set-gender.cjs`, `remove-word.cjs`, `fix-corrupted-names.cjs`, `backfill-access.cjs` (they are done and no longer needed in this project; kept only for the other one). Keep `_client.cjs` and `analyze.cjs`.
+
 ## C. Decisions pending / postponed (roles design)
 - [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just
       started and graduation is less than a year away. Decide before the next graduation who may do them (admin only, or the class's servants)

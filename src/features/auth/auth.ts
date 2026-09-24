@@ -10,6 +10,7 @@ import { notifyManagersPush } from '@/features/shell/push';
 import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadConfig } from '@/core/config';
 import { logActivity } from '@/core/presence';
 import { refreshAllData } from '@/core/data';
+import { resolveAccess } from '@/core/access';
 import { getDocFast, loadProfileCache } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { clearSplashWatchdog } from '@/core/splash';
@@ -257,6 +258,9 @@ onAuthStateChanged(auth, async user => {
       return;
     }
 
+    // Access is worked out before anything is shown: from the roles snapshot when the account has one, else from today's fields.
+    { const r = resolveAccess({ ...snapData, role: state.currentUserRole }); state.access = r.access; state.accessSource = r.source; }
+
     // Every account except an admin belongs to ONE section (boys or girls) and one class. A girl who opens the boys' site is
     // sent straight to the girls' section (and the other way round); she can never use the other one.
     if (state.currentUserRole !== 'admin') {
@@ -294,6 +298,8 @@ onAuthStateChanged(auth, async user => {
     await enterApp(user, snapData);
   } else {
     state.currentUserRole = null;
+    state.access = null;
+    state.accessSource = null;
     state.currentUserGrade = null;
     state.currentUserPhaseGrades = [];
     state.currentUserIsLead = false;

@@ -27,7 +27,7 @@ export async function enterApp(user, snapData) {
       state.activeGrade = allowedGrades.includes(preferred) ? preferred : (allowedGrades[0] || GRADES[0]);
     }
 
-    saveProfileCache(user.uid, { gender: snapData && snapData.gender, section: (snapData && snapData.section) || 'boys', role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
+    saveProfileCache(user.uid, { access: snapData && snapData.access, gender: snapData && snapData.gender, section: (snapData && snapData.section) || 'boys', role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
 
     clearSplashWatchdog();
         document.getElementById('splash-screen').style.display  = 'none';
