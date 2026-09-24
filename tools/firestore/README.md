@@ -4,6 +4,8 @@ Use your own `firebase login`; the project id is read from `.firebaserc`, so the
 project. They talk to the Firebase MCP server through `npx firebase-tools@latest mcp` (first run downloads it).
 
 - `analyze.cjs` – read-only structure report (collections, counts, fields, date ranges; no values).
+- `set-gender.cjs` – sets `gender: 'male'|'female'` on servants (`users` + `deacons`) that have none. Dry run by default;
+  `--apply --limit 1` to test, then `--apply`. Only 'male' and 'female' are ever valid values.
 - `remove-word.cjs` – removes a whole word (default "مستر") from servant-name fields in all collections, trims spaces.
   Dry run by default (writes only a local backup); `--apply --limit 1` to test on one document, then `--apply`.
 - One-off scripts used on 2026-09-24 in the first project (legacy collection cleanup) were removed after use; see git history

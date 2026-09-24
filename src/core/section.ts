@@ -1,7 +1,11 @@
 // @ts-nocheck
+import { state } from '@/core/state';
 
 // ===== حساب بنين / حساب بنات =====
 // الجهاز ده شغّال دلوقتي على أي قسم؟ اتخزنت محليًا على الجهاز، ومفيش قسم = "بنين" (الوضع الافتراضي/القديم)
+// A link such as https://.../?section=girls opens the girls section directly (handy to send to the girls' servants).
+try { const q = new URLSearchParams(location.search).get('section'); if (q === 'girls' || q === 'boys') localStorage.setItem('appSection', q); } catch (e) {}
+
 export let SECTION = (() => { try { return localStorage.getItem('appSection') === 'girls' ? 'girls' : 'boys'; } catch(e) { return 'boys'; } })();
 
 const isGirlsSection = () => SECTION === 'girls';
@@ -88,7 +92,37 @@ export function setupGenderObserver() {
   });
 }
 
+// The ONLY two values ever stored in a servant's `gender` field (users and deacons documents).
+export const GENDERS = ['male', 'female'];
+export const genderOfSection = (section) => (section === 'girls' ? 'female' : 'male');
+export const sectionOfGender = (gender) => (gender === 'female' ? 'girls' : 'boys');
+
+// Which section an ACCOUNT belongs to: its gender decides (female -> girls, male -> boys). Accounts created before the
+// gender field existed fall back to the older `section` field, and a missing value means boys, like the old data.
+export const accountSection = (data) => {
+  if (data && GENDERS.includes(data.gender)) return sectionOfGender(data.gender);
+  return (data && data.section === 'girls') ? 'girls' : 'boys';
+};
+
+// What to do with a logged-in account given the section this device is on:
+//   'ok'        -> admin, or the account belongs to this device's section
+//   'redirect'  -> switch the device to the account's own section and reload (first time)
+//   'deny'      -> we already tried that once and it did not stick: do not let her in
+export function checkAccountSection(role, data, redirectedTo) {
+  if (role === 'admin') return { action: 'ok' };
+  const mine = accountSection(data);
+  if (mine === SECTION) return { action: 'ok' };
+  return redirectedTo === mine ? { action: 'deny', target: mine } : { action: 'redirect', target: mine };
+}
+
+// Point this device at a section; false if the browser refuses to store it (private mode).
+export function switchDeviceToSection(target) {
+  try { localStorage.setItem('appSection', target); return localStorage.getItem('appSection') === target; } catch (e) { return false; }
+}
+
+// Only admins move between the two sections. Every other account belongs to exactly one (see the check at login in auth.ts).
 window.toggleAppSection = () => {
+  if (state.currentUserRole !== 'admin') { showToast('حسابك على قسم واحد بس', 'info'); return; }
   const goingTo = SECTION === 'girls' ? 'boys' : 'girls';
   try { localStorage.setItem('appSection', goingTo); } catch(e) {}
   location.reload();
@@ -107,7 +141,7 @@ if (sectionBadge) sectionBadge.textContent = SECTION === 'girls' ? '🌸 حسا�
 // The girls look only applies inside the app (after login). Login / pending / complete-profile screens
 // always use the default blue. `appSessionHint` lets the inline <head> script apply the right theme
 // before first paint on a reload, so a girls session doesn't flash blue.
-const THEME_COLOR = { boys: '#1a1f2e', girls: '#2a2033' };
+const THEME_COLOR = { boys: '#1a1f2e', girls: '#221e38' }; // browser bar: dark blue / dark violet
 export function applySectionTheme(inApp) {
   const girls = inApp && SECTION === 'girls';
   document.documentElement.classList.toggle('girls', girls);
@@ -116,3 +150,13 @@ export function applySectionTheme(inApp) {
   document.title = girls ? 'خدمة ابتدائي 🌸 بنات' : 'خدمة ابتدائي';
   try { if (inApp) localStorage.setItem('appSessionHint', '1'); else localStorage.removeItem('appSessionHint'); } catch (e) {}
 }
+
+// registration form: the new servant's gender (male = boys' section, female = girls' section). Changing it reloads the page,
+// because the classes and the servants list shown in the form depend on the section.
+const regGender = document.getElementById('reg-gender');
+if (regGender) regGender.value = genderOfSection(SECTION);
+window.changeRegGender = (value) => {
+  if (!switchDeviceToSection(sectionOfGender(value))) return;
+  try { sessionStorage.setItem('openRegisterTab', '1'); } catch (e) {}
+  location.reload();
+};

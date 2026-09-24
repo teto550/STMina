@@ -27,7 +27,7 @@ export async function enterApp(user, snapData) {
       state.activeGrade = allowedGrades.includes(preferred) ? preferred : (allowedGrades[0] || GRADES[0]);
     }
 
-    saveProfileCache(user.uid, { role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
+    saveProfileCache(user.uid, { gender: snapData && snapData.gender, section: (snapData && snapData.section) || 'boys', role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
 
     clearSplashWatchdog();
         document.getElementById('splash-screen').style.display  = 'none';
@@ -39,7 +39,10 @@ export async function enterApp(user, snapData) {
 
     // القسم النشط على الجهاز ده (بنين/بنات) — بيتحكم في تصفية المخدومين/الخدام وتأنيث الكلام
     const secBtn = document.getElementById('section-toggle-btn');
-    if (secBtn) secBtn.innerHTML = SECTION === 'girls' ? '🔄 حساب بنين' : '🔄 حساب بنات';
+    if (secBtn) {
+      secBtn.innerHTML = SECTION === 'girls' ? '🔄 حساب بنين' : '🔄 حساب بنات';
+      secBtn.style.display = state.currentUserRole === 'admin' ? 'flex' : 'none'; // only admins move between the sections
+    }
     setupGenderObserver();
     applySectionTheme(true);
 

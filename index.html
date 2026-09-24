@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1f2e">
-<script>try{if(localStorage.getItem('appSection')==='girls'&&localStorage.getItem('appSessionHint')==='1'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#2a2033');}}catch(e){}</script>
+<script>try{if(localStorage.getItem('appSection')==='girls'&&localStorage.getItem('appSessionHint')==='1'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#221e38');}}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="خدمة ابتدائي">
@@ -51,6 +51,11 @@
 
     <!-- REGISTER PANEL -->
     <div id="auth-panel-register" style="display:none">
+      <label class="field-label">النوع *</label>
+      <select id="reg-gender" class="field-input" style="font-family:Cairo,sans-serif" onchange="changeRegGender(this.value)">
+        <option value="male">ذكر (حساب بنين)</option>
+        <option value="female">أنثى (حساب بنات)</option>
+      </select>
       <label class="field-label">السنة الدراسية اللي هتخدم فيها *</label>
       <select id="reg-grade" class="field-input" style="font-family:Cairo,sans-serif" onchange="populateRegDeaconSelect()">
         <option value="">اختر السنة الدراسية</option>

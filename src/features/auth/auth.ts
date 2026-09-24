@@ -5,7 +5,7 @@ import { state } from '@/core/state';
 import { loadDeaconsList } from '@/features/servants/deacons';
 import { populateUniversitySelect } from '@/features/servants/servants';
 import { auth, db } from '@/core/firebase';
-import { SECTION, applySectionTheme } from '@/core/section';
+import { SECTION, applySectionTheme, checkAccountSection, genderOfSection, switchDeviceToSection } from '@/core/section';
 import { notifyManagersPush } from '@/features/shell/push';
 import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadConfig } from '@/core/config';
 import { logActivity } from '@/core/presence';
@@ -15,6 +15,17 @@ import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { clearSplashWatchdog } from '@/core/splash';
 import { isProfileIncomplete, openCompleteProfileScreen } from '@/features/auth/profile-complete';
 import { enterApp } from '@/features/shell/app-shell';
+
+// Refuse an account (wrong section, no class): back to the login screen with a message.
+async function denyAccess(message) {
+  applySectionTheme(false);
+  clearSplashWatchdog();
+  ['splash-screen', 'app-screen', 'pending-screen', 'complete-profile-screen'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  document.getElementById('auth-screen').style.display = 'flex';
+  try { await signOut(auth); } catch (e) {}
+  const err = document.getElementById('login-error');
+  if (err) { err.textContent = message; err.style.display = 'block'; }
+}
 
 // ===== AUTH TAB SWITCH =====
 window.switchAuthTab = (tab) => {
@@ -73,7 +84,7 @@ window.doRegister = async () => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await setDoc(doc(db, 'users', cred.user.uid), {
       name, email, grade, role: 'deacon', status: 'pending', createdAt: serverTimestamp(),
-      phones, phone: phones[0], address, dob, section: SECTION,
+      phones, phone: phones[0], address, dob, section: SECTION, gender: genderOfSection(SECTION),
       graduated: gradStatus === 'graduated',
       college: gradStatus === 'student' ? college : '',
       university: gradStatus === 'student' ? university : ''
@@ -246,6 +257,28 @@ onAuthStateChanged(auth, async user => {
       return;
     }
 
+    // Every account except an admin belongs to ONE section (boys or girls) and one class. A girl who opens the boys' site is
+    // sent straight to the girls' section (and the other way round); she can never use the other one.
+    if (state.currentUserRole !== 'admin') {
+      let already = null; try { already = sessionStorage.getItem('sectionRedirect'); } catch (e) {}
+      const gate = checkAccountSection(state.currentUserRole, snapData, already);
+      if (gate.action === 'redirect' && switchDeviceToSection(gate.target)) {
+        try { sessionStorage.setItem('sectionRedirect', gate.target); } catch (e) {}
+        location.reload();
+        return;
+      }
+      if (gate.action !== 'ok') {
+        await denyAccess('حسابك تابع لقسم تاني ومقدرناش نحوّلك ليه على الجهاز ده. جرّب متصفح تاني أو كلّم الأدمن.');
+        return;
+      }
+      try { sessionStorage.removeItem('sectionRedirect'); } catch (e) {}
+      // a servant without a class must not be handed one by default
+      if (!state.currentUserGrade && !state.currentUserPhaseGrades.length) {
+        await denyAccess('حسابك لسه ملوش فصل. كلّم الأدمن يحدد لك فصلك.');
+        return;
+      }
+    }
+
     // خادم/أدمن لسه بياناته الأساسية (تليفون/عنوان/ميلاد/حالة دراسية) ناقصة؟ يتاخد منه أول حاجة قبل ما يكمل
     if (isProfileIncomplete(snapData)) {
       applySectionTheme(false);
@@ -280,3 +313,6 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('login-btn').textContent = 'دخول';
   }
 });
+
+// coming back from changing the section in the registration form: stay on the registration tab
+try { if (sessionStorage.getItem('openRegisterTab')) { sessionStorage.removeItem('openRegisterTab'); window.switchAuthTab('register'); } } catch (e) {}

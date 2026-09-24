@@ -71,7 +71,9 @@ Status: C1-C3 are commit `ee6f2d1`; C4-C8 the second commit; C9 the third (`git 
   and removed later, see C10.)
 - Files: `index.html` (`<span id="section-badge">`), `src/styles/app.css` (`--section-*` variables, badge, bar tint),
   `src/styles/girls.css` (girls values), `src/core/section.ts` (badge text).
-- Decision: **girls and boys share the same blue palette everywhere; only the banner differs** (girls = rose/coral).
+- Decision (updated): **girls and boys share the same blue palette and the same header colours; the ONLY difference is the
+  "🌸 حساب البنات" badge colour** (rose; variables `--badge-rgb`/`--badge-text` in `app.css`, overridden in `girls.css`).
+  The header tint, its border and the browser-bar colour are the same as boys.
   Original pill-shaped chips / round icon buttons for girls were kept.
 
 ### C6. Login screen always blue; girls theme only inside the app (committed)
@@ -162,6 +164,17 @@ Full explanation in `docs/READ-OPTIMIZATION.md`. Nothing is project-specific; no
 - Class switch: `loadStudents` captures the class it loads for (no mixing when switching during a load); home label follows.
 - Logging out clears the cache (`refreshAllData()` in the signed-out branch of `auth.ts`).
 - Dev-only read counter `window.__reads` (`core/firestore-helpers.ts`, `countSnapshot`/`countReads`).
+
+### C13. Header colours, servant gender, section access (pending until committed)
+Details and the honest limits in `docs/SECURITY-SECTIONS.md`.
+- Girls header: same layout as boys, violet tint + violet "🌸 حساب البنات" badge, dark-violet browser bar (`girls.css`, `--badge-*`
+  and `--section-*` variables in `app.css`, `THEME_COLOR` in `section.ts`, the early script in `index.html`).
+- **`gender` field** (only `'male'` | `'female'`) on `users` and `deacons`: helpers `GENDERS`, `genderOfSection`, `sectionOfGender`,
+  `accountSection` in `core/section.ts`; set at registration (`auth.ts`) and when an admin adds a servant (`servants.ts`);
+  cached in the offline profile (`app-shell.ts`). Existing data: `tools/firestore/set-gender.cjs` (run in each project).
+- **Section/class access:** `checkAccountSection()` decides at login (redirect / refuse); the section switch is admin-only;
+  accounts without a class are refused; registration form has a gender select (`#reg-gender`) that switches the section;
+  `?section=girls|boys` URL parameter. All in `core/section.ts`, `auth.ts`, `app-shell.ts`, `index.html`.
 
 ## Firestore data notes (data is per project, but the same checks apply to the other project)
 Findings for THIS project on 2026-09-24 (Spark plan, database `(default)`). Nothing here is ported by copying data;

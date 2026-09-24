@@ -14,10 +14,11 @@
     --border: rgba(79,142,247,0.15);
     --radius: 16px;
     --radius-sm: 10px;
-    /* top banner only (badge, bar tint): overridden by html.girls */
-    --section-rgb: 79,142,247;
-    --section-text: #9dc0ff;
+    /* header: tint is shared, only the badge is overridden by html.girls */
+    --section-rgb: 79,142,247;   /* header tint: the same blue in both accounts */
     --section-tint: 0.16;
+    --badge-rgb: 79,142,247;      /* the "حساب البنين / البنات" badge: the only thing that differs (see girls.css) */
+    --badge-text: #9dc0ff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
@@ -226,8 +227,8 @@
 @keyframes splashPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.75; transform:scale(0.96); } }
 
   /* ===== Account indicator: badge next to the title + tint on the top bar.
-     Colours come from --section-*, which html.girls overrides. ===== */
-  .section-badge { font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 999px; white-space: nowrap; color: var(--section-text); background: rgba(var(--section-rgb), 0.16); border: 1px solid rgba(var(--section-rgb), 0.5); }
+     Only the badge colours (--badge-*) change for girls; the header tint is the same blue. ===== */
+  .section-badge { font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 999px; white-space: nowrap; color: var(--badge-text); background: rgba(var(--badge-rgb), 0.16); border: 1px solid rgba(var(--badge-rgb), 0.5); }
   .top-bar { background: linear-gradient(180deg, rgba(var(--section-rgb), var(--section-tint)), var(--surface) 75%); }
 
   /* Horizontal chip/tab rows: drag-to-scroll for mouse (see src/core/drag-scroll.ts), native swipe for touch */

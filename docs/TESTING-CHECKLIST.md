@@ -32,6 +32,14 @@ daily Firestore quota was used up, so it was only checked by build, static check
 - [ ] On an open tab switch class: the tab reloads with the new class' data. Switch A -> B -> A quickly: no mixed data.
 - [ ] The home screen label and the top bar show the current class.
 
+## 3b. Gender / section access (needs a female test account)
+- [ ] Run the gender script first: `node tools/firestore/set-gender.cjs` (dry run), then `--apply --limit 1`, then `--apply`.
+- [ ] Register a new servant on the girls' side (`/?section=girls`, or choose "أنثى" in the form): the account gets `gender: 'female'`,
+      `section: 'girls'`; an admin approves her; she logs in from the BOYS site and lands directly in the girls' section.
+- [ ] She cannot see the "switch section" menu item; she only sees her class; the class bar and the servants directory are not shown to her.
+- [ ] A male servant logging in on a device set to girls lands in the boys' section. An admin can still switch freely.
+- [ ] An account without a class is refused with a clear message. Registration list of classes/servants matches the chosen section.
+
 ## 4. Short cache (5 minutes, memory only)
 - [ ] Open a tab, go to home, open it again within 5 minutes: `__reads` does not grow. After 5 minutes it re-reads.
 - [ ] Home -> "تحديث البيانات" forces fresh reads. Logging out clears everything (log in as someone else: no stale data).

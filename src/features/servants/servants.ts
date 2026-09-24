@@ -8,7 +8,7 @@ import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttend
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
-import { sectionTag } from '@/core/section';
+import { sectionTag, genderOfSection } from '@/core/section';
 import { logActivity } from '@/core/presence';
 
 // ===== قائمة الجامعات المصرية (لفورم التسجيل وتعديل بيانات الخادم) =====
@@ -288,7 +288,7 @@ window.saveNewDeacon = async () => {
   if (!name) { showToast('اكتب اسم الخادم', 'error'); return; }
   if (DEACONS.includes(name)) { showToast('الخادم ده موجود بالفعل في السنة دي', 'error'); return; }
   try {
-    const docRef = await addDoc(collection(db, 'deacons'), { name, grade: state.activeGrade, section: sectionTag(), createdAt: serverTimestamp() });
+    const docRef = await addDoc(collection(db, 'deacons'), { name, grade: state.activeGrade, section: sectionTag(), gender: genderOfSection(sectionTag()), createdAt: serverTimestamp() });
     state.ALL_DEACONS_RAW.push({ id: docRef.id, name, grade: state.activeGrade, section: sectionTag() });
     applyActiveGradeDeacons();
     closeAddDeaconModal();

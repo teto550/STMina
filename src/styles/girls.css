@@ -1,11 +1,12 @@
   /* ===== حساب البنات =====
-     نفس ألوان التطبيق بالظبط زي حساب البنين. الاختلاف الوحيد هو البانر اللي فوق:
-     شارة "حساب البنات" + لمسة الخلفية بتاعة الشريط العلوي. ===== */
+     نفس ألوان التطبيق زي حساب البنين. الاختلاف الوحيد: الهيدر وشارة "🌸 حساب البنات" بلون بنفسجي
+     (قريب من الأزرق/النيلي بتاع التطبيق، ومش وردي فيتخانق معاه). ===== */
   html.girls {
-    --section-rgb: 255,107,157;
-    --section-text: #ffb0cc;
-    --section-tint: 0.26;
+    --section-rgb: 150,110,235;   /* header tint */
+    --section-tint: 0.22;
+    --badge-rgb: 170,130,245;     /* badge */
+    --badge-text: #dcc8ff;
   }
-  html.girls .top-bar { border-bottom: 1px solid rgba(255,107,157,0.45); border-radius: 0 0 18px 18px; }
+  html.girls .top-bar { border-bottom: 1px solid rgba(160,120,240,0.35); border-radius: 0 0 18px 18px; }
   html.girls .grade-chip, html.girls .date-chip, html.girls .action-btn { border-radius: 999px; }
   html.girls .icon-btn { border-radius: 50%; }
