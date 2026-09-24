@@ -23,39 +23,50 @@ export function RoleCards({ data, onOpen, onNew }: { data: AdminData; onOpen: (r
   );
 }
 
-const columns: { key: string; title: string; cells: Cell[] }[] = [
-  ...GRADES.filter((g) => isMixedGrade(g)).map((g) => ({ key: `mixed${g}`, title: `${g} بنات وأولاد`, cells: [cellOf('female', g), cellOf('male', g)] })),
-  ...GRADES.filter((g) => !isMixedGrade(g)).map((g) => ({ key: `f${g}`, title: `${g} بنات`, cells: [cellOf('female', g)] })),
-  ...GRADES.filter((g) => !isMixedGrade(g)).map((g) => ({ key: `m${g}`, title: `${g} بنين`, cells: [cellOf('male', g)] })),
+const GRADE_NAMES = ['', 'أولى', 'تانية', 'تالتة', 'رابعة', 'خامسة', 'سادسة'];
+const mixedCols = GRADES.filter((g) => isMixedGrade(g)).map((g) => ({ key: `mixed${g}`, title: GRADE_NAMES[g] ?? '', cells: [cellOf('female', g), cellOf('male', g)] as Cell[] }));
+const girlsCols = GRADES.filter((g) => !isMixedGrade(g)).map((g) => ({ key: `f${g}`, title: GRADE_NAMES[g] ?? '', cells: [cellOf('female', g)] as Cell[] }));
+const boysCols = GRADES.filter((g) => !isMixedGrade(g)).map((g) => ({ key: `m${g}`, title: GRADE_NAMES[g] ?? '', cells: [cellOf('male', g)] as Cell[] }));
+const groups = [
+  { title: 'بنات وأولاد (خادمات)', cols: mixedCols },
+  { title: 'بنات', cols: girlsCols },
+  { title: 'بنين', cols: boysCols },
 ];
+const columns = groups.flatMap((g) => g.cols);
 
 /** Wide screens: roles x classes matrix with sticky header row and first column, and a side panel with the members of the selected role. */
 export function RoleMatrix({ data, onOpen, onNew }: { data: AdminData; onOpen: (r: AdminRole) => void; onNew: () => void }) {
   const [selected, setSelected] = useState<string | null>(data.roles[0]?.id ?? null);
+  // (after a save the list is reloaded: keep the selection if the role still exists)
   const sel = data.roles.find((r) => r.id === selected) ?? null;
-  const head = 'tw:sticky tw:top-0 tw:z-10 tw:bg-surface-2 tw:px-2 tw:py-2 tw:text-xs tw:font-bold tw:whitespace-nowrap tw:border-b tw:border-line';
+  const head = 'tw:sticky tw:z-10 tw:bg-surface-2 tw:px-2 tw:text-xs tw:font-bold tw:whitespace-nowrap tw:border-b tw:border-line';
   return (
-    <div className="tw:flex tw:gap-4 tw:p-4">
-      <div className="tw:max-h-[70dvh] tw:min-w-0 tw:flex-1 tw:overflow-auto tw:rounded-card tw:border tw:border-line">
+    <div className="tw:flex tw:gap-5 tw:p-4">
+      <div className="tw:max-h-[72dvh] tw:min-w-0 tw:flex-1 tw:overflow-auto tw:rounded-card tw:border tw:border-line">
         <table className="tw:w-full tw:border-collapse tw:text-sm">
           <thead>
             <tr>
-              <th className={cn(head, 'tw:start-0 tw:z-20 tw:text-start')}>الدور</th>
-              {columns.map((c) => <th key={c.key} className={head}>{c.title}</th>)}
-              <th className={head}>أدمن</th><th className={head}>الأعضاء</th>
+              <th rowSpan={2} className={cn(head, 'tw:top-0 tw:start-0 tw:z-20 tw:min-w-36 tw:text-start')}>الدور</th>
+              {groups.map((g) => <th key={g.title} colSpan={g.cols.length} className={cn(head, 'tw:top-0 tw:h-9 tw:border-s tw:border-line tw:text-center tw:text-accent')}>{g.title}</th>)}
+              <th rowSpan={2} className={cn(head, 'tw:top-0 tw:border-s tw:border-line')}>أدمن</th>
+              <th rowSpan={2} className={cn(head, 'tw:top-0')}>الأعضاء</th>
+            </tr>
+            <tr>
+              {groups.flatMap((g) => g.cols.map((c, i) => <th key={c.key} className={cn(head, 'tw:top-9 tw:h-9 tw:text-center tw:text-dim', i === 0 && 'tw:border-s tw:border-line')}>{c.title}</th>))}
             </tr>
           </thead>
           <tbody>
             {data.roles.map((r) => (
               <tr key={r.id} className={cn('tw:cursor-pointer tw:hover:bg-surface-2', selected === r.id && 'tw:bg-surface-2')} onClick={() => setSelected(r.id)}>
                 <th scope="row" className="tw:sticky tw:start-0 tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:font-bold tw:border-b tw:border-line">{r.name}</th>
-                {columns.map((c) => <td key={c.key} className="tw:border-b tw:border-line tw:text-center">{!r.admin && c.cells.every((x) => r.cells.includes(x)) ? '✓' : ''}</td>)}
-                <td className="tw:border-b tw:border-line tw:text-center">{r.admin ? '✓' : ''}</td>
+                {columns.map((c) => <td key={c.key} className="tw:h-11 tw:min-w-10 tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-ok">{!r.admin && c.cells.every((x) => r.cells.includes(x)) ? '✓' : ''}</td>)}
+                <td className="tw:border-s tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-warn">{r.admin ? '✓' : ''}</td>
                 <td className="tw:border-b tw:border-line tw:text-center">{membersOf(r.id, data.people).length}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        {data.roles.length === 0 && <p className="tw:py-10 tw:text-center tw:text-dim">مفيش أدوار لسه. دوس "+ دور جديد" واعمل أول دور.</p>}
       </div>
       <aside className="tw:flex tw:w-72 tw:shrink-0 tw:flex-col tw:gap-3 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4" aria-label="أعضاء الدور">
         <Button onClick={onNew}>+ دور جديد</Button>

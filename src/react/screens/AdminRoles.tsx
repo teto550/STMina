@@ -49,16 +49,16 @@ export default function AdminRoles({ close }: ScreenProps) {
       {editing && data ? (
         <RoleEditor role={editing.role} data={data} onDone={changed} onCancel={() => setEditing(null)} />
       ) : (
-        <>
-          <div className="tw:p-3"><Segmented<Tab> label="القسم" value={tab} onChange={setTab} options={[{ value: 'roles', label: 'الأدوار' }, { value: 'people', label: 'الأشخاص' }]} /></div>
+        <div className="tw:mx-auto tw:max-w-6xl">
+          <div className="tw:mx-auto tw:max-w-md tw:p-3"><Segmented<Tab> label="القسم" value={tab} onChange={setTab} options={[{ value: 'roles', label: 'الأدوار' }, { value: 'people', label: 'الأشخاص' }]} /></div>
           {note && <p role="status" className="tw:px-4 tw:text-sm tw:text-ok">{note}</p>}
           {failed && <div className="tw:p-6 tw:text-center"><p className="tw:mb-3 tw:text-bad">مقدرناش نحمّل البيانات</p><Button onClick={() => void reload()}>حاول تاني</Button></div>}
           {!data && !failed && <p className="tw:p-6 tw:text-center tw:text-dim">جاري التحميل…</p>}
           {data && tab === 'roles' && (wide
             ? <RoleMatrix data={data} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />
             : <RoleCards data={data} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />)}
-          {data && tab === 'people' && <PeopleTab data={data} onChanged={(m) => void changed(m)} />}
-        </>
+          {data && tab === 'people' && <div className="tw:mx-auto tw:max-w-2xl"><PeopleTab data={data} onChanged={(m) => void changed(m)} /></div>}
+        </div>
       )}
     </div>
   );

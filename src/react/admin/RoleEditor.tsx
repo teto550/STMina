@@ -6,7 +6,7 @@ import { commit, newId } from './data';
 import { membersOf, planRoleDelete, planRoleSave } from './logic';
 import { PersonList } from './PersonList';
 import type { AdminData, AdminRole } from './types';
-import { CellToggle, CheckRow, Chip, Sheet, inputClass } from './ui';
+import { CellToggle, Chip, Sheet, SwitchCard, inputClass } from './ui';
 
 const GRADE_NAMES = ['', 'أولى', 'تانية', 'تالتة', 'رابعة', 'خامسة', 'سادسة'];
 
@@ -46,17 +46,17 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
   }
 
   return (
-    <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:flex-col tw:gap-4 tw:p-4 tw:pb-28">
-      <h2 className="tw:text-lg tw:font-bold">{role ? 'تعديل دور' : 'دور جديد'}</h2>
-      <label className="tw:flex tw:flex-col tw:gap-1 tw:text-sm tw:font-bold">اسم الدور
+    <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:flex-col tw:gap-5 tw:px-4 tw:pt-5 tw:pb-32">
+      <h2 className="tw:text-xl tw:font-bold">{role ? 'تعديل دور' : 'دور جديد'}</h2>
+      <label className="tw:flex tw:flex-col tw:gap-2 tw:text-sm tw:font-bold">اسم الدور
         <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: تالتة بنين" />
       </label>
-      <CheckRow checked={admin} onChange={setAdmin} hint="الأدمن بيشوف ويعدّل كل حاجة في القسمين">دور أدمن</CheckRow>
+      <SwitchCard checked={admin} onChange={setAdmin} title="دور أدمن" hint="الأدمن بيشوف ويعدّل كل حاجة في القسمين" />
 
       {!admin && (
-        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3" aria-label="الفصول">
-          <h3 className="tw:mb-1 tw:text-sm tw:font-bold">الفصول</h3>
-          <p className="tw:mb-3 tw:text-xs tw:text-dim">بتشمل المخدومين والخدام بتوع الفصل</p>
+        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4" aria-label="الفصول">
+          <h3 className="tw:text-sm tw:font-bold">الفصول</h3>
+          <p className="tw:mt-1 tw:mb-4 tw:text-xs tw:text-dim">بتشمل المخدومين والخدام بتوع الفصل</p>
           <div className="tw:flex tw:flex-col tw:gap-2">
             {GRADES.map((g: Grade) => (
               <div key={g} className="tw:grid tw:grid-cols-[4.5rem_1fr_1fr] tw:items-center tw:gap-2">
@@ -76,8 +76,8 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
         </section>
       )}
 
-      <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3">
-        <div className="tw:mb-2 tw:flex tw:items-center tw:justify-between">
+      <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4">
+        <div className="tw:mb-3 tw:flex tw:items-center tw:justify-between">
           <h3 className="tw:text-sm tw:font-bold">الأعضاء ({members.size})</h3>
           <Button size="sm" variant="secondary" onClick={() => setPicking(true)}>+ إضافة أشخاص</Button>
         </div>
@@ -89,7 +89,7 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
         </ul>
       </section>
 
-      <p className="tw:text-sm tw:text-dim" aria-live="polite">التغيير ده هيأثر على {plan.affectedPeople} شخص دلوقتي</p>
+      <p className="tw:rounded-field tw:bg-surface-2 tw:px-4 tw:py-3 tw:text-sm tw:text-dim" aria-live="polite">التغيير ده هيأثر على <b className="tw:text-fg">{plan.affectedPeople}</b> شخص دلوقتي</p>
       {errors.length > 0 && <ul role="alert" className="tw:rounded-field tw:border tw:border-bad tw:p-3 tw:text-sm tw:text-bad">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
 
       <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:border-t tw:border-line tw:bg-surface tw:p-3">
