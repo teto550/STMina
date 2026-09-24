@@ -12,7 +12,7 @@ time, or never.
 | shadcn/ui-style components (Radix Slot + class-variance-authority + tailwind-merge); example: Button | `src/react/components/ui/`, `src/react/lib/utils.ts` (`cn`) |
 | Forms: `react-hook-form` + `zod` (+ `@hookform/resolvers`); icons: `lucide-react` | used by screens |
 | Mounting: `mountIsland()`, the screen registry and `window.openReactScreen(name, container?)` | `src/react/mount.tsx`, `src/react/screens/registry.ts`, `src/react/bootstrap.ts` |
-| Self-check page (open the app with `?react-check`); can be deleted at any time | `src/react/screens/ReactCheck.tsx` |
+| First real screen: admin "المستخدمين والأدوار" (`openReactScreen('admin-roles')`, admin-only settings menu entry) | `src/react/screens/AdminRoles.tsx`, `src/react/admin/` |
 | Tests: Vitest + Testing Library (`npm test`) | `src/react/__tests__/` |
 | Strict TypeScript for React code only (`tsconfig.strict.json`; the old code stays non-strict) | `npm run typecheck` runs both |
 
@@ -49,7 +49,7 @@ primitives (`@radix-ui/react-dialog`, `-checkbox`, ...) are installed when a com
 
 ## Verified (2026-09-25)
 Typecheck (both modes), 7 unit tests, production build, and in the browser (dev and built): the plain app loads exactly as
-before with no Tailwind/React downloaded; `?react-check` passes 6/6 checks (React running, utilities beat the old reset, theme
+before with no Tailwind/React downloaded; the (since removed) `?react-check` page passed 6/6 checks (React running, utilities beat the old reset, theme
 colours, RTL, old state readable, section theme), form validation, sticky header + first column in RTL, closing the overlay,
 and embedding inside an existing panel.
 

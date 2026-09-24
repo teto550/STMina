@@ -19,7 +19,6 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Switch GitHub Pages to the build (`deploy:ghpages`, source = `gh-pages`) and bump the service worker cache version at go-live.
 - [ ] Replace the runtime CDN scripts (EmailJS, SheetJS, ExcelJS) with bundled packages loaded on demand.
 - [ ] Type the data model and remove `// @ts-nocheck` file by file (React code is already strict).
-- [ ] Remove the `?react-check` self-check page (`src/react/screens/ReactCheck.tsx`) once the first real React screen exists.
 - [ ] Remove dev helpers when no longer useful: `window.__state`, `window.__reads` (dev only, harmless).
 - [ ] Delete `tools/monolith-split/` after the other project has been ported (it is kept only for that).
 - [ ] Prune old `activity_log` entries (older than ~90 days) with a script, if the log grows.
@@ -42,4 +41,4 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [x] "مستر" removed from servant names (all collections).
 - [x] Heartbeat removed; `lastActive` written once per page load.
 - [x] Read reduction: home screen, lazy loading, memory-only cache, on-demand activity viewer.
-- [x] React + TypeScript + Tailwind foundation (islands).
+- [x] React + TypeScript + Tailwind foundation (islands); the `?react-check` self-check page was removed once the first real screen existed.

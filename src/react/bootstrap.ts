@@ -36,6 +36,3 @@ window.closeReactOverlay = () => {
   overlay = null;
   import('./mount').then(({ unmountIsland }) => { unmountIsland(el); el.remove(); });
 };
-
-// a hidden self-check page: open the app with ?react-check in the URL
-try { if (new URLSearchParams(location.search).has('react-check')) window.openReactScreen('react-check'); } catch (e) { /* ignore */ }

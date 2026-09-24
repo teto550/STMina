@@ -1,6 +1,6 @@
 # Roles and access design (agreed decisions + plan)
 
-Status: **design only, nothing implemented.** Decisions below come from the user (2026-09-25). Open questions are at the end.
+Status: **in progress (2026-09-25).** Done: config/types, data backfill, access module (dual mode), rules, admin screen. Not yet: applying access to the app (classes, sections, directory, switch menu, no-access screen), auto-link of accounts by email. Decisions below come from the user (2026-09-25). Open questions are at the end.
 
 ## 1. Decisions (updated 2026-09-25, second round)
 1. **One checkbox per class**, and it means everything. A class cell covers the kids AND the servants of that class: a servant of a class can do

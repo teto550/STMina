@@ -89,10 +89,12 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
       <p className="tw:text-sm tw:text-dim" aria-live="polite">التغيير ده هيأثر على {plan.affectedPeople} شخص دلوقتي</p>
       {errors.length > 0 && <ul role="alert" className="tw:rounded-field tw:border tw:border-bad tw:p-3 tw:text-sm tw:text-bad">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
 
-      <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:flex tw:gap-2 tw:border-t tw:border-line tw:bg-surface tw:p-3">
-        <Button className="tw:flex-1" disabled={busy} onClick={save}>{busy ? 'جاري الحفظ…' : 'حفظ'}</Button>
-        <Button className="tw:flex-1" variant="outline" disabled={busy} onClick={onCancel}>إلغاء</Button>
-        {role && <Button variant="destructive" disabled={busy} onClick={remove}>حذف</Button>}
+      <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:border-t tw:border-line tw:bg-surface tw:p-3">
+        <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:gap-2">
+          <Button className="tw:flex-1" disabled={busy} onClick={save}>{busy ? 'جاري الحفظ…' : 'حفظ'}</Button>
+          <Button className="tw:flex-1" variant="outline" disabled={busy} onClick={onCancel}>إلغاء</Button>
+          {role && <Button variant="destructive" disabled={busy} onClick={remove}>حذف</Button>}
+        </div>
       </div>
 
       {picking && (

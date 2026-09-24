@@ -6,6 +6,5 @@ export type ScreenProps = { close?: () => void };
 type Loader = () => Promise<{ default: ComponentType<ScreenProps> }>;
 
 export const screens: Record<string, Loader> = {
-  'react-check': () => import('./ReactCheck'),
   'admin-roles': () => import('./AdminRoles'),
 };

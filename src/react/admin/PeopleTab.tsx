@@ -91,10 +91,12 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
       {error && <p role="alert" className="tw:rounded-field tw:border tw:border-bad tw:p-3 tw:text-sm tw:text-bad">{error}</p>}
 
       {selected.size > 0 && (
-        <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:flex tw:items-center tw:gap-2 tw:border-t tw:border-line tw:bg-surface tw:p-3">
-          <span className="tw:text-sm tw:font-bold">{selected.size} محدد</span>
-          <Button className="tw:flex-1" disabled={busy} onClick={() => setChooser('add')}>إضافة لدور</Button>
-          <Button className="tw:flex-1" variant="outline" disabled={busy || heldRoles.length === 0} onClick={() => setChooser('remove')}>إزالة من دور</Button>
+        <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:border-t tw:border-line tw:bg-surface tw:p-3">
+          <div className="tw:mx-auto tw:flex tw:max-w-2xl tw:items-center tw:gap-2">
+            <span className="tw:text-sm tw:font-bold">{selected.size} محدد</span>
+            <Button className="tw:flex-1" disabled={busy} onClick={() => setChooser('add')}>إضافة لدور</Button>
+            <Button className="tw:flex-1" variant="outline" disabled={busy || heldRoles.length === 0} onClick={() => setChooser('remove')}>إزالة من دور</Button>
+          </div>
         </div>
       )}
       {chooser && <RoleChooser title={chooser === 'add' ? 'إضافة المحدّدين لدور' : 'إزالة المحدّدين من دور'} roles={chooser === 'add' ? data.roles : heldRoles} onClose={() => setChooser(null)} onPick={(id) => void apply(chooser, id)} />}

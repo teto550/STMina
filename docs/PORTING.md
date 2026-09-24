@@ -247,3 +247,6 @@ New `src/core/access.ts` (+ test), `state.access/accessSource` (`core/state.ts`)
 
 ### C21 - Firestore rules now in the repo
 `firestore.rules` (copied from the deployed rules) + `firebase.json` entry. Roles change: new `roles/{id}` block (read: approved, write: admin) and non-admins cannot change `users.deaconId` / `users.access`. Rules are per project: in the other project, first copy ITS deployed rules (`firebase_get_security_rules`), then add the same two changes.
+
+### C22 - Roles step 4: admin screen (React)
+New: `src/react/screens/AdminRoles.tsx`, `src/react/admin/*` (types, logic, data, ui, PersonList, RoleEditor, RolesTab, PeopleTab), tests `src/react/__tests__/admin-logic.test.ts` + `AdminRoles.test.tsx`, registry entry `admin-roles`, admin-only menu entry (`index.html` `#admin-settings-wrap`, shown in `features/shell/app-shell.ts`), `.rx-root` list/button resets in `src/react/styles.css`, legacy admin kept in `core/access.ts`. Removed the `?react-check` page (`ReactCheck.tsx`, its test, its registry/bootstrap lines). Firestore rules for `roles` must be deployed in the other project too (C21).
