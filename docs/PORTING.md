@@ -235,3 +235,6 @@ New files `src/types/access.ts` (Gender, Section, Grade, Cell, Role, Person, Acc
 
 ### C17 - Roles step 2: data backfill script
 `tools/firestore/backfill-access.cjs` (new fields only). Run in the other Firebase project too (after `set-gender.cjs`); the dry-run report shows what needs a manual decision there.
+
+### C18 - Duplicate accounts
+`tools/firestore/dedupe-users.cjs` deletes duplicate `users` profiles (list is specific to this project's data; build a new list for the other project). One account per person, the most recently active one. Firebase Auth logins are not deleted.
