@@ -20,7 +20,7 @@ describe('cells and sections', () => {
     expect(cellsOfSection('boys')).toEqual(['male:3', 'male:4', 'male:5', 'male:6']);
     expect(cellsOfSection('girls')).toContain('male:1');
     expect(cellsOfSection('girls')).not.toContain('male:3');
-    expect(cellsOfSection('girls')).toHaveLength(10);
+    expect(cellsOfSection('girls')).toHaveLength(8);
   });
   it('gives the linked pair of a mixed grade', () => expect(mixedGradeCells(1)).toEqual(['female:1', 'male:1']));
 });
