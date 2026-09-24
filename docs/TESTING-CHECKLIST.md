@@ -69,3 +69,15 @@ daily Firestore quota was used up, so it was only checked by build, static check
 - [ ] Log in as an admin and as a normal servant on the test channel: everything works as before (access is derived from today's fields;
       `state.access` / `state.accessSource` can be checked in the console in dev).
 - [ ] The 4 accounts that could not be linked by name (David Ayman, Mario Yasser Fadel Fam, ابرام سامح منصور سعد, الأدمن) are linked in the admin screen once it exists.
+
+## Roles: what to test with real accounts (2026-09-25)
+Use two extra accounts (one servant, one new registration) and your admin. Give the servant a role in "المستخدمين والأدوار" first.
+- [ ] Servant with a role (say أولاد رابعة): logs in, starts in the boys' section, sees only that class (no class chips unless the role has several classes), no 🙏 الخدام chip, no switch-section item, and DOES see the class's servants in the الخدام tab.
+- [ ] Servant with several classes: the class chips show only those classes.
+- [ ] Girl servant with a grade 1-2 role: starts in the girls' section, sees the class of boys and girls together.
+- [ ] Servant whose account is linked but has no role and no snapshot: still works as before (old fields). A servant whose LAST role was removed (snapshot with no classes): sees "لسه مفيش صلاحيات".
+- [ ] Admin: switch-section item and 🙏 الخدام chip still there. Admin role given to a new person: register with that email, admin approves the request, the account becomes an admin (👑) after login.
+- [ ] Approving a pending servant as admin links the account to the person (users.deaconId) and copies the role access.
+- [ ] Add a kid in the boys' section (gets gender male + cell), and in the girls' section grade 1 (the ولد/بنت choice appears; grade 3 does not show it).
+- [ ] Kids' passwords: only the admin sees them (a phase lead no longer does). Deploy the rules first.
+- [ ] Rename a servant (edit screen and admin screen): kids, attendance and parts follow.
