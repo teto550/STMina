@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 // base './' so the build works from any sub-path (GitHub Pages project sites).
@@ -22,9 +24,17 @@ self.addEventListener('activate', (e) => e.waitUntil((async () => {
 };
 
 export default defineConfig({
-  plugins: [devKillSw],
+  // React + Tailwind are only used by the React "islands" (src/react); the rest of the app is unchanged. See docs/REACT.md.
+  plugins: [devKillSw, react(), tailwindcss()],
   base: './',
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: { port: 5173 },
   build: { outDir: 'dist', sourcemap: false },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    css: false,
+  },
 });

@@ -5,21 +5,44 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.strict.json",
     "deploy:test": "npm run build && firebase hosting:channel:deploy test --expires 30d",
     "deploy:live": "npm run build && firebase deploy --only hosting",
-    "deploy:ghpages": "npm run build && gh-pages -d dist --dotfiles --message \"Deploy build\""
+    "deploy:ghpages": "npm run build && gh-pages -d dist --dotfiles --message \"Deploy build\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@radix-ui/react-slot": "^1.3.3",
     "axios": "^1.20.0",
-    "firebase": "10.12.2"
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "firebase": "10.12.2",
+    "lucide-react": "^1.47.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.88.0",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "firebase-tools": "^15.30.2",
     "gh-pages": "^6.3.0",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11"
   }
 }

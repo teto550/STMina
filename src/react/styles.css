@@ -1,0 +1,30 @@
+/* Styles for the React "islands" ONLY. This file is imported by the island code, which is loaded on demand,
+   so the plain app never downloads it and none of its rules can touch the existing screens.
+   - Tailwind classes are written with the `tw:` prefix (tw:flex, tw:bg-surface) so they can never clash with the old CSS.
+   - No Tailwind preflight/reset: the old app has its own reset.
+   - Utilities are !important so the old unlayered reset (`* { padding: 0 }`) cannot override them.
+   - Colours come from the app's own CSS variables, so React screens follow the boys/girls theme automatically. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) important;
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface2);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent2);
+  --color-fg: var(--text);
+  --color-dim: var(--text-dim);
+  --color-line: var(--border);
+  --color-ok: var(--success);
+  --color-warn: var(--warning);
+  --color-bad: var(--danger);
+  --radius-card: var(--radius);
+  --radius-field: var(--radius-sm);
+  --font-sans: 'Cairo', sans-serif;
+}
+
+/* the root element of every island (added by mountIsland) */
+.rx-root { font-family: 'Cairo', sans-serif; color: var(--text); }
+.rx-root button, .rx-root input, .rx-root select, .rx-root textarea { font: inherit; color: inherit; }

@@ -1,6 +1,7 @@
 import './styles/app.css';
 import './styles/girls.css';
 import '@/core/drag-scroll';
+import '@/react/bootstrap';
 import '@/core/firebase';
 import '@/features/assistant/assistant';
 import '@/features/shell/push';

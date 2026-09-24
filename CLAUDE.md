@@ -29,3 +29,9 @@ Nothing is ported yet and the user did not ask to port now; only keep the log ac
 The read-reduction work (home screen, lazy loading, cache, activity viewer, axios, once-per-load `lastActive`) has NOT been
 tested against real data. At the start of the next session remind the user and go through `docs/TESTING-CHECKLIST.md`
 (first step: `firebase deploy --only firestore:indexes`). Keep the checklist updated. Open decisions: see the end of that file.
+
+## React islands (see docs/REACT.md)
+New complex screens are written in React + TypeScript under `src/react/` and mounted into the existing page
+(`window.openReactScreen`); the plain screens stay as they are until they are touched. Conventions: Tailwind classes always use the
+`tw:` prefix and the app's colour tokens, logical (RTL-safe) utilities, forms with react-hook-form + zod, strict types, a test per
+screen. Never add a global Tailwind reset or unprefixed classes: that would change the old screens.

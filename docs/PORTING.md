@@ -176,6 +176,12 @@ Details and the honest limits in `docs/SECURITY-SECTIONS.md`.
   accounts without a class are refused; registration form has a gender select (`#reg-gender`) that switches the section;
   `?section=girls|boys` URL parameter. All in `core/section.ts`, `auth.ts`, `app-shell.ts`, `index.html`.
 
+### C14. React + TypeScript + Tailwind foundation, incremental islands (committed)
+Details in `docs/REACT.md`. No data or project-specific values; run `npm install` after merging.
+- New: `src/react/**`, `src/test/setup.ts`, `tsconfig.strict.json`; changed: `vite.config.ts` (react + tailwind plugins, vitest),
+  `tsconfig.json` (`jsx`, test types), `package.json` (deps + scripts `test`, `typecheck`), `src/main.ts` (imports `@/react/bootstrap`).
+- The plain app is unchanged; React/Tailwind load on demand only when a React screen opens (`window.openReactScreen`).
+
 ## Firestore data notes (data is per project, but the same checks apply to the other project)
 Findings for THIS project on 2026-09-24 (Spark plan, database `(default)`). Nothing here is ported by copying data;
 re-run `node tools/firestore/analyze.cjs` in the other project and compare with the collections used in `src/`.
