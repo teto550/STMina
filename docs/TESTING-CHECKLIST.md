@@ -35,6 +35,7 @@ daily Firestore quota was used up, so it was only checked by build, static check
 - [ ] Home -> "تحديث البيانات" forces fresh reads. Logging out clears everything (log in as someone else: no stale data).
 
 ## 5. Activity viewer (managers)
+- Verified once in dev with real data (2026-09-25): first open fills within ~2 s without switching tabs; scrolling to the bottom loads the next batch. Cost seen: ~180 reads for the first 22 entries, ~100 more per next batch (about 3/4 of the raw entries are hidden by the client-side checks: admin actions, other section). Idea if it matters: filter `role == 'deacon'` on the server (one more composite index).
 - [ ] Opens with 20 entries; scrolling to the bottom loads the next 20 with a spinner at the bottom; the end shows "آخر النتائج".
 - [ ] Servant / type / date filters only apply when pressing "تطبيق" (also for the next pages); "مسح" resets.
 - [ ] Deleting one entry works. No free-text search on purpose (see docs/READ-OPTIMIZATION.md).

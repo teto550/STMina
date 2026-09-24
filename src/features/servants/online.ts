@@ -17,7 +17,8 @@ import { inCurrentSection } from '@/core/section';
 //
 // Needs 3 composite indexes (firestore.indexes.json): (grade, timestamp), (name, timestamp), (action, timestamp).
 const PAGE_SIZE = 20;
-const MAX_RAW_PAGES_PER_LOAD = 5; // when the safety checks below hide most entries of a page, look at most 5 x 20
+const MAX_RAW_PAGES_PER_LOAD = 5; // when the safety checks below hide most entries of a page, look at most 5 x 20 per step
+const MAX_EMPTY_SCAN = 200;       // ...and give up after 200 raw entries if not a single one was shown
 
 // every action the app writes to the log (used for the "type" filter)
 const ACTIVITY_TYPES = [
@@ -31,7 +32,7 @@ const ACTIVITY_TYPES = [
   'استيراد حضور من إكسيل', 'رفع بيانات مخدومين من إكسيل', 'رفع ID وباسوردات المخدومين',
 ];
 
-let feed = { items: [], cursor: null, done: false, loading: false, started: false, filters: null, gen: 0 };
+let feed = { items: [], cursor: null, done: false, loading: false, started: false, filters: null, gen: 0, rawSeen: 0, error: null };
 let observer = null;
 
 function fullDateTime(ts) {
@@ -91,6 +92,7 @@ async function loadMore() {
       const snap = await getDocs(buildQuery(feed.filters, feed.cursor)); pages++;
       if (gen !== feed.gen) return; // "apply" was pressed meanwhile: this answer belongs to the old filters
       countReads('activity_log', Math.max(snap.size, 1));
+      feed.rawSeen += snap.docs.length;
       if (snap.size < PAGE_SIZE) feed.done = true;
       if (snap.docs.length) feed.cursor = snap.docs[snap.docs.length - 1];
       snap.docs.forEach(d => { const a = { id: d.id, ...d.data() }; if (passesSafetyChecks(a)) feed.items.push(a); });
@@ -101,12 +103,23 @@ async function loadMore() {
     feed.done = true; // do not retry in a loop while scrolling
     feed.error = /index/i.test(String(e && e.message)) ? 'index' : 'error';
   }
+  // nothing shown after a long look (e.g. the newest entries are all admin actions): stop instead of reading the whole log
+  if (!feed.items.length && feed.rawSeen >= MAX_EMPTY_SCAN && !feed.done) { feed.done = true; feed.capped = true; }
   feed.loading = false; render();
+  // the page is still empty or short and the bottom is on screen: the scroll trigger will NOT fire again by itself
+  // (it only reacts to changes), so ask for the next page right away
+  if (!feed.done && bottomInView()) loadMore();
+}
+
+// is the end-of-list marker visible (or almost) right now?
+function bottomInView() {
+  const el = document.getElementById('activity-sentinel');
+  return !!el && el.offsetParent !== null && el.getBoundingClientRect().top < window.innerHeight + 200;
 }
 
 // "apply" (or first open, or refresh): forget what was loaded and start again from the newest entry with the chosen filters
 function startFeed() {
-  feed = { items: [], cursor: null, done: false, loading: false, started: true, filters: readFilters(), gen: feed.gen + 1, error: null };
+  feed = { items: [], cursor: null, done: false, loading: false, started: true, filters: readFilters(), gen: feed.gen + 1, rawSeen: 0, error: null, capped: false };
   render();
   loadMore();
 }
@@ -131,6 +144,7 @@ function render() {
   if (feed.loading) bottom.innerHTML = '<div class="spinner" style="margin:0 auto 6px"></div>جاري التحميل…';
   else if (feed.error === 'index') bottom.textContent = '⚠️ الفلتر ده محتاج index في Firestore — شغّل: firebase deploy --only firestore:indexes';
   else if (feed.error) bottom.textContent = '⚠️ مقدرناش نجيب الأنشطة، دوس "تطبيق" تاني';
+  else if (feed.capped) bottom.textContent = 'مفيش نشاط مطابق في آخر 200 تسجيل — جرّب تغيّر الفلتر أو التاريخ';
   else if (feed.done) bottom.textContent = feed.items.length ? '— آخر النتائج —' : 'لا يوجد نشاط مطابق';
   else bottom.textContent = '';
 }
@@ -151,7 +165,7 @@ export function initOnlineTab() {
     observer.observe(document.getElementById('activity-sentinel'));
   }
   // the class can change between visits: start again when it did (or on the first visit)
-  if (!feed.started || (feed.filters && feed.filters.grade !== classForUser())) startFeed();
+  if (!feed.started || feed.error || (feed.filters && feed.filters.grade !== classForUser())) startFeed();
 }
 
 window.switchOnlineSubTab = (name, btn) => {

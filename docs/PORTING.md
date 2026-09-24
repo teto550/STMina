@@ -148,7 +148,9 @@ Full explanation in `docs/READ-OPTIMIZATION.md`. Nothing is project-specific; no
   per page, next page on scroll (IntersectionObserver); servant / type / date / class filters applied by the server on
   "apply". No free-text search (Firestore cannot). Needs composite indexes: `firestore.indexes.json` (new, registered under
   `firestore` in `firebase.json`) -> `firebase deploy --only firestore:indexes` in EACH Firebase project. Removed the live
-  listener and "delete all". Tab-open logging removed (`tabs.ts`).
+  listener and "delete all". Tab-open logging removed (`tabs.ts`). Fix (same day): when the client-side checks hid every entry of a
+  page the viewer stopped until a tab switch re-armed the scroll trigger; it now keeps loading while the bottom is on screen
+  (gives up after 200 raw entries with nothing shown) and retries after an error when the tab is opened again.
 - **Heartbeat removed:** `startPresence`/`stopPresence` deleted; instead `touchLastActive(uid)` (`core/presence.ts`, called from
   `enterApp`) writes `users.lastActive` once per page load. `lastActiveTab` is no longer written.
 - **axios:** `npm i axios`; `src/core/http.ts` is the one instance for every non-Firebase call (`push.ts` x2, `assistant.ts`
