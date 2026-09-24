@@ -45,3 +45,8 @@ So the safe order is:
 2. Add `where('section','==',SECTION)` to the app's queries (and `where('grade', ...)` where the rule needs it).
 3. Test the rules in the Rules Playground / emulator, then deploy them. A wrong rule locks everybody out, so do it in a quiet moment.
 Not started; needs the user's go-ahead. The same applies to the other Firebase project.
+
+## Kids' passwords (`student_secrets`)
+Decision (2026-09-25): nobody sees them in the app, admins included, and there is no UI for them. The rules should therefore deny every client read
+and write on `student_secrets` (today: admin creates, admin/phase-lead reads one document). Only the console / an external integration touches it.
+This goes together with removing the password UI from the app (see `docs/TODO-CLEANUP.md`).

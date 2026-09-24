@@ -26,11 +26,14 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Verify the "مستر" rename left 0 occurrences (read-only scan).
 - [ ] Run the gender script on the existing servants (`tools/firestore/set-gender.cjs`) and the same steps in the OTHER Firebase project.
 
-## C. Questions waiting for the user (roles design)
-- [ ] Cross-class operations (promotion, imports, attendance clean-up) and kids' passwords: admin only or class servants? (`docs/ROLES-DESIGN.md` §9)
-- [ ] Access cache lifetime (24 h proposed) and whether role changes may wait for the next load.
-- [ ] Add-admin flow through a person with an email (§6b), person without a role, deleting a role with members.
-- [ ] Approve the mobile-first mockups of the roles screens.
+## C. Decisions pending / postponed (roles design)
+- [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just
+      started and graduation is less than a year away. Decide before the next graduation who may do them (admin only, or the class's servants)
+      and that promotion recomputes each kid's `cell` and `section` (boys leave the girls' section at grade 2 -> 3).
+- [ ] **Kids' passwords (`student_secrets`)**: hide from everybody (admins too), Firestore only, no UI. To do: remove the password display in the
+      student profile and the "ID and passwords" import screen (`import-creds.ts`), and make the security rules deny all client access to
+      `student_secrets`. Waiting for the go-ahead on timing. (Later it may be linked to an external source.)
+- [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
 - [x] QR feature removed (scanner, generation, print-all cards).

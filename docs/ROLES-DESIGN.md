@@ -99,11 +99,18 @@ The live site still runs the OLD code, so every data step must be harmless to it
 - Firestore rules need queries constrained like the rules (one query per cell); tested in the emulator before deploy.
 - Roles edited by mistake affect many people at once: a confirmation with the number of affected people, and an "undo" via the role's previous value.
 
-## 9. Open questions
-1. Cross-class operations: promoting kids to the next grade moves them into ANOTHER class; bulk imports and attendance clean-up can touch many
-   kids. Admin only, or allowed for the class's servants? And may every servant of a class see the kids' passwords (student_secrets)?
-2. Cache lifetime for access (24 h proposed) and whether a role change may wait until the next page load.
-3. Adding an admin through a person with an email that links on registration (6b): OK?
-4. A person without any role: sees a "no access yet" screen after login?
-5. Deleting a role that still has members: block it (proposal) or ask to reassign?
-6. Roles matrix on desktop and cards/editor on mobile: confirm after looking at the mockups.
+## 9. Decisions from the third round (2026-09-25)
+- **Cache:** access is cached for 24 hours; nothing needs to be instant, a page reload is fine.
+- **No role yet:** a person who logs in without any role sees a "no access yet" screen. Roles can be assigned to people who have not
+  registered yet; they get their access as soon as their account links to the person.
+- **Deleting a role:** only a role with **no members** can be deleted. If it has members the screen blocks the delete and asks the admin to
+  move the members to another role first.
+- **Kids' passwords (`student_secrets`):** hidden from **everybody, admins included**, with **no UI at all**. The data stays in Firestore only
+  (it may later be linked with an external source). Consequence for the rules: clients get no access to `student_secrets`. Consequence for the
+  code: the password display in the student profile and the "ID and passwords" Excel import screen are to be removed when this is done
+  (they are still there today). Not urgent; needs a go-ahead.
+- **Actions across classes** (promoting kids to the next grade, bulk imports, attendance clean-up): postponed. Graduation is still months
+  away, so nothing is decided; see `docs/TODO-CLEANUP.md` section C. Until then those stay as they are today.
+
+## 10. Still open
+- Whether to remove the existing password UI now, or together with the roles work (asked to the user).
