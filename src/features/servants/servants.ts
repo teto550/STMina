@@ -140,7 +140,8 @@ window.openDeaconProfile = (name) => {
   const canEdit = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserName === name;
   const editBtn = document.getElementById('dprof-edit-btn');
   const safeName = name.replace(/'/g, "\\'");
-  editBtn.style.display = (canEdit && u) ? 'inline-block' : 'none';
+  // a servant who has not registered yet can still be renamed (by an admin)
+  editBtn.style.display = ((canEdit && u) || (state.currentUserRole === 'admin' && raw)) ? 'inline-block' : 'none';
   editBtn.setAttribute('onclick', `openEditDeaconProfile('${safeName}')`);
 
   const rows = [];
@@ -209,13 +210,14 @@ window.openMyProfile = async () => {
 window.openEditDeaconProfile = (name) => {
   const nm = name || document.getElementById('dprof-name').textContent;
   const u = DEACON_ADMIN_MAP[nm];
-  if (!u) { showToast('الخادم ده لسه ماسجلش حساب، مينفعش نعدل بياناته', 'error'); return; }
   const raw = state.ALL_DEACONS_RAW.find(x => x.name === nm);
+  if (!u && !(state.currentUserRole === 'admin' && raw)) { showToast('الخادم ده لسه ماسجلش حساب، مينفعش نعدل بياناته', 'error'); return; }
+  const p = u || {};
   window.openReactScreen('edit-servant', undefined, {
     servant: {
-      name: nm, uid: u.uid, personId: raw ? raw.id : null,
-      phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []),
-      address: u.address || '', dob: u.dob || '', graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+      name: nm, uid: u ? u.uid : null, personId: raw ? raw.id : null,
+      phones: (p.phones && p.phones.length) ? p.phones : (p.phone ? [p.phone] : []),
+      address: p.address || '', dob: p.dob || '', graduated: !!p.graduated, college: p.college || '', university: p.university || ''
     },
     canRename: state.currentUserRole === 'admin',
     onSaved: ({ name: newName, data, renamed }) => {

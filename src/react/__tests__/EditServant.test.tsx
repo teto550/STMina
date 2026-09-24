@@ -66,4 +66,19 @@ describe('EditServant', () => {
     await user.selectOptions(screen.getByLabelText('الحالة الدراسية'), 'graduated');
     expect(screen.queryByLabelText('الكلية')).not.toBeInTheDocument();
   });
+
+  it('a servant without an account can still be renamed: only the name is shown, nothing is written to users', async () => {
+    const user = userEvent.setup();
+    const onSaved = vi.fn();
+    render(<EditServant servant={{ ...servant, uid: null, phones: [] }} canRename onSaved={onSaved} close={() => undefined} />);
+    expect(screen.queryByLabelText(/رقم التليفون/)).not.toBeInTheDocument();
+    expect(screen.getByText(/لسه ماسجلش بياناته/)).toBeInTheDocument();
+    const name = screen.getByLabelText('الاسم');
+    await user.clear(name);
+    await user.type(name, 'مينا');
+    await user.click(screen.getByRole('button', { name: /حفظ/ }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(renameServant).toHaveBeenCalledWith('p1', 'مينا باسم', 'مينا');
+    expect(setDoc).not.toHaveBeenCalled();
+  });
 });

@@ -12,7 +12,9 @@ import { Button } from '@/react/components/ui/button';
 import type { ScreenProps } from './registry';
 
 export interface ServantProfile {
-  name: string; uid: string;
+  name: string;
+  /** login of the servant; null when they have not registered yet (then only the name can be edited) */
+  uid: string | null;
   /** id of the servant in the servants list (needed to rename); null when unknown */
   personId: string | null;
   phones: string[]; address: string; dob: string; graduated: boolean; college: string; university: string;
@@ -28,7 +30,7 @@ export interface EditServantProps extends ScreenProps {
 const schema = z.object({
   // a single first name is fine
   name: z.string().trim().min(1, 'اكتب الاسم'),
-  phones: z.array(z.object({ value: z.string() })).refine((list) => list.some((p) => p.value.trim()), 'اكتب رقم تليفون واحد على الأقل'),
+  phones: z.array(z.object({ value: z.string() })),
   address: z.string(),
   dob: z.string(),
   status: z.enum(['student', 'graduated']),
@@ -44,6 +46,8 @@ const Field = ({ label, error, children }: { label: string; error?: string; chil
 /** "تعديل بيانات الخادم": the servant's data (and, for an admin, the name). */
 export default function EditServant({ close, servant, canRename, onSaved }: EditServantProps) {
   const [problem, setProblem] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const hasAccount = servant.uid !== null;
   const { register, control, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -57,7 +61,9 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
 
   const submit = handleSubmit(async (v) => {
     setProblem(null);
+    setPhoneError(null);
     const list = v.phones.map((p) => p.value.trim()).filter(Boolean);
+    if (hasAccount && list.length === 0) { setPhoneError('اكتب رقم تليفون واحد على الأقل'); return; }
     const data: ProfileData = {
       phones: list, phone: list[0] ?? '', address: v.address.trim(), dob: v.dob, graduated: v.status === 'graduated',
       college: v.status === 'student' ? v.college.trim() : '', university: v.status === 'student' ? v.university : '',
@@ -69,7 +75,7 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
         renamed = await renameServant(servant.personId, servant.name, wanted);
         if (!renamed.ok) { setProblem(renamed.error ?? 'مقدرناش نغيّر الاسم'); return; }
       }
-      await setDoc(doc(db, 'users', servant.uid), data, { merge: true });
+      if (servant.uid) await setDoc(doc(db, 'users', servant.uid), data, { merge: true });
       onSaved({ name: renamed ? wanted : servant.name, data, renamed });
       close?.();
     } catch (e) { console.warn(e); setProblem('حصل خطأ، جرّب تاني'); }
@@ -87,7 +93,8 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
             <input className={inputClass} readOnly={!canRename} {...register('name')} />
             {!canRename && <span className="tw:text-xs tw:font-normal tw:text-dim">الأدمن بس هو اللي يغيّر الاسم</span>}
           </Field>
-          <Field label="رقم التليفون" error={errors.phones?.message ?? errors.phones?.root?.message}>
+          {hasAccount && <>
+          <Field label="رقم التليفون" error={phoneError ?? undefined}>
             <div className="tw:flex tw:flex-col tw:gap-2">
               {phones.fields.map((f, i) => (
                 <div key={f.id} className="tw:flex tw:gap-2">
@@ -100,9 +107,11 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
           </Field>
           <Field label="العنوان"><input className={inputClass} {...register('address')} /></Field>
           <Field label="تاريخ الميلاد"><input className={inputClass} type="date" {...register('dob')} /></Field>
+          </>}
+          {!hasAccount && <p className="tw:rounded-field tw:bg-surface-2 tw:px-4 tw:py-3 tw:text-sm tw:text-dim">الخادم ده لسه ماسجلش بياناته في التطبيق، فتقدر تعدّل الاسم بس.</p>}
         </section>
 
-        <section className="tw:flex tw:flex-col tw:gap-4 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
+        {hasAccount && <section className="tw:flex tw:flex-col tw:gap-4 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
           <Field label="الحالة الدراسية">
             <select className={inputClass} {...register('status')}><option value="student">لسه بيدرس</option><option value="graduated">متخرج</option></select>
           </Field>
@@ -117,7 +126,7 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
               </Field>
             </>
           )}
-        </section>
+        </section>}
 
         {problem && <p role="alert" className="tw:rounded-field tw:border tw:border-bad tw:p-3 tw:text-sm tw:text-bad">{problem}</p>}
         <div className="tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-10 tw:border-t tw:border-line tw:bg-surface tw:p-3">
