@@ -239,5 +239,5 @@ New files `src/types/access.ts` (Gender, Section, Grade, Cell, Role, Person, Acc
 ### C18 - Duplicate accounts
 `tools/firestore/dedupe-users.cjs` deletes duplicate `users` profiles (list is specific to this project's data; build a new list for the other project). One account per person, the most recently active one. Firebase Auth logins are not deleted.
 
-### C19 - Damaged servant name
-`tools/firestore/fix-corrupted-names.cjs` repairs a servant name that lost a character (U+FFFD). Check the other project for U+FFFD in `deacons.name` (dry run).
+### C19 - Damaged names (U+FFFD)
+`tools/firestore/_client.cjs` now decodes UTF-8 across chunk boundaries (before, Arabic text could be read with U+FFFD and a script could write it back). Copy the fixed `_client.cjs` FIRST, then run `fix-corrupted-names.cjs` (dry run) in the other project to look for damaged values.
