@@ -228,3 +228,7 @@ other project.
 ## Not done yet (planned, will also need porting)
 - Applying the Firestore cleanup and the "مستر" rename (see Firestore data notes). Data is per project: do it separately for each.
 - Step 2: TypeScript types for the data model, remove `@ts-nocheck`. Later: React + Tailwind, routes.
+
+### C16 - Roles/access: config and types (step 1, no behaviour change)
+New files `src/types/access.ts` (Gender, Section, Grade, Cell, Role, Person, Access), `src/core/access-config.ts` (`MIXED_GRADES`, cell/section helpers,
+`computeAccess`, `canSwitchSection`, ...) and `src/core/__tests__/access-config.test.ts`. Pure code, no data, no screens; copy the three files as they are.
