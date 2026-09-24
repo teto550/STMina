@@ -30,9 +30,8 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just
       started and graduation is less than a year away. Decide before the next graduation who may do them (admin only, or the class's servants)
       and that promotion recomputes each kid's `cell` and `section` (boys leave the girls' section at grade 2 -> 3).
-- [ ] **Kids' passwords (`student_secrets`)**: hide from everybody (admins too), Firestore only, no UI. To do: remove the password display in the
-      student profile and the "ID and passwords" import screen (`import-creds.ts`), and make the security rules deny all client access to
-      `student_secrets`. Waiting for the go-ahead on timing. (Later it may be linked to an external source.)
+- [ ] **Kids' passwords (`student_secrets`)**: keep the import and the display, but admin only (with roles: the admin role only; drop the
+      phase-lead exception in the code and in the security rules). Low priority; the data may later be linked to an external source.
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done

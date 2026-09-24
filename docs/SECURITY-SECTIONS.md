@@ -47,6 +47,6 @@ So the safe order is:
 Not started; needs the user's go-ahead. The same applies to the other Firebase project.
 
 ## Kids' passwords (`student_secrets`)
-Decision (2026-09-25): nobody sees them in the app, admins included, and there is no UI for them. The rules should therefore deny every client read
-and write on `student_secrets` (today: admin creates, admin/phase-lead reads one document). Only the console / an external integration touches it.
-This goes together with removing the password UI from the app (see `docs/TODO-CLEANUP.md`).
+Decision (2026-09-25, revised): the import screen and the display stay, but only admins may use them. Rules: keep `create`/`list`/`get` for
+admins only and remove the "phase lead may read one document" exception once roles exist (the code path `canSeeStudentPassword` follows the same
+change). No new UI work.

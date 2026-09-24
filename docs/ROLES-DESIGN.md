@@ -105,12 +105,11 @@ The live site still runs the OLD code, so every data step must be harmless to it
   registered yet; they get their access as soon as their account links to the person.
 - **Deleting a role:** only a role with **no members** can be deleted. If it has members the screen blocks the delete and asks the admin to
   move the members to another role first.
-- **Kids' passwords (`student_secrets`):** hidden from **everybody, admins included**, with **no UI at all**. The data stays in Firestore only
-  (it may later be linked with an external source). Consequence for the rules: clients get no access to `student_secrets`. Consequence for the
-  code: the password display in the student profile and the "ID and passwords" Excel import screen are to be removed when this is done
-  (they are still there today). Not urgent; needs a go-ahead.
+- **Kids' passwords (`student_secrets`):** revised - they stay as today: the import screen and the display in the student profile are kept,
+  but **only admins** may see or import them (with roles: the admin role; the current "phase lead may read one" exception goes away).
+  The data stays in Firestore and may later be linked with an external source. Low priority, not to be over-engineered.
 - **Actions across classes** (promoting kids to the next grade, bulk imports, attendance clean-up): postponed. Graduation is still months
   away, so nothing is decided; see `docs/TODO-CLEANUP.md` section C. Until then those stay as they are today.
 
 ## 10. Still open
-- Whether to remove the existing password UI now, or together with the roles work (asked to the user).
+Nothing that blocks the start. Cross-class actions are postponed (see the to-do list).
