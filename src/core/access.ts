@@ -61,3 +61,17 @@ export function resolveAccess(data: AccountData | null | undefined): { access: A
   if (stored) return { access: { ...stored, admin: stored.admin || data?.role === 'admin' }, source: 'roles' };
   return { access: legacyAccess(data), source: 'legacy' };
 }
+
+/**
+ * `gender` and `cell` for a NEW kid (docs/ROLES-DESIGN.md). The boys' section only has boys; in the girls' section a kid of grade 3+ is a
+ * girl, and in grades 1-2 (boys and girls together) the servant chooses. Returns null when it cannot be told (nothing is guessed).
+ */
+export function newKidFields(section: 'boys' | 'girls', gradeName: string, chosen?: string | null): { gender: Gender; cell: Cell } | null {
+  const grade = gradeNumber(gradeName);
+  if (!grade) return null;
+  let gender: Gender | null = null;
+  if (section === 'boys') gender = 'male';
+  else if (!isMixedGrade(grade)) gender = 'female';
+  else if (chosen === 'male' || chosen === 'female') gender = chosen;
+  return gender ? { gender, cell: cellOf(gender, grade) } : null;
+}

@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { updateDoc, doc, getDocs, query, collection, where } from 'firebase/firestore';
+import { updateDoc, doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
+import { findApprovalPatch } from '@/core/access-link';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
@@ -28,7 +29,15 @@ window.updateDeaconsTabLabel = function() {
 
 // ===== APPROVE / REJECT DEACON =====
 export async function approveDeacon(uid) {
-  await updateDoc(doc(db, 'users', uid), { status: 'approved' });
+  // link the account to its person of the servants list and give it the access of that person's roles (never blocks the approval)
+  let link = {};
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (snap.exists()) link = await findApprovalPatch(snap.data());
+    // only an admin may change the access snapshot and the admin flag; a class lead approving just records the link
+    if (state.currentUserRole !== 'admin') link = link.deaconId ? { deaconId: link.deaconId } : {};
+  } catch (e) { console.warn('could not link the account to its person:', e); }
+  await updateDoc(doc(db, 'users', uid), { status: 'approved', ...link });
   showToast('✅ تم قبول الخادم', 'success');
   logActivity('وافق على طلب خادم', uid);
   loadPendingDeacons();

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { doc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { state } from '@/core/state';
+import { newKidFields } from '@/core/access';
 import { buildColumnDateMap, ensureXLSXLoaded, normalizeName } from '@/features/import-export/import-attendance';
 import { db } from '@/core/firebase';
 import { sectionTag } from '@/core/section';
@@ -194,6 +195,7 @@ window.startImportStudentsData = async () => {
           name, grade: state.activeGrade, sid,
           dob: '', address: '', phoneDad: '', phoneMom: '', phoneStudent: '', confessor: '', deacon: '',
           attendanceCount: 0, starCount: 0, photo: '', section: sectionTag(), createdAt: serverTimestamp(),
+          ...(newKidFields(sectionTag(), state.activeGrade) || {}), // gender + cell when they can be told (not for grades 1-2 of the girls' section)
           ...fields
         }});
         toCreate++;

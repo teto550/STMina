@@ -1,4 +1,4 @@
-import { gradeNumber, legacyAccess, resolveAccess, storedAccess } from '@/core/access';
+import { gradeNumber, legacyAccess, newKidFields, resolveAccess, storedAccess } from '@/core/access';
 
 describe('gradeNumber', () => {
   it('reads the grade from the class name', () => {
@@ -45,4 +45,15 @@ describe('resolveAccess', () => {
     expect(r.source).toBe('legacy');
     expect(r.access.cells).toEqual(['male:4']);
   });
+});
+
+describe('newKidFields', () => {
+  it('boys section: a boy', () => expect(newKidFields('boys', 'سنة رابعة ابتدائي')).toEqual({ gender: 'male', cell: 'male:4' }));
+  it('girls section, grade 3+: a girl', () => expect(newKidFields('girls', 'سنة خامسة ابتدائي')).toEqual({ gender: 'female', cell: 'female:5' }));
+  it('girls section, grades 1-2: the servant chooses; nothing is guessed', () => {
+    expect(newKidFields('girls', 'سنة أولى ابتدائي', 'male')).toEqual({ gender: 'male', cell: 'male:1' });
+    expect(newKidFields('girls', 'سنة تانية ابتدائي', 'female')).toEqual({ gender: 'female', cell: 'female:2' });
+    expect(newKidFields('girls', 'سنة أولى ابتدائي')).toBeNull();
+  });
+  it('unknown grade: null', () => expect(newKidFields('boys', 'x')).toBeNull());
 });

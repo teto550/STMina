@@ -264,3 +264,8 @@ Also in C24: an admin can rename a servant who has not registered yet (the edit 
 
 ### C26 - Roles step 5b: classes come from the roles (accounts that have a role snapshot)
 `core/access-config.ts` (`GRADE_NAMES`, `gradeNamesOfAccess`), `core/session.ts` (`getUserManagedGrades` uses the roles' classes in this section for role-based accounts), `features/auth/auth.ts` (for non-admin role-based accounts: grade from the roles, lead/phase-lead flags off), `features/shell/app-shell.ts` (class chips also for a role-based person with several classes). Accounts without a role snapshot keep the old behaviour. Server-side rules are unchanged (see docs/SECURITY-SECTIONS.md).
+
+### C27 - Roles: new records get the new fields; accounts link on approval; kids' passwords admin-only
+- New kids get `gender` + `cell` (`core/access.ts` `newKidFields`; `features/students/students.ts` + a gender select `#new-gender` in `index.html`, shown only for grades 1-2 of the girls' section; Excel import sets them when they can be told, `features/import-export/import-students.ts`). New roster servants get `roleIds: []` (`features/servants/servants.ts`).
+- On approval (`features/servants/approvals.ts`) the account is linked to its person (link, same email, or same name in the section) and, for an admin approver, gets the access snapshot of the person's roles and the admin flag: new `src/core/access-link.ts` (+ test). A class lead approving only records the link.
+- Kids' passwords: admin only in the profile display (`features/students/student-profile.ts`) and in `firestore.rules` (`student_secrets` get: admin only). DEPLOY THE RULES in the other project too.

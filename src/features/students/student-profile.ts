@@ -142,10 +142,9 @@ window.closeProfile = () => {
   document.body.style.overflow = '';
 };
 
-// ===== باسورد المخدوم (أدمن + مسؤول المرحلة بتاع صفه فقط) =====
+// ===== باسورد المخدوم (أدمن فقط) =====
 function canSeeStudentPassword(s) {
-  if (state.currentUserRole === 'admin') return true;
-  return !!state.currentUserIsPhaseLead && state.currentUserPhaseGrades.includes(s.grade);
+  return state.currentUserRole === 'admin';
 }
 
 async function loadStudentPassword(id) {

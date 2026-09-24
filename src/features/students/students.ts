@@ -4,7 +4,8 @@ import { state } from '@/core/state';
 import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
 import { ensureAttendance } from '@/core/data';
 import { db } from '@/core/firebase';
-import { inCurrentSection, sectionTag } from '@/core/section';
+import { SECTION, inCurrentSection, sectionTag } from '@/core/section';
+import { newKidFields } from '@/core/access';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
 import { avatarBox } from '@/features/students/photos';
@@ -33,7 +34,16 @@ window.toggleAddStudentForm = () => {
   const isOpen = fields.style.display !== 'none';
   fields.style.display = isOpen ? 'none' : 'block';
   btn.textContent = isOpen ? '➕ إضافة مخدوم' : '✕ إغلاق';
+  updateNewGenderVisibility();
   if (!isOpen) clearNewPhoto(); // فورم بيتفتح جديد، امسح أي صورة كانت متحطة قبل كده
+};
+
+// grades 1-2 in the girls' section hold boys and girls together: then (and only then) the servant picks the kid's gender
+window.updateNewGenderVisibility = () => {
+  const wrap = document.getElementById('new-gender-wrap');
+  if (!wrap) return;
+  const g = document.getElementById('new-grade').value;
+  wrap.style.display = (SECTION === 'girls' && (g === 'سنة أولى ابتدائي' || g === 'سنة تانية ابتدائي')) ? 'block' : 'none';
 };
 
 window.addStudent = async () => {
@@ -55,8 +65,10 @@ window.addStudent = async () => {
     starCount:       0,
     photo:           state.newPhotoData || '',
     section:         sectionTag(),
+    ...(newKidFields(sectionTag(), grade, document.getElementById('new-gender').value) || {}), // gender + cell (roles design)
     createdAt:       serverTimestamp()
   };
+  if (SECTION === 'girls' && !data.gender) { showToast('اختر النوع (بنت أو ولد)', 'error'); return; }
   await addDoc(collection(db,'students'), data);
   // clear only name and extra fields, keep grade
   ['new-name','new-dob','new-address','new-phone-dad','new-phone-mom','new-phone-student','new-confessor','new-deacon','new-att-count']

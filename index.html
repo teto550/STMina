@@ -289,10 +289,17 @@
           </div>
           <div>
             <label class="field-label">الصف الدراسي *</label>
-            <select id="new-grade" class="field-select">
+            <select id="new-grade" class="field-select" onchange="updateNewGenderVisibility()">
               <option value="سنة تالتة ابتدائي">سنة تالتة ابتدائي</option>
             </select>
           </div>
+        </div>
+        <div id="new-gender-wrap" style="display:none">
+          <label class="field-label">النوع *</label>
+          <select id="new-gender" class="field-select">
+            <option value="female">بنت</option>
+            <option value="male">ولد</option>
+          </select>
         </div>
         <div class="form-2col">
           <div>

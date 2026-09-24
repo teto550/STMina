@@ -220,6 +220,6 @@ export function buildGradeFilters() {
   const gradeOptions = GRADES.map(g => `<option value="${g}">${g}</option>`).join('');
   const newGradeSel  = document.getElementById('new-grade');
   const editGradeSel = document.getElementById('edit-grade');
-  if (newGradeSel)  { newGradeSel.innerHTML  = gradeOptions; if (state.activeGrade) newGradeSel.value  = state.activeGrade; }
+  if (newGradeSel)  { newGradeSel.innerHTML  = gradeOptions; if (state.activeGrade) newGradeSel.value  = state.activeGrade; if (window.updateNewGenderVisibility) window.updateNewGenderVisibility(); }
   if (editGradeSel) editGradeSel.innerHTML = gradeOptions;
 }

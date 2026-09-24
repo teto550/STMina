@@ -101,9 +101,9 @@ service cloud.firestore {
 
     // 🆕 ===== student_secrets (باسوردات المخدومين) =====
     // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش ولا بيتمسح.
-    // get: أدمن أو مسؤول مرحلة (مستند واحد). list: أدمن بس (عشان محدّش يسحب الكل).
+    // أدمن بس (قرار الأدوار: مسؤول المرحلة مبقاش يشوف الباسوردات).
     match /student_secrets/{docId} {
-      allow get: if isAdmin() || isPhaseLead();
+      allow get: if isAdmin();
       allow list: if isAdmin();
       allow create: if isAdmin() && request.resource.data.password is string;
       allow update, delete: if false;

@@ -30,11 +30,10 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just
       started and graduation is less than a year away. Decide before the next graduation who may do them (admin only, or the class's servants)
       and that promotion recomputes each kid's `cell` and `section` (boys leave the girls' section at grade 2 -> 3).
-- [ ] **Kids' passwords (`student_secrets`)**: keep the import and the display, but admin only (with roles: the admin role only; drop the
-      phase-lead exception in the code and in the security rules). Low priority; the data may later be linked to an external source.
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
+- [x] Kids' passwords are admin only (display + rules; the import stays, admin only) - rules to deploy.
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.
 - [x] Firestore rules deployed (roles collection, users.deaconId/access locked to admins, admin may rename part assignments) on 2026-09-25.
 - [x] QR feature removed (scanner, generation, print-all cards).
