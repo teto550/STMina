@@ -63,3 +63,9 @@ daily Firestore quota was used up, so it was only checked by build, static check
 ## Known open items (not part of this test)
 - `part_notifications` has no security rule (notifications blocked). ID-based links plan: docs/ID-MIGRATION.md.
 - Verify the "مستر" rename left 0 occurrences (read-only scan) once the quota allows.
+
+## Roles work (2026-09-24/25)
+- [ ] Deploy the rules first: `firebase deploy --only firestore:rules` (adds `roles`, locks `users.deaconId/access` to admins).
+- [ ] Log in as an admin and as a normal servant on the test channel: everything works as before (access is derived from today's fields;
+      `state.access` / `state.accessSource` can be checked in the console in dev).
+- [ ] The 4 accounts that could not be linked by name (David Ayman, Mario Yasser Fadel Fam, ابرام سامح منصور سعد, الأدمن) are linked in the admin screen once it exists.
