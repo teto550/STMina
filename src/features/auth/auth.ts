@@ -11,11 +11,23 @@ import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadCon
 import { logActivity } from '@/core/presence';
 import { refreshAllData } from '@/core/data';
 import { resolveAccess } from '@/core/access';
+import { hasNoAccess } from '@/core/access-config';
 import { getDocFast, loadProfileCache } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { clearSplashWatchdog } from '@/core/splash';
 import { isProfileIncomplete, openCompleteProfileScreen } from '@/features/auth/profile-complete';
 import { enterApp } from '@/features/shell/app-shell';
+
+// The waiting screen with its own text ("waiting for approval" by default, or "no access yet")
+function showPendingScreen(icon, title, html) {
+  applySectionTheme(false);
+  clearSplashWatchdog();
+  ['splash-screen', 'auth-screen', 'app-screen', 'complete-profile-screen'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  document.getElementById('pending-icon').textContent = icon;
+  document.getElementById('pending-title').textContent = title;
+  document.getElementById('pending-text').innerHTML = html;
+  document.getElementById('pending-screen').style.display = 'flex';
+}
 
 // Refuse an account (wrong section, no class): back to the login screen with a message.
 async function denyAccess(message) {
@@ -206,12 +218,7 @@ onAuthStateChanged(auth, async user => {
       }, { merge: true }).catch(() => {});
     } else if (snapData) {
       if (snapData.status === 'pending') {
-        applySectionTheme(false);
-        clearSplashWatchdog();
-        document.getElementById('splash-screen').style.display  = 'none';
-        document.getElementById('auth-screen').style.display    = 'none';
-        document.getElementById('app-screen').style.display     = 'none';
-        document.getElementById('pending-screen').style.display = 'flex';
+        showPendingScreen('⏳', 'في انتظار الموافقة', 'حسابك قيد المراجعة من الأدمن.<br>هتقدر تدخل بعد الموافقة عليه.');
         return;
       }
       if (snapData.status === 'rejected') {
@@ -261,11 +268,17 @@ onAuthStateChanged(auth, async user => {
     // Access is worked out before anything is shown: from the roles snapshot when the account has one, else from today's fields.
     { const r = resolveAccess({ ...snapData, role: state.currentUserRole }); state.access = r.access; state.accessSource = r.source; }
 
+    // Role-based access and nothing assigned yet: a screen that says so (roles are given by an admin), instead of an empty app
+    if (state.currentUserRole !== 'admin' && state.accessSource === 'roles' && hasNoAccess(state.access)) {
+      showPendingScreen('🔒', 'لسه مفيش صلاحيات', 'حسابك اتسجّل، بس لسه محدش حدد لك فصل.<br>كلّم الأدمن يدّيك الدور المناسب وبعدين افتح التطبيق تاني.');
+      return;
+    }
+
     // Every account except an admin belongs to ONE section (boys or girls) and one class. A girl who opens the boys' site is
     // sent straight to the girls' section (and the other way round); she can never use the other one.
     if (state.currentUserRole !== 'admin') {
       let already = null; try { already = sessionStorage.getItem('sectionRedirect'); } catch (e) {}
-      const gate = checkAccountSection(state.currentUserRole, snapData, already);
+      const gate = checkAccountSection(state.currentUserRole, snapData, already, state.accessSource === 'roles' ? state.access : null);
       if (gate.action === 'redirect' && switchDeviceToSection(gate.target)) {
         try { sessionStorage.setItem('sectionRedirect', gate.target); } catch (e) {}
         location.reload();

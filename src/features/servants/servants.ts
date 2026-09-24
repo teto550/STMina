@@ -33,6 +33,7 @@ window.toggleRegGradFields = function() {
 let currentServantsTab = 'att'; // 'att' | 'list'
 
 window.openServantsDirectory = async () => {
+  if (state.currentUserRole !== 'admin') { showToast('دليل الخدام للأدمن بس', 'error'); return; }
   state.servantsDirectoryOpen = true;
   showServantsDirectorySection();
   buildActiveGradeBar();

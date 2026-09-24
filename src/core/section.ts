@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { state } from '@/core/state';
+import { canOpenSection, canSwitchSection } from '@/core/access-config';
 
 // ===== حساب بنين / حساب بنات =====
 // الجهاز ده شغّال دلوقتي على أي قسم؟ اتخزنت محليًا على الجهاز، ومفيش قسم = "بنين" (الوضع الافتراضي/القديم)
@@ -108,9 +109,12 @@ export const accountSection = (data) => {
 //   'ok'        -> admin, or the account belongs to this device's section
 //   'redirect'  -> switch the device to the account's own section and reload (first time)
 //   'deny'      -> we already tried that once and it did not stick: do not let her in
-export function checkAccountSection(role, data, redirectedTo) {
+export function checkAccountSection(role, data, redirectedTo, access) {
   if (role === 'admin') return { action: 'ok' };
-  const mine = accountSection(data);
+  // with role-based access the sections of the person's classes decide; otherwise the account's gender does
+  const fromRoles = access && access.sections && access.sections.length;
+  if (fromRoles && canOpenSection(access, SECTION)) return { action: 'ok' };
+  const mine = fromRoles ? access.sections[0] : accountSection(data);
   if (mine === SECTION) return { action: 'ok' };
   return redirectedTo === mine ? { action: 'deny', target: mine } : { action: 'redirect', target: mine };
 }
@@ -120,10 +124,11 @@ export function switchDeviceToSection(target) {
   try { localStorage.setItem('appSection', target); return localStorage.getItem('appSection') === target; } catch (e) { return false; }
 }
 
-// Only admins move between the two sections. Every other account belongs to exactly one (see the check at login in auth.ts).
+// Only admins, and people whose roles span both sections, move between the two sections. Every other account belongs to exactly one (see the check at login in auth.ts).
 window.toggleAppSection = () => {
-  if (state.currentUserRole !== 'admin') { showToast('حسابك على قسم واحد بس', 'info'); return; }
+  if (state.currentUserRole !== 'admin' && !(state.access && canSwitchSection(state.access))) { showToast('حسابك على قسم واحد بس', 'info'); return; }
   const goingTo = SECTION === 'girls' ? 'boys' : 'girls';
+  if (state.currentUserRole !== 'admin' && !canOpenSection(state.access, goingTo)) { showToast('حسابك على قسم واحد بس', 'info'); return; }
   try { localStorage.setItem('appSection', goingTo); } catch(e) {}
   location.reload();
 };

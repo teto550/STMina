@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { state } from '@/core/state';
+import { canSwitchSection } from '@/core/access-config';
 import { GRADES, SECTION, applySectionTheme, setupGenderObserver } from '@/core/section';
 import { canManageGrade, formatAssignedGradesLabel, getUserManagedGrades, isGradeManagerOf } from '@/core/session';
 import { saveProfileCache } from '@/core/firestore-helpers';
@@ -41,7 +42,7 @@ export async function enterApp(user, snapData) {
     const secBtn = document.getElementById('section-toggle-btn');
     if (secBtn) {
       secBtn.innerHTML = SECTION === 'girls' ? '🔄 حساب بنين' : '🔄 حساب بنات';
-      secBtn.style.display = state.currentUserRole === 'admin' ? 'flex' : 'none'; // only admins move between the sections
+      secBtn.style.display = (state.currentUserRole === 'admin' || (state.access && canSwitchSection(state.access))) ? 'flex' : 'none'; // admins, and people whose roles span both sections
     }
     const adminWrap = document.getElementById('admin-settings-wrap');
     if (adminWrap) adminWrap.style.display = state.currentUserRole === 'admin' ? 'block' : 'none'; // roles/users screen: admins only
@@ -132,7 +133,7 @@ export function buildActiveGradeBar() {
     return `<button class="grade-chip ${isActive ? 'active' : ''}" onclick="switchActiveGrade('${g}')">${g}${roleTag}</button>`;
   }).join('');
   // شريحة ثابتة بتفتح دليل كل الخدام في البرنامج كله (كل السنين مع بعض) — للأدمن/المسؤولين فقط
-  html += `<button class="grade-chip ${state.servantsDirectoryOpen ? 'active' : ''}" style="border-color:rgba(46,204,113,0.4);color:var(--success)" onclick="openServantsDirectory()">🙏 الخدام</button>`;
+  if (state.currentUserRole === 'admin') html += `<button class="grade-chip ${state.servantsDirectoryOpen ? 'active' : ''}" style="border-color:rgba(46,204,113,0.4);color:var(--success)" onclick="openServantsDirectory()">🙏 الخدام</button>`;
   bar.innerHTML = html;
 }
 
