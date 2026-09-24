@@ -23,7 +23,6 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Remove dev helpers when no longer useful: `window.__state`, `window.__reads` (dev only, harmless).
 - [ ] Delete `tools/monolith-split/` after the other project has been ported (it is kept only for that).
 - [ ] Prune old `activity_log` entries (older than ~90 days) with a script, if the log grows.
-- [ ] Verify the "مستر" rename left 0 occurrences (read-only scan).
 - [ ] Run the gender script (`tools/firestore/set-gender.cjs`) in the OTHER Firebase project (done here on 2026-09-24: 49 servants + 32 accounts = male).
 
 ## C. Decisions pending / postponed (roles design)
@@ -35,6 +34,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
+- [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.
 - [x] QR feature removed (scanner, generation, print-all cards).
 - [x] Legacy Firestore collections `paragraphs` and `deacon_attendance` and the leftover fields deleted (backup in `backups/`).
 - [x] "مستر" removed from servant names (all collections).
