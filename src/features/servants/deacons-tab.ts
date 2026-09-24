@@ -2,11 +2,10 @@
 import { deleteDoc, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { DEACONS, DEACON_ADMIN_MAP, DEACON_DOC_IDS, applyActiveGradeDeacons, loadDeaconUsersMap } from '@/features/servants/deacons';
-import { formatAssignedGradesLabel, getPhaseGradesForGrade } from '@/core/session';
+import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
 import { loadPendingDeacons } from '@/features/servants/approvals';
-import { GRADES } from '@/core/section';
 import { renderTodayList } from '@/features/attendance/attendance';
 import { ensureAttendance } from '@/core/data';
 import { avatarBox } from '@/features/students/photos';
@@ -56,22 +55,12 @@ window.buildDeaconChips = async function() {
       const isDeaconPhaseLead = u && u.isPhaseLead;
       const phaseLabel = u && u.phaseGrades && u.phaseGrades.length ? ` 🟣 ${formatAssignedGradesLabel(u.phaseGrades)}` : '';
       const safeName = d.replace(/'/g, "\\'");
-      // زرار تعيين/إلغاء أدمن عام — أدمن بس. زرار تعيين/إلغاء "مسؤول السنة" أو "مسؤول المرحلة" — الأدمن أو أي مسؤول على الفصول المسموح له
+      // Access is given with roles now (admin screen "المستخدمين والأدوار"); the old admin / lead / phase-lead toggles were removed.
+      // Accounts that still carry the old flags keep working and show their badges here.
       let adminBtn = '';
-      if (isAdmin) {
-        adminBtn = u
-          ? `<button class="deacon-admin-btn ${isDeaconAdmin ? 'is-admin' : 'not-admin'}" onclick="event.stopPropagation();toggleDeaconAdmin('${safeName}')">${isDeaconAdmin ? '👑 أدمن (إزالة)' : '➕ اجعله أدمن'}</button>
-             <button class="deacon-admin-btn ${isDeaconLead ? 'is-admin' : 'not-admin'}" onclick="event.stopPropagation();toggleGradeLead('${safeName}')">${isDeaconLead ? '⭐ مسؤول سنة (إزالة)' : '⭐ اجعله مسؤول سنة'}</button>
-             <button class="deacon-admin-btn ${isDeaconPhaseLead ? 'is-admin' : 'not-admin'}" onclick="event.stopPropagation();togglePhaseLead('${safeName}')">${isDeaconPhaseLead ? '🟣 مسؤول مرحلة (إزالة)' : '🟣 اجعله مسؤول مرحلة'}</button>`
-          : `<span class="deacon-no-account">لسه ماسجلش حساب</span>`;
-      } else if (state.currentUserIsLead || state.currentUserIsPhaseLead) {
-        adminBtn = u
-          ? `<button class="deacon-admin-btn ${isDeaconLead ? 'is-admin' : 'not-admin'}" onclick="event.stopPropagation();toggleGradeLead('${safeName}')">${isDeaconLead ? '⭐ مسؤول سنة (إزالة)' : '⭐ اجعله مسؤول سنة'}</button>
-             <button class="deacon-admin-btn ${isDeaconPhaseLead ? 'is-admin' : 'not-admin'}" onclick="event.stopPropagation();togglePhaseLead('${safeName}')">${isDeaconPhaseLead ? '🟣 مسؤول مرحلة (إزالة)' : '🟣 اجعله مسؤول مرحلة'}</button>`
-          : `<span class="deacon-no-account">لسه ماسجلش حساب</span>`;
-      } else if (isDeaconLead || isDeaconPhaseLead) {
-        adminBtn = `<span class="deacon-no-account">${isDeaconLead ? '⭐ مسؤول السنة' : ''}${isDeaconPhaseLead ? ' 🟣 مسؤول المرحلة' : ''}</span>`;
-      }
+      if (!u) adminBtn = `<span class="deacon-no-account">لسه ماسجلش حساب</span>`;
+      else if (isAdmin) adminBtn = `<button class="deacon-admin-btn not-admin" onclick="event.stopPropagation();openReactScreen('admin-roles')">👥 الأدوار</button>`;
+      else if (isDeaconLead || isDeaconPhaseLead) adminBtn = `<span class="deacon-no-account">${isDeaconLead ? '⭐ مسؤول السنة' : ''}${isDeaconPhaseLead ? ' 🟣 مسؤول المرحلة' : ''}</span>`;
       return `
         <div class="deacon-row" data-deacon="${d}" onclick="setDeacon('${d}',this)">
           <div class="deacon-row-top">
@@ -172,91 +161,6 @@ window.backToDeaconList = () => {
   }
   document.querySelectorAll('#deacon-chips .deacon-row').forEach(b => b.classList.remove('active'));
   renderDeaconList();
-};
-
-// ===== تعيين/إلغاء أدمن لخادم من قائمة الخدام =====
-window.toggleDeaconAdmin = async (name) => {
-  const u = DEACON_ADMIN_MAP[name];
-  if (!u) { showToast('الخادم ده لسه ماسجلش حساب في التطبيق', 'error'); return; }
-  const makeAdmin = u.role !== 'admin';
-  const isSelf = auth.currentUser && u.uid === auth.currentUser.uid;
-  let msg = makeAdmin
-    ? `هتخلي "${name}" أدمن؟ هيبقى عنده كل الصلاحيات اللي عندك بالظبط.`
-    : `هتشيل صلاحية الأدمن من "${name}"؟ هيرجع خادم عادي.`;
-  if (isSelf && !makeAdmin) msg += '\n\n⚠️ ده حسابك انت! ممكن تفقد صلاحيات الأدمن فورًا.';
-  if (!confirm(msg)) return;
-  try {
-    await setDoc(doc(db, 'users', u.uid), { role: makeAdmin ? 'admin' : 'deacon' }, { merge: true });
-    DEACON_ADMIN_MAP[name] = { ...u, role: makeAdmin ? 'admin' : 'deacon' };
-    showToast(makeAdmin ? `تم تعيين "${name}" أدمن ✓` : `تم إلغاء أدمن "${name}" ✓`, 'success');
-    logActivity(makeAdmin ? 'عيّن أدمن جديد' : 'ألغى صلاحية أدمن', name);
-    buildDeaconChips();
-  } catch(e) {
-    console.error(e);
-    showToast('حدث خطأ، حاول تاني', 'error');
-  }
-};
-
-// ===== تعيين/إلغاء "مسؤول" السنة الدراسية النشطة (activeGrade) — أدمن بس =====
-window.toggleGradeLead = async (name) => {
-  if (state.currentUserRole !== 'admin' && !state.currentUserIsLead && !state.currentUserIsPhaseLead) { showToast('الأدمن أو مسؤول السنة أو مسؤول المرحلة بس يقدروا يحددوا المسؤول', 'error'); return; }
-  if (!state.activeGrade) { showToast('اختر السنة الدراسية الأول', 'error'); return; }
-  const u = DEACON_ADMIN_MAP[name];
-  if (!u) { showToast('الخادم ده لسه ماسجلش حساب في التطبيق', 'error'); return; }
-  const makeLead = !u.isLead;
-  let msg = makeLead
-    ? `هتخلي "${name}" مسؤول سنة "${state.activeGrade}"؟ هيشيل صلاحية المسؤول تلقائيًا من أي حد تاني مسؤول عن نفس السنة.`
-    : `هتشيل صلاحية "مسؤول السنة" من "${name}"؟`;
-  if (!confirm(msg)) return;
-  try {
-    if (makeLead) {
-      const others = Object.entries(DEACON_ADMIN_MAP).filter(([n, uu]) => n !== name && uu.isLead && uu.grade === state.activeGrade);
-      for (const [n, uu] of others) {
-        await setDoc(doc(db, 'users', uu.uid), { isLead: false }, { merge: true });
-        DEACON_ADMIN_MAP[n] = { ...uu, isLead: false };
-      }
-    }
-    await setDoc(doc(db, 'users', u.uid), { isLead: makeLead, grade: u.grade || state.activeGrade }, { merge: true });
-    DEACON_ADMIN_MAP[name] = { ...u, isLead: makeLead };
-    showToast(makeLead ? `"${name}" بقى مسؤول سنة ${state.activeGrade} ✓` : `تم إلغاء "المسؤول" من "${name}" ✓`, 'success');
-    logActivity(makeLead ? 'عيّن مسؤول سنة' : 'ألغى مسؤول سنة', `${name} — ${state.activeGrade}`);
-    buildDeaconChips();
-  } catch(e) {
-    console.error(e);
-    showToast('حدث خطأ، حاول تاني', 'error');
-  }
-};
-
-window.togglePhaseLead = async (name) => {
-  if (state.currentUserRole !== 'admin' && !state.currentUserIsLead && !state.currentUserIsPhaseLead) {
-    showToast('الأدمن أو مسؤول السنة أو مسؤول المرحلة بس يقدروا يحددوا المسؤولية', 'error');
-    return;
-  }
-  const targetGrade = state.activeGrade || state.currentUserGrade || GRADES[0];
-  const u = DEACON_ADMIN_MAP[name];
-  if (!u) { showToast('الخادم ده لسه ماسجلش حساب في التطبيق', 'error'); return; }
-  const nextGrades = getPhaseGradesForGrade(targetGrade);
-  const makePhaseLead = !u.isPhaseLead;
-  const msg = makePhaseLead
-    ? `هتخلي "${name}" مسؤول مرحلة "${nextGrades.join(' / ')}"؟ هيبقى عنده صلاحيات إدارة في الفصول دي بس.`
-    : `هتشيل صلاحية "مسؤول المرحلة" من "${name}"؟`;
-  if (!confirm(msg)) return;
-  try {
-    const patch = {
-      isPhaseLead: makePhaseLead,
-      phaseGrades: makePhaseLead ? nextGrades : [],
-      grade: u.grade || targetGrade,
-      isLead: makePhaseLead ? false : u.isLead
-    };
-    await setDoc(doc(db, 'users', u.uid), patch, { merge: true });
-    DEACON_ADMIN_MAP[name] = { ...u, isPhaseLead: makePhaseLead, phaseGrades: patch.phaseGrades, isLead: patch.isLead };
-    showToast(makePhaseLead ? `"${name}" بقى مسؤول مرحلة ${nextGrades.join(' / ')} ✓` : `تم إلغاء "المسؤولية" من "${name}" ✓`, 'success');
-    logActivity(makePhaseLead ? 'عيّن مسؤول مرحلة' : 'ألغى مسؤول مرحلة', `${name} — ${nextGrades.join(' / ')}`);
-    buildDeaconChips();
-  } catch (e) {
-    console.error(e);
-    showToast('حدث خطأ، حاول تاني', 'error');
-  }
 };
 
 window.setDeaconFilter = (f, btn) => {

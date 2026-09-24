@@ -33,6 +33,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
+- [x] Old admin / lead / phase-lead toggle buttons removed from the servants tab (roles are the only way to give access).
 - [x] Kids' passwords are admin only (display + rules; the import stays, admin only); rules deployed 2026-09-25.
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.
 - [x] Firestore rules deployed (roles collection, users.deaconId/access locked to admins, admin may rename part assignments) on 2026-09-25.
