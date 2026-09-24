@@ -57,6 +57,7 @@ export type AccessSource = 'roles' | 'legacy';
 /** The access to use for this account, and where it came from. */
 export function resolveAccess(data: AccountData | null | undefined): { access: Access; source: AccessSource } {
   const stored = storedAccess(data);
-  if (stored) return { access: stored, source: 'roles' };
+  // an account that is an admin today stays an admin until the legacy flag is removed (no lock-out while both worlds exist)
+  if (stored) return { access: { ...stored, admin: stored.admin || data?.role === 'admin' }, source: 'roles' };
   return { access: legacyAccess(data), source: 'legacy' };
 }

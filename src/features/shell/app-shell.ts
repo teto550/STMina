@@ -43,6 +43,8 @@ export async function enterApp(user, snapData) {
       secBtn.innerHTML = SECTION === 'girls' ? '🔄 حساب بنين' : '🔄 حساب بنات';
       secBtn.style.display = state.currentUserRole === 'admin' ? 'flex' : 'none'; // only admins move between the sections
     }
+    const adminWrap = document.getElementById('admin-settings-wrap');
+    if (adminWrap) adminWrap.style.display = state.currentUserRole === 'admin' ? 'block' : 'none'; // roles/users screen: admins only
     setupGenderObserver();
     applySectionTheme(true);
 

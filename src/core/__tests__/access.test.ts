@@ -34,6 +34,9 @@ describe('resolveAccess', () => {
     expect(r.source).toBe('roles');
     expect(r.access.cells).toEqual(['male:5']);
   });
+  it('keeps a legacy admin an admin even if the snapshot says otherwise', () => {
+    expect(resolveAccess({ role: 'admin', access: { admin: false, cells: [] } }).access.admin).toBe(true);
+  });
   it('ignores unusable cells in a snapshot', () => {
     expect(storedAccess({ access: { cells: ['male:9', 'nonsense', 'male:3'] } })?.cells).toEqual(['male:3']);
   });
