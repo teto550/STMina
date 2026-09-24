@@ -50,7 +50,7 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
       <h2 className="tw:px-1 tw:text-xl tw:font-bold">{role ? 'تعديل دور' : 'دور جديد'}</h2>
       <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
         <label className="tw:flex tw:flex-col tw:gap-3 tw:text-sm tw:font-bold">اسم الدور
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: تالتة بنين" />
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: تالتة أولاد" />
         </label>
       </section>
       <SwitchCard checked={admin} onChange={setAdmin} title="دور أدمن" hint="الأدمن بيشوف ويعدّل كل حاجة في القسمين" />
@@ -68,7 +68,7 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
                 ) : (
                   <>
                     <CellToggle label={`${GRADE_NAMES[g]} بنات`} checked={cells.has(cellOf('female', g))} onChange={(v) => toggle([cellOf('female', g)], v)} tone="girls">بنات</CellToggle>
-                    <CellToggle label={`${GRADE_NAMES[g]} بنين`} checked={cells.has(cellOf('male', g))} onChange={(v) => toggle([cellOf('male', g)], v)} tone="boys">بنين</CellToggle>
+                    <CellToggle label={`${GRADE_NAMES[g]} أولاد`} checked={cells.has(cellOf('male', g))} onChange={(v) => toggle([cellOf('male', g)], v)} tone="boys">أولاد</CellToggle>
                   </>
                 )}
               </div>

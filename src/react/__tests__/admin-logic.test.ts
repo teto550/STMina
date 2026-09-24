@@ -3,7 +3,7 @@ import type { AdminData } from '@/react/admin/types';
 
 const data = (): AdminData => ({
   roles: [
-    { id: 'b3', name: 'تالتة بنين', admin: false, cells: ['male:3'] },
+    { id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] },
     { id: 'adm', name: 'أدمن', admin: true, cells: [] },
   ],
   people: [
@@ -73,7 +73,7 @@ describe('planRoleSave', () => {
     expect(planRoleSave({ id: 'b3', name: 'x', admin: false, cells: ['male:3'] }, ['p1', 'p2'], data()).errors[0]).toContain('ماريا');
   });
   it('a removed member loses the role and gets a refreshed snapshot', () => {
-    const plan = planRoleSave({ id: 'b3', name: 'تالتة بنين', admin: false, cells: ['male:3'] }, [], data());
+    const plan = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] }, [], data());
     expect(plan.ops).toContainEqual({ col: 'deacons', id: 'p1', data: { roleIds: [] }, merge: true });
   });
 });

@@ -30,7 +30,7 @@ const boysCols = GRADES.filter((g) => !isMixedGrade(g)).map((g) => ({ key: `m${g
 const groups = [
   { title: 'بنات وأولاد (خادمات)', cols: mixedCols },
   { title: 'بنات', cols: girlsCols },
-  { title: 'بنين', cols: boysCols },
+  { title: 'أولاد', cols: boysCols },
 ];
 const columns = groups.flatMap((g) => g.cols);
 

@@ -19,10 +19,10 @@ export function Chip({ children, tone = 'plain' }: { children: ReactNode; tone?:
 
 const GRADE_NAMES = ['', 'أولى', 'تانية', 'تالتة', 'رابعة', 'خامسة', 'سادسة'];
 
-/** "3 بنين", "1 و2 بنات وأولاد"... */
+/** "3 أولاد", "1 و2 بنات وأولاد"... */
 export function cellLabel(cell: Cell): string {
   const { gender, grade } = parseCell(cell);
-  return `${GRADE_NAMES[grade]} ${gender === 'female' ? 'بنات' : 'بنين'}`;
+  return `${GRADE_NAMES[grade]} ${gender === 'female' ? 'بنات' : 'أولاد'}`;
 }
 
 export function CellChips({ cells }: { cells: Cell[] }) {

@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 import type { AdminData } from '@/react/admin/types';
 
 const data: AdminData = {
-  roles: [{ id: 'b3', name: 'تالتة بنين', admin: false, cells: ['male:3'] }, { id: 'adm', name: 'أدمن', admin: true, cells: [] }],
+  roles: [{ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] }, { id: 'adm', name: 'أدمن', admin: true, cells: [] }],
   people: [
     { id: 'p1', name: 'مينا', gender: 'male', roleIds: ['b3'] },
     { id: 'p2', name: 'ماريا', gender: 'female', roleIds: [] },
@@ -22,9 +22,9 @@ beforeEach(() => commit.mockClear());
 describe('AdminRoles screen', () => {
   it('shows the roles with their classes and member counts', async () => {
     render(<AdminRoles close={() => undefined} />);
-    const card = (await screen.findByRole('button', { name: /تالتة بنين/ }));
+    const card = (await screen.findByRole('button', { name: /تالتة أولاد/ }));
     expect(card).toHaveTextContent('1 شخص');
-    expect(card).toHaveTextContent('تالتة بنين');
+    expect(card).toHaveTextContent('تالتة أولاد');
   });
 
   it('people tab: lists everyone, filters by gender and by name in the browser', async () => {
@@ -49,7 +49,7 @@ describe('AdminRoles screen', () => {
     await user.click(screen.getByRole('checkbox', { name: /بيتر/ }));
     await user.click(screen.getByRole('button', { name: 'إضافة لدور' }));
     const dialog = screen.getByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: 'تالتة بنين' }));
+    await user.click(within(dialog).getByRole('button', { name: 'تالتة أولاد' }));
     await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
     const ops = commit.mock.calls[0]![0] as { col: string; id: string }[];
     expect(ops.map((o) => `${o.col}/${o.id}`)).toEqual(['deacons/p3', 'users/u3']);
@@ -58,7 +58,7 @@ describe('AdminRoles screen', () => {
   it('role editor: a role with members cannot be deleted', async () => {
     const user = userEvent.setup();
     render(<AdminRoles close={() => undefined} />);
-    await user.click(await screen.findByRole('button', { name: /تالتة بنين/ }));
+    await user.click(await screen.findByRole('button', { name: /تالتة أولاد/ }));
     await user.click(screen.getByRole('button', { name: 'حذف' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('انقلهم');
     expect(commit).not.toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('AdminRoles screen', () => {
   it('role editor: the member picker disables people whose gender does not fit', async () => {
     const user = userEvent.setup();
     render(<AdminRoles close={() => undefined} />);
-    await user.click(await screen.findByRole('button', { name: /تالتة بنين/ }));
+    await user.click(await screen.findByRole('button', { name: /تالتة أولاد/ }));
     await user.click(screen.getByRole('button', { name: '+ إضافة أشخاص' }));
     expect(screen.getByRole('checkbox', { name: /ماريا/ })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /بيتر/ })).toBeEnabled();
