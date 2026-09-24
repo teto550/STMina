@@ -1,6 +1,6 @@
 // Roles step 2: adds the NEW fields of the roles design, additively (nothing existing is changed or removed):
-//   students: gender ('male'), cell ('male:<grade>')      deacons: roleIds ([]), uid (linked login)      users: deaconId
-// Accounts are linked to their person by exact name (trimmed); unmatched accounts, duplicate names and kids that are not male
+//   students: gender ('male'), cell ('male:<grade>')      deacons: roleIds ([])      users: deaconId
+// Accounts are linked to their person by name (the word "مستر" and extra spaces ignored, unique matches only); several accounts may point to one person; unmatched accounts, duplicate names and kids that are not male
 // (girls' section, grade 3+) are only REPORTED, never written. Only documents missing a field are touched (safe to run twice).
 //   node tools/firestore/backfill-access.cjs                       dry run: report + local backup list, writes nothing
 //   node tools/firestore/backfill-access.cjs --apply --limit 1     test on one document per collection first
@@ -17,6 +17,7 @@ const gradeNo = s => { const w = GRADE_WORDS.find(([k]) => (s || '').includes(k)
 const str = (d, f) => d.fields && d.fields[f] && d.fields[f].stringValue;
 const has = (d, f) => !!(d.fields && d.fields[f]);
 const id = d => d.name.split('/').pop();
+const norm = s => (s || '').replace(/(?<![\u0621-\u064A])مستر(?![\u0621-\u064A])/g, ' ').replace(/\s+/g, ' ').trim();
 
 async function plan() {
   const [students, deacons, users] = await Promise.all(['students', 'deacons', 'users'].map(listAll));
@@ -32,19 +33,16 @@ async function plan() {
     writes.push({ doc: s, col: 'students', fields: f });
   }
   const byName = new Map();
-  for (const d of deacons) { const n = (str(d, 'name') || '').trim(); byName.set(n, [...(byName.get(n) || []), d]); }
+  for (const d of deacons) { const n = norm(str(d, 'name')); byName.set(n, [...(byName.get(n) || []), d]); }
   report.duplicateNames = [...byName].filter(([n, v]) => n && v.length > 1).map(([n]) => n);
-  const uidOf = new Map();
   for (const u of users) {
-    const n = (str(u, 'name') || '').trim(), m = byName.get(n);
+    const n = norm(str(u, 'name')), m = byName.get(n);
     if (!m || m.length !== 1) { report.unmatchedUsers.push(`${id(u)} (${n || 'no name'}, ${str(u, 'role') || '-'})`); continue; }
-    uidOf.set(id(m[0]), id(u));
     if (has(u, 'deaconId')) report.alreadyLinked++; else writes.push({ doc: u, col: 'users', fields: { deaconId: { stringValue: id(m[0]) } } });
   }
   for (const d of deacons) {
     const f = {};
     if (!has(d, 'roleIds')) f.roleIds = { arrayValue: {} };
-    if (!has(d, 'uid') && uidOf.has(id(d))) f.uid = { stringValue: uidOf.get(id(d)) };
     if (Object.keys(f).length) writes.push({ doc: d, col: 'deacons', fields: f });
   }
   return { writes, report, counts: { students: students.length, deacons: deacons.length, users: users.length } };

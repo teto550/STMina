@@ -20,4 +20,4 @@ Always take a backup of what you delete first. On the free (Spark) plan there ar
 so dump the documents to JSON under `backups/` (git-ignored).
 
 ## backfill-access.cjs
-Roles step 2 (docs/ROLES-DESIGN.md): adds only NEW fields (`students.gender/cell`, `deacons.roleIds/uid`, `users.deaconId`); dry run by default, `--apply --limit 1`, then `--apply`. Reports unmatched accounts and duplicate names without writing them.
+Roles step 2 (docs/ROLES-DESIGN.md): adds only NEW fields (`students.gender/cell`, `deacons.roleIds`, `users.deaconId`); dry run by default, `--apply --limit 1`, then `--apply`. Reports unmatched accounts and duplicate names without writing them.

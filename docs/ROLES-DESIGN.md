@@ -52,7 +52,7 @@ roster get a person record created for them (migration step).
 | Data | New field | Notes |
 | --- | --- | --- |
 | `roles/{id}` (new) | `name`, `admin`, `cells[]`, `createdAt`, `updatedAt` | edited only by admins |
-| `deacons/{id}` | `gender` (done), `roleIds[]`, `uid` | person; `grade`/`section` become legacy |
+| `deacons/{id}` | `gender` (done), `roleIds[]` (no `uid`: several logins may belong to one person, the link is `users.deaconId`) | person; `grade`/`section` become legacy |
 | `users/{uid}` | `deaconId`, `access` (computed snapshot) | snapshot lets login and (later) security rules read one document |
 | `students` | `gender` (all existing = male), `cell` (`male:4`), `deaconId` | `section` stays (denormalised, recomputed at promotion) |
 | later: `attendance`, `deaconAttendance`, `parts_distribution` | `cell` / `deaconId` | only needed for server-side rules |
