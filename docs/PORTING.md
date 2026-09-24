@@ -244,3 +244,6 @@ Duplicate `users` profiles were removed here with a one-off script that has been
 
 ### C20 - Roles step 3: access module (dual mode)
 New `src/core/access.ts` (+ test), `state.access/accessSource` (`core/state.ts`), `resolveAccess` call in `features/auth/auth.ts` before the section gate, `access` in the offline profile cache with a 24 h limit (`core/firestore-helpers.ts`, `features/shell/app-shell.ts`). No visible change yet.
+
+### C21 - Firestore rules now in the repo
+`firestore.rules` (copied from the deployed rules) + `firebase.json` entry. Roles change: new `roles/{id}` block (read: approved, write: admin) and non-admins cannot change `users.deaconId` / `users.access`. Rules are per project: in the other project, first copy ITS deployed rules (`firebase_get_security_rules`), then add the same two changes.

@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Helpers =====
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function myDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isApproved() {
+      return isSignedIn() && myDoc().status == 'approved';
+    }
+    function isAdmin() {
+      return isApproved() && myDoc().role == 'admin';
+    }
+    function isLead() {
+      return isApproved() && myDoc().role == 'deacon' && myDoc().isLead == true;
+    }
+    // 🆕 مسؤول مرحلة (نفس منطق التطبيق: isPhaseLead أو عنده phaseGrades)
+    function isPhaseLead() {
+      return isApproved()
+        && (myDoc().get('isPhaseLead', false) == true
+            || myDoc().get('phaseGrades', []).size() > 0);
+    }
+
+    // ===== users =====
+    // كل واحد بيقرا ملفه بس، أو الأدمن يقرا الكل، أو أي معتمد يقرا حسابات المعتمدين
+    // التانيين (محتاجينها لدليل الخدام)، أو مسؤول سنة يقرا طلبات "pending" بتاعة سنته
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        (isApproved() && resource.data.status == 'approved') ||
+        (isLead() && resource.data.status == 'pending')
+      );
+
+      // التسجيل: يقدر ينشئ ملفه هو بس، وإجباريًا status=pending و role=deacon —
+      // ممنوع حد يسجل نفسه admin أو approved من الأول
+      // 🆕 وكمان ممنوع يسجل نفسه ومعاه isLead / isPhaseLead / phaseGrades
+      // (عشان الصلاحيات دي مبقتش تتمنح إلا بعد موافقة الأدمن/المسؤول)
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role   == 'deacon'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.email  == request.auth.token.email
+        && !('isLead' in request.resource.data)
+        && !('isPhaseLead' in request.resource.data)
+        && !('phaseGrades' in request.resource.data);
+
+      // التعديل: صاحب الحساب يعدل بياناته الشخصية بس (من غير ما يغيّر role/status/isLead
+      // بنفسه)، أو الأدمن يعدل أي حاجة، أو مسؤول السنة يقبل/يرفض طلبات سنته بس
+      // 🆕 صاحب الحساب كمان ممنوع يغيّر isPhaseLead / phaseGrades بنفسه
+      // (من غير كده أي خادم كان يقدر يخلي نفسه مسؤول مرحلة ويشوف الباسوردات)
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId
+            && request.resource.data.role   == resource.data.role
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.isLead == resource.data.isLead
+            && request.resource.data.get('isPhaseLead', false) == resource.data.get('isPhaseLead', false)
+            && request.resource.data.get('phaseGrades', null)  == resource.data.get('phaseGrades', null)
+            // roles design: the person link and the access snapshot are set by an admin only
+            && request.resource.data.get('deaconId', null) == resource.data.get('deaconId', null)
+            && request.resource.data.get('access', null)   == resource.data.get('access', null))
+        || (isLead() && resource.data.grade == myDoc().grade
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.isLead == resource.data.isLead);
+
+      allow delete: if isAdmin();
+    }
+
+    // ===== roles (docs/ROLES-DESIGN.md): { name, admin, cells[] }; every approved account reads, only admins write =====
+    match /roles/{roleId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+
+    // ===== deacons (قايمة أسماء الخدام المعتمدة — بتتقرا في فورم التسجيل قبل ما يعمل حساب) =====
+    match /deacons/{docId} {
+      allow read: if true;              // لازم عشان تظهر في قايمة "الاسم الكامل" وقت التسجيل
+      allow write: if isAdmin();
+    }
+
+    // ===== students =====
+    match /students/{docId} {
+      allow read, delete: if isApproved();
+
+      // 🆕 إنشاء مخدوم: ممنوع حد غير الأدمن يحط kidId
+      allow create: if isApproved()
+        && (isAdmin() || !('kidId' in request.resource.data));
+
+      // 🆕 تعديل: لو المخدوم عنده kidId ممنوع يتغير أو يتشال نهائيًا.
+      // ولو معندوش، الأدمن بس هو اللي يضيفه (وقت رفع الشيت).
+      allow update: if isApproved() && (
+        ('kidId' in resource.data)
+          ? request.resource.data.get('kidId', null) == resource.data.kidId
+          : (isAdmin() || !('kidId' in request.resource.data))
+      );
+    }
+
+    // 🆕 ===== student_secrets (باسوردات المخدومين) =====
+    // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش ولا بيتمسح.
+    // get: أدمن أو مسؤول مرحلة (مستند واحد). list: أدمن بس (عشان محدّش يسحب الكل).
+    match /student_secrets/{docId} {
+      allow get: if isAdmin() || isPhaseLead();
+      allow list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.password is string;
+      allow update, delete: if false;
+    }
+
+    // ===== attendance / deaconAttendance =====
+    match /attendance/{docId} {
+      allow read, write: if isApproved();
+    }
+    match /deaconAttendance/{docId} {
+      allow read, write: if isApproved();
+    }
+
+    // ===== activity_log =====
+    match /activity_log/{docId} {
+      allow read: if isAdmin();
+      allow create: if isApproved() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ===== config =====
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 🆕 ===== parts_distribution (توزيع الفقرات) =====
+    // كل خادم معتمد يقرا فقرات فصله، وبس مسؤول السنة/المرحلة بتاعة الفصل ده (أو الأدمن)
+    // يقدر يضيف أو يمسح — نفس منطق الأدمن في التطبيق، اتطبّق هنا كمان عشان محدّش
+    // يقدر يتحايل على التطبيق نفسه.
+    match /parts_distribution/{docId} {
+      allow read: if isApproved();
+      allow create: if isApproved() && (
+        isAdmin() ||
+        (isLead() && myDoc().grade == request.resource.data.grade) ||
+        (isPhaseLead() && request.resource.data.grade in myDoc().get('phaseGrades', []))
+      ) && request.resource.data.createdByUid == request.auth.uid;
+      allow delete: if isApproved() && (
+        isAdmin() ||
+        (isLead() && myDoc().grade == resource.data.grade) ||
+        (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
+      );
+      allow update: if false;
+    }
+
+    // أي حاجة تانية غير كده: ممنوعة
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
