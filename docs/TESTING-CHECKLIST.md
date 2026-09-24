@@ -79,5 +79,5 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] Admin: switch-section item and 🙏 الخدام chip still there. Admin role given to a new person: register with that email, admin approves the request, the account becomes an admin (👑) after login.
 - [ ] Approving a pending servant as admin links the account to the person (users.deaconId) and copies the role access.
 - [ ] Add a kid in the boys' section (gets gender male + cell), and in the girls' section grade 1 (the ولد/بنت choice appears; grade 3 does not show it).
-- [ ] Kids' passwords: only the admin sees them (a phase lead no longer does). Deploy the rules first.
+- [ ] Kids' passwords: only the admin sees them (a phase lead no longer does). Rules are deployed (2026-09-25).
 - [ ] Rename a servant (edit screen and admin screen): kids, attendance and parts follow.
