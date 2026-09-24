@@ -20,7 +20,7 @@ export function PersonList({ data, selected, onToggle, forRole, showRoles = true
   const label = (p: AdminPerson) => (p.gender === 'female' ? 'خادمة' : 'خادم');
   return (
     <div className="tw:flex tw:flex-col tw:gap-3">
-      <input className={inputClass} type="search" placeholder="🔍 دوّر على اسم" aria-label="بحث بالاسم" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input className={inputClass} type="text" placeholder="ابحث بالاسم" aria-label="بحث بالاسم" value={query} onChange={(e) => setQuery(e.target.value)} />
       <Segmented<GenderFilter> label="النوع" value={gender} onChange={setGender}
         options={[{ value: 'all', label: 'الكل' }, { value: 'male', label: 'خدام' }, { value: 'female', label: 'خادمات' }]} />
       {extraFilter && (
