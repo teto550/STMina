@@ -111,5 +111,11 @@ The live site still runs the OLD code, so every data step must be harmless to it
 - **Actions across classes** (promoting kids to the next grade, bulk imports, attendance clean-up): postponed. Graduation is still months
   away, so nothing is decided; see `docs/TODO-CLEANUP.md` section C. Until then those stay as they are today.
 
+## 9b. Notes from the user (2026-09-25, after the list of agreed changes)
+- **Only admins assign roles.** Adding or removing a person to/from a role is always done by an admin, in the admin screen.
+- **The admin screen is the same in the boys' and the girls' section.** It is not scoped by the current section: it always shows everything.
+- **The picker for adding people to a role lists ALL servants, male and female**, with a local (in-browser, no reads) search box and a
+  gender filter: الكل / خدام (male) / خادمات (female). The same search + gender filter is on the People tab.
+
 ## 10. Still open
 Nothing that blocks the start. Cross-class actions are postponed (see the to-do list).
