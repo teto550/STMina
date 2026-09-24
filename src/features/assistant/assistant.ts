@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { http } from '@/core/http';
 import { updateDoc, doc } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { bestVoiceMatch, normalizeArabicVoice, speakAr } from '@/features/assistant/voice';
@@ -9,6 +10,7 @@ import { isDeaconPresentToday } from '@/features/servants/deacon-attendance';
 import { doRemoveAttendance, markPresent } from '@/features/attendance/attendance';
 import { DEACONS } from '@/features/servants/deacons';
 import { attFilteredStudents } from '@/features/students/students';
+import { ensureCoreData, ensureDeaconAttendance } from '@/core/data';
 
 // ===== المساعد الذكي (Gemini) — بيتنادى عن طريق Cloudflare Worker مجاني
 // علشان مفتاح الـ API يفضل مخبي وميظهرش خالص في كود الصفحة اللي ظاهر لأي حد.
@@ -170,13 +172,9 @@ async function assistantAskGemini(question) {
   const data = buildAssistantDataSummary();
   // الطلب بيروح للـ Cloudflare Worker (مجاني بالكامل) اللي هو اللي بيكلم Gemini فعليًا
   // ومعاه مفتاح الـ API المخبي هناك — الصفحة نفسها متعرفش المفتاح خالص.
-  const res = await fetch(ASSISTANT_WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, data })
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
+  const res = await http.post(ASSISTANT_WORKER_URL, { question, data }, { validateStatus: () => true });
+  const json = (res.data && typeof res.data === 'object') ? res.data : {};
+  if (res.status < 200 || res.status >= 300) {
     throw new Error(json.error || `خطأ من السيرفر (${res.status})`);
   }
   return json.answer || null;
@@ -560,6 +558,8 @@ window.toggleVoiceAssistant = (forceStop) => {
   assistantRecognition = assistantRecognition || initAssistantRecognition();
   if (!assistantRecognition) return;
   assistantActive = true;
+  // the assistant works on the students, the servants and today's attendance: load them now if the screens didn't
+  ensureCoreData().catch(() => {}); ensureDeaconAttendance().catch(() => {});
   try { assistantRecognition.start(); } catch (e) {}
   if (btn) { btn.textContent = '⏹'; btn.style.background = 'linear-gradient(135deg,#e74c3c,#c0392b)'; }
   if (status) status.style.display = 'block';

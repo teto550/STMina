@@ -7,6 +7,7 @@ import { GRADES, inCurrentSection, sectionTag } from '@/core/section';
 import { getUserManagedGrades } from '@/core/session';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 import { logActivity } from '@/core/presence';
+import { getDocsTtl } from '@/core/firestore-helpers';
 
 // ===== DEACON ATTENDANCE (حضور الخدام أنفسهم) — نوعين: مدارس الأحد + اجتماع الخدام =====
 const DEACON_ATT_TYPES = {
@@ -46,7 +47,7 @@ export function deaconAttendanceCount(name, type) {
 
 export async function loadDeaconAttendance() {
   try {
-    const snap = await getDocs(collection(db, 'deaconAttendance'));
+    const snap = await getDocsTtl(collection(db, 'deaconAttendance'), 'deaconAttendance:' + sectionTag());
     DEACON_ATTENDANCE = { sunday: {}, meeting: {} };
     todayDeaconAttendance = { sunday: {}, meeting: {} };
     const today = todayKey();

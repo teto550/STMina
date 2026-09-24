@@ -564,7 +564,7 @@ window.commitCredsImport = async () => {
     }
     logActivity('رفع ID وباسوردات المخدومين', `${plan.newIds} ID / ${plan.newPws} باسورد`);
     log('⏳ تحديث قائمة المخدومين…');
-    await loadStudents();
+    await loadStudents({ force: true });
     credsCache = null; credsPlan = null;
     log('🎉 تمّ. الـ ID والباسورد بقوا ثابتين.');
     btn.textContent = '✔ تم';

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore';
 import { state } from '@/core/state';
-import { getDocsFast } from '@/core/firestore-helpers';
+import { getDocsTtl, countSnapshot } from '@/core/firestore-helpers';
 import { db } from '@/core/firebase';
 import { todayKey } from '@/core/utils';
 import { inCurrentSection, sectionTag } from '@/core/section';
@@ -12,9 +12,16 @@ import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 
 // ===== SYNC ATTENDANCE COUNTS =====
 // ===== ATTENDANCE =====
-export async function loadAllAttendance() {
-  const snap = await getDocsFast(collection(db,'attendance'));
-  state.allAttendance  = {};
+// Attendance history is NOT loaded at start. 'recent' = the last 90 days (enough for "absent last time", the
+// statistics and the servant lists), 'full' = the whole collection (export, import, cleanup). Both go through the
+// short-lived read cache; `force` reads from the server.
+const RECENT_DAYS = 90;
+export async function loadAttendance(level = 'recent', { force = false } = {}) {
+  const col = collection(db, 'attendance');
+  const cutoff = new Date(Date.now() - RECENT_DAYS * 86400000).toISOString().slice(0, 10);
+  const q = level === 'full' ? col : query(col, where('date', '>=', cutoff));
+  const snap = await getDocsTtl(q, `attendance-${level}:${sectionTag()}`, { force });
+  state.allAttendance = {};
   const today = todayKey();
   snap.docs.forEach(d => {
     const data = d.data();
@@ -22,8 +29,12 @@ export async function loadAllAttendance() {
     if (!state.allAttendance[data.date]) state.allAttendance[data.date] = {};
     state.allAttendance[data.date][data.studentId] = true;
   });
+  if (Object.keys(state.todayAttendance).length) state.allAttendance[today] = { ...state.todayAttendance }; // keep what the live listener already knows
+  state.attendanceLevel = level;
   updateStats();
 }
+// after imports / cleanups: read everything again from the server
+export const loadAllAttendance = () => loadAttendance('full', { force: true });
 
 // حضور النهارده بس، بث لحظي: أي خادم يسجل أو يشيل حضور، كل الخدام التانيين
 // اللي فاتحين الموقع في نفس اللحظة يشوفوا التحديث فوراً من غير ما يعملوا reload
@@ -33,6 +44,7 @@ export function listenTodayAttendance() {
   state.todayAttendanceUnsub = onSnapshot(
     query(collection(db,'attendance'), where('date','==', today)),
     snap => {
+      countSnapshot('attendance today (live)', snap);
       state.todayAttendance = {};
       snap.docs.forEach(d => { if (inCurrentSection(d.data())) state.todayAttendance[d.data().studentId] = true; });
       if (!state.allAttendance[today]) state.allAttendance[today] = {};

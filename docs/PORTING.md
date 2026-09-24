@@ -129,6 +129,34 @@ QR turned out to be unnecessary, so both generating and scanning QR codes were r
   (it used to sit below the add buttons, the sort dropdown and the full servants list). Markup move only, no code change
   (`loadPendingDeacons()` in `src/features/servants/approvals.ts` still fills it).
 
+### C12. Read reduction: home screen, lazy loading, short cache, activity viewer (pending until committed)
+Full explanation in `docs/READ-OPTIMIZATION.md`. Nothing is project-specific; no new Firestore index is needed.
+- **Home screen, nothing loaded at start.** `index.html`: new `#tab-home` panel + `#tab-btn-home` tab (default), tiles, a
+  "refresh data" button; `#tab-attendance` no longer visible by default. `src/features/shell/tabs.ts` rewritten: `switchTab`,
+  `openTab`, `loadTabData` (each screen loads only what it needs), `reloadOpenTab`, `refreshData`. `app-shell.ts`: `initApp`
+  only builds the UI and shows home; `switchActiveGrade` reloads only the open screen. CSS `.home-*` in `app.css`.
+- **Lazy loader + short cache.** New `src/core/data.ts` (`ensureStudents/Deacons/DeaconUsers/Attendance/DeaconAttendance/
+  TodayListener/CoreData`, `refreshAllData`); `getDocsTtl()`/`clearReadCache()` in `core/firestore-helpers.ts` serve a query from
+  Firestore's local cache for 5 minutes after it was fetched (`rc:` keys in localStorage). Kept in MEMORY only (a reload re-fetches). Loaders using it: students (per class),
+  servants, approved accounts, attendance, servants' attendance.
+- **Students** are fetched per class (`where('grade','==',...)`, name sort in memory) instead of everything.
+- **Attendance history** is no longer loaded at start: `loadAttendance('recent'|'full')` in `attendance.ts` (recent = last 90 days).
+  `recent` for the statistics, the servant pages and the "absent last time" chip; `full` for export and imports (duplicate check).
+  The student profile now queries only that student's attendance. `state.attendanceLevel` added.
+- **Other entry points load on demand:** dashboard (`openDashboard`), voice assistant (on switch-on), export modal, imports.
+- **Activity viewer rewritten** (`servants/online.ts`, markup in `index.html`): nothing is read until the tab opens; 20 entries
+  per page, next page on scroll (IntersectionObserver); servant / type / date / class filters applied by the server on
+  "apply". No free-text search (Firestore cannot). Needs composite indexes: `firestore.indexes.json` (new, registered under
+  `firestore` in `firebase.json`) -> `firebase deploy --only firestore:indexes` in EACH Firebase project. Removed the live
+  listener and "delete all". Tab-open logging removed (`tabs.ts`).
+- **Heartbeat removed:** `startPresence`/`stopPresence` deleted; instead `touchLastActive(uid)` (`core/presence.ts`, called from
+  `enterApp`) writes `users.lastActive` once per page load. `lastActiveTab` is no longer written.
+- **axios:** `npm i axios`; `src/core/http.ts` is the one instance for every non-Firebase call (`push.ts` x2, `assistant.ts`
+  x1 were `fetch`). CDN `<script>` loaders (EmailJS, SheetJS, ExcelJS) are still runtime downloads; candidates for npm packages.
+- Class switch: `loadStudents` captures the class it loads for (no mixing when switching during a load); home label follows.
+- Logging out clears the cache (`refreshAllData()` in the signed-out branch of `auth.ts`).
+- Dev-only read counter `window.__reads` (`core/firestore-helpers.ts`, `countSnapshot`/`countReads`).
+
 ## Firestore data notes (data is per project, but the same checks apply to the other project)
 Findings for THIS project on 2026-09-24 (Spark plan, database `(default)`). Nothing here is ported by copying data;
 re-run `node tools/firestore/analyze.cjs` in the other project and compare with the collections used in `src/`.

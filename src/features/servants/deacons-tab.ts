@@ -8,6 +8,7 @@ import { logActivity } from '@/core/presence';
 import { loadPendingDeacons } from '@/features/servants/approvals';
 import { GRADES } from '@/core/section';
 import { renderTodayList } from '@/features/attendance/attendance';
+import { ensureAttendance } from '@/core/data';
 import { avatarBox } from '@/features/students/photos';
 
 window.buildDeaconChips = async function() {
@@ -389,6 +390,13 @@ window.renderDeaconList = () => {
     return;
   }
   if (filterTabs) filterTabs.style.display = '';
+
+  // this page shows "attended / absent last time", which needs the recent attendance history: loaded on demand
+  if (!state.attendanceLevel) {
+    cont.innerHTML = '<div class="loading"><div class="spinner"></div>جاري التحميل…</div>';
+    ensureAttendance('recent').then(() => window.renderDeaconList());
+    return;
+  }
 
   const base = state.allStudents.filter(s => s.deacon === state.currentDeacon);
   let list = base;

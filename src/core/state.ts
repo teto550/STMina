@@ -12,10 +12,11 @@ export const state = {
   currentUserIsPhaseLead: false, // هل هو "مسؤول" مرحلة (فصلين/أكثر)
   activeGrade: null, // السنة الدراسية المعروضة/بيتم التعامل معاها دلوقتي
   servantsDirectoryOpen: false, // هل خانة "🙏 الخدام" (جنب الفصول) مفتوحة دلوقتي بدل تابات الفصل العادية
-  lastActiveMainTab: 'attendance', // آخر تاب رئيسي كان مفتوح قبل ما ندخل خانة الخدام
+  lastActiveMainTab: 'home', // آخر تاب رئيسي كان مفتوح قبل ما ندخل خانة الخدام
   allStudents: [],
   todayAttendance: {},
   allAttendance: {}, // { date: { studentId: true } }
+  attendanceLevel: null, // null = not loaded, 'recent' = last ~90 days, 'full' = everything (loaded on demand, see core/data.ts)
   todayAttendanceUnsub: null, // realtime listener لحضور النهارده — بيخلي أي خادم تاني يشوف الحضور لحظياً
   currentAttGrade: 'الكل',
   currentStuGrade: 'الكل',

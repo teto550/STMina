@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { collection, query, where } from 'firebase/firestore';
 import { state } from '@/core/state';
-import { getDocsFast } from '@/core/firestore-helpers';
+import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
 import { db } from '@/core/firebase';
 import { SECTION } from '@/core/section';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
@@ -16,7 +16,7 @@ export let DEACON_ADMIN_MAP = {};  // { name: { uid, role, email, grade, isLead 
 // Load ALL deacons (كل السنين) from Firestore — single source of truth for everyone
 export async function loadDeaconsList() {
   try {
-    const snap = await getDocsFast(collection(db, 'deacons'));
+    const snap = await getDocsTtl(collection(db, 'deacons'), 'deacons:' + SECTION);
     state.ALL_DEACONS_RAW = snap.docs
       .map(d => ({ id: d.id, name: d.data().name, grade: d.data().grade || '', section: d.data().section || 'boys' }))
       .filter(x => x.name && x.section === SECTION);
@@ -33,14 +33,14 @@ export function applyActiveGradeDeacons() {
     .filter(x => (!state.activeGrade || x.grade === state.activeGrade) && x.section === SECTION)
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
     .forEach(x => { DEACONS.push(x.name); DEACON_DOC_IDS[x.name] = x.id; });
-  buildDeaconChips();
+  if (document.getElementById('tab-deacons')?.style.display !== 'none') buildDeaconChips(); // only when that screen is open (it reads the accounts)
   refreshDeaconDropdowns();
 }
 
 // بيجيب كل الحسابات المعتمدة (users) عشان نعرف مين أدمن/مسؤول ومين لأ، ونربطهم بالاسم
 export async function loadDeaconUsersMap() {
   try {
-    const snap = await getDocsFast(query(collection(db, 'users'), where('status', '==', 'approved')));
+    const snap = await getDocsTtl(query(collection(db, 'users'), where('status', '==', 'approved')), 'users-approved:' + SECTION);
     const map = {};
     snap.docs.forEach(d => {
       const u = d.data();

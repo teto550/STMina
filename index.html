@@ -185,7 +185,8 @@
 
   <div class="app-content">
     <div class="tabs" id="main-tabs">
-      <button class="tab active" id="tab-btn-attendance" onclick="switchTab('attendance',this)">الحضور</button>
+      <button class="tab active" id="tab-btn-home" onclick="switchTab('home',this)">🏠 الرئيسية</button>
+      <button class="tab" id="tab-btn-attendance" onclick="switchTab('attendance',this)">الحضور</button>
       <button class="tab" id="tab-btn-students" onclick="switchTab('students',this)" style="display:none">المخدومين</button>
       <button class="tab" id="tab-btn-deacons" onclick="switchTab('deacons',this)"><span id="deacons-tab-label">الخدام</span><span id="deacons-tab-badge"></span></button>
       <button class="tab" id="tab-btn-parts" onclick="switchTab('parts',this)">توزيع الفقرات</button>
@@ -193,8 +194,23 @@
       <button class="tab" id="tab-btn-online" onclick="switchTab('online',this)" style="display:none">👁 متابعة</button>
     </div>
 
+    <!-- HOME: the app opens here and reads nothing; each screen loads its own data when it is opened -->
+    <div id="tab-home">
+      <div class="home-class" id="home-class"></div>
+      <p class="home-hint">اختر الخانة اللي عايز تفتحها. البيانات بتتحمل لما تفتح الخانة بس.</p>
+      <div class="home-grid">
+        <button class="home-tile" onclick="openTab('attendance')"><span class="home-icon">✅</span><span>الحضور</span></button>
+        <button class="home-tile" id="home-tile-students" onclick="openTab('students')"><span class="home-icon">👥</span><span>المخدومين</span></button>
+        <button class="home-tile" onclick="openTab('deacons')"><span class="home-icon">🙏</span><span>الخدام</span></button>
+        <button class="home-tile" onclick="openTab('parts')"><span class="home-icon">📖</span><span>توزيع الفقرات</span></button>
+        <button class="home-tile" onclick="openTab('stats')"><span class="home-icon">📊</span><span>إحصائيات</span></button>
+        <button class="home-tile" id="home-tile-online" onclick="openTab('online')" style="display:none"><span class="home-icon">👁</span><span>متابعة</span></button>
+      </div>
+      <button class="home-refresh" onclick="refreshData()">🔄 تحديث البيانات</button>
+    </div>
+
     <!-- ATTENDANCE TAB -->
-    <div id="tab-attendance">
+    <div id="tab-attendance" style="display:none">
       <div class="date-card">
         <div class="date-icon">📅</div>
         <div>
@@ -551,20 +567,31 @@
         <button class="tab" id="online-subtab-btn-attendance" onclick="switchOnlineSubTab('attendance',this)">✅ الحضور</button>
       </div>
 
-      <!-- ACTIVITY SUB-PANEL -->
+      <!-- ACTIVITY SUB-PANEL: on demand, 20 at a time, next page on scroll, filters applied by the server when "apply" is pressed -->
       <div id="online-subpanel-activity">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px">
-          <label class="field-label">🙏 اختر الخادم</label>
-          <select id="online-deacon-filter" class="field-select" style="margin-bottom:0" onchange="renderOnlineTab()">
+          <label class="field-label">🙏 الخادم</label>
+          <select id="online-deacon-filter" class="field-select">
             <option value="">كل الخدام</option>
           </select>
+          <label class="field-label">📌 نوع النشاط</label>
+          <select id="activity-type" class="field-select">
+            <option value="">كل الأنواع</option>
+          </select>
+          <div style="display:flex;gap:10px;margin-bottom:16px">
+            <div style="flex:1"><label class="field-label">من تاريخ</label><input id="activity-from" class="field-input" type="date" style="margin-bottom:0"></div>
+            <div style="flex:1"><label class="field-label">إلى تاريخ</label><input id="activity-to" class="field-input" type="date" style="margin-bottom:0"></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-primary" style="flex:2" onclick="applyActivityFilters()">🔎 تطبيق</button>
+            <button class="btn-primary" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="clearActivityFilters()">مسح</button>
+          </div>
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <p class="section-title" style="margin:0">📜 الأنشطة</p>
-          <button onclick="deleteAllActivities()" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:var(--danger);font-size:12px;padding:6px 12px;cursor:pointer">🗑 حذف الكل</button>
-        </div>
+        <p class="section-title" style="margin-bottom:14px">📜 الأنشطة <span id="activity-count" style="color:var(--text-dim);font-weight:600"></span></p>
         <div id="activity-list"><div class="loading"><div class="spinner"></div>جاري التحميل…</div></div>
+        <div id="activity-sentinel" style="height:1px"></div>
+        <div id="activity-bottom" style="text-align:center;padding:14px 0 30px;color:var(--text-dim);font-size:13px"></div>
       </div>
 
       <!-- ATTENDANCE SUB-PANEL -->

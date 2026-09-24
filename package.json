@@ -13,6 +13,7 @@
     "deploy:ghpages": "npm run build && gh-pages -d dist --dotfiles --message \"Deploy build\""
   },
   "dependencies": {
+    "axios": "^1.20.0",
     "firebase": "10.12.2"
   },
   "devDependencies": {

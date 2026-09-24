@@ -25,3 +25,7 @@ Nothing is ported yet and the user did not ask to port now; only keep the log ac
   (`activity_log` ~2,800 docs) add up fast; on 2026-09-24 repeated full scans exhausted it and the app showed
   "Quota exceeded". Never loop or repeat full scans; prefer small targeted reads.
 
+## REMINDER for the next working session
+The read-reduction work (home screen, lazy loading, cache, activity viewer, axios, once-per-load `lastActive`) has NOT been
+tested against real data. At the start of the next session remind the user and go through `docs/TESTING-CHECKLIST.md`
+(first step: `firebase deploy --only firestore:indexes`). Keep the checklist updated. Open decisions: see the end of that file.

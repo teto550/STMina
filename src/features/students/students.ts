@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { query, collection, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
+import { query, collection, orderBy, where, serverTimestamp, addDoc } from 'firebase/firestore';
 import { state } from '@/core/state';
-import { getDocsFast } from '@/core/firestore-helpers';
+import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
+import { ensureAttendance } from '@/core/data';
 import { db } from '@/core/firebase';
 import { inCurrentSection, sectionTag } from '@/core/section';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
@@ -11,10 +12,17 @@ import { todayKey } from '@/core/utils';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 
 // ===== STUDENTS =====
-export async function loadStudents() {
-  const snap = await getDocsFast(query(collection(db,'students'), orderBy('name')));
+export async function loadStudents({ force = false } = {}) {
+  // Only the active class is kept in memory, so ask the server for just that class instead of every student
+  // (was: read all students, then throw the other classes away). Equality on one field needs no extra index;
+  // the name sort (same order Firestore's orderBy('name') gave) is done here.
+  const grade = state.activeGrade; // the class this load is for: a class switch while loading must not mix data
+  const students = collection(db, 'students');
+  const snap = await getDocsTtl(grade ? query(students, where('grade', '==', grade)) : query(students, orderBy('name')), `students:${sectionTag()}:${grade || '*'}`, { force });
+  if (grade !== state.activeGrade) return; // the user switched class meanwhile: the newer load owns the data
   const all  = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(inCurrentSection);
-  state.allStudents = state.activeGrade ? all.filter(s => s.grade === state.activeGrade) : all;
+  if (grade) all.sort((a, b) => ((a.name || '') < (b.name || '') ? -1 : (a.name || '') > (b.name || '') ? 1 : 0));
+  state.allStudents = grade ? all.filter(s => s.grade === grade) : all;
   updateStats();
   renderStudentsList();
 }
@@ -60,10 +68,11 @@ window.addStudent = async () => {
   toggleAddStudentForm(); // اقفل الفورم تلقائي بعد الإضافة
 };
 
-window.setAttGrade = (g, btn) => {
+window.setAttGrade = async (g, btn) => {
   state.currentAttGrade = g;
   document.querySelectorAll('#att-grade-filter .grade-chip').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  if (g === 'غاب آخر مرة') await ensureAttendance('recent'); // this filter needs the recent attendance history
   updateStats();
   renderTodayList();
 };

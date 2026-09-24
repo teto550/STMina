@@ -6,9 +6,11 @@ import { GRADES, inCurrentSection } from '@/core/section';
 import { todayKey } from '@/core/utils';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
+import { ensureAttendance } from '@/core/data';
 
 // ===== EXPORT MODAL =====
-window.openExportModal = () => {
+window.openExportModal = async () => {
+  await ensureAttendance('full'); // the export lists every date, so it needs the whole history (loaded once, cached a few minutes)
   const dates   = Object.keys(state.allAttendance).sort().reverse();
   const cont    = document.getElementById('date-chips-container');
   state.selectedDates = [];

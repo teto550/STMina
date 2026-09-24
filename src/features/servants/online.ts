@@ -1,19 +1,38 @@
 // @ts-nocheck
-import { onSnapshot, query, collection, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { query, collection, orderBy, limit, startAfter, where, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
+import { countReads } from '@/core/firestore-helpers';
 import { state } from '@/core/state';
 import { DEACONS } from '@/features/servants/deacons';
 import { db } from '@/core/firebase';
 import { inCurrentSection } from '@/core/section';
-import { loadDeaconAttendance } from '@/features/servants/deacon-attendance';
 
-// ===== ONLINE / ACTIVITY TAB (admin only) =====
-let onlineUnsub   = null;
+// ===== ACTIVITY LOG VIEWER (admin / year and phase leads) =====
+// On demand only. The log can hold thousands of entries, so it is never read as a whole and nothing is read until this
+// screen is opened. Newest first, 20 per page; the next page loads by itself when the user scrolls to the bottom.
+// The filters (servant, type of activity, date range, class) are applied BY THE SERVER, only when "apply" is pressed,
+// and the same filters are used for every following page.
+//
+// Free-text search is NOT offered: Firestore cannot search inside text, and a text filter cannot be combined with the
+// newest-first order. See docs/READ-OPTIMIZATION.md ("Where should the activity log live?").
+//
+// Needs 3 composite indexes (firestore.indexes.json): (grade, timestamp), (name, timestamp), (action, timestamp).
+const PAGE_SIZE = 20;
+const MAX_RAW_PAGES_PER_LOAD = 5; // when the safety checks below hide most entries of a page, look at most 5 x 20
 
-let activityUnsub = null;
+// every action the app writes to the log (used for the "type" filter)
+const ACTIVITY_TYPES = [
+  'دخل التطبيق', 'خرج من التطبيق',
+  'سجّل حضور', 'ألغى حضور', 'سجّل افتقاد بالصوت', 'سجّل حضور خادم',
+  'أضاف مخدوم جديد', 'حذف مخدوم', 'أضاف نجمة', 'شال نجمة', 'سجّل هدية عيد ميلاد', 'ألغى هدية عيد ميلاد',
+  'حدد موقع GPS', 'مسح موقع GPS',
+  'أضاف خادم جديد', 'عدّل اسم خادم', 'حذف خادم', 'وافق على طلب خادم', 'رفض طلب خادم',
+  'عيّن أدمن جديد', 'ألغى صلاحية أدمن', 'عيّن مسؤول سنة', 'ألغى مسؤول سنة', 'عيّن مسؤول مرحلة', 'ألغى مسؤول مرحلة',
+  'ترقية سنة دراسية', 'تنظيف حضور قديم', 'حذف تاريخ حضور', 'ترحيل بيانات قديمة',
+  'استيراد حضور من إكسيل', 'رفع بيانات مخدومين من إكسيل', 'رفع ID وباسوردات المخدومين',
+];
 
-let onlineUsersCache   = []; // deacons only (admin excluded)
-
-let activityItemsCache = [];
+let feed = { items: [], cursor: null, done: false, loading: false, started: false, filters: null, gen: 0 };
+let observer = null;
 
 function fullDateTime(ts) {
   if (!ts) return '—';
@@ -22,68 +41,117 @@ function fullDateTime(ts) {
     ' — ' + d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
 }
 
-function timeAgo(ts) {
-  if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (sec < 45)   return 'الآن';
-  if (sec < 90)   return 'من دقيقة';
-  if (sec < 3600) return `من ${Math.floor(sec/60)} دقيقة`;
-  if (sec < 86400)return `من ${Math.floor(sec/3600)} ساعة`;
-  return d.toLocaleDateString('ar-EG', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-}
-
 // لو الاسم المسجل شكله إيميل (فيه @) اعتبره زي ما لو مفيش اسم خالص
 function displayName(name) {
   return (name && !/@/.test(name)) ? name : 'بدون اسم';
 }
 
-// أسماء مستبعدة تمامًا من تبويب "المتصلين" (مش هتظهر في الليست ولا الفلتر ولا الأنشطة)
+// أسماء مستبعدة تمامًا من تبويب المتابعة (مش هتظهر في الليست ولا الفلتر)
 const EXCLUDED_NAMES = ['سوتي'];
+const isExcludedName = (name) => !!name && EXCLUDED_NAMES.some(x => name.includes(x));
 
-function isExcludedName(name) {
-  return !!name && EXCLUDED_NAMES.some(x => name.includes(x));
+// Safety checks that stay on the client because old log entries lack the fields needed to filter them on the server
+// (no `section` on older entries; admin actions are 'role: admin'). They never change what the user chose to filter.
+const passesSafetyChecks = (a) => inCurrentSection(a) && a.role !== 'admin' && !isExcludedName(a.name);
+
+// the class the log is limited to: an admin sees the active class, a lead sees their own class
+const classForUser = () => (state.currentUserRole === 'admin' ? state.activeGrade : state.currentUserGrade) || null;
+
+function readFilters() {
+  return {
+    grade: classForUser(),
+    name:  document.getElementById('online-deacon-filter').value,
+    type:  document.getElementById('activity-type').value,
+    from:  document.getElementById('activity-from').value,
+    to:    document.getElementById('activity-to').value,
+  };
 }
 
-// لو نفس الاسم مسجل أكتر من مرة (حسابين مختلفين)، خليه يظهر مرة واحدة بس
-function dedupeByName(users) {
-  const map = new Map();
-  for (const u of users) {
-    const key = (u.name || u.id).trim();
-    const existing = map.get(key);
-    if (!existing) { map.set(key, u); continue; }
-    const uTime = u.lastActive?.seconds || 0;
-    const eTime = existing.lastActive?.seconds || 0;
-    if (uTime > eTime) map.set(key, u); // خلي الأحدث نشاطًا هو اللي يظهر
+function buildQuery(f, cursor) {
+  const c = [];
+  if (f.grade) c.push(where('grade', '==', f.grade));
+  if (f.name)  c.push(where('name', '==', f.name));
+  if (f.type)  c.push(where('action', '==', f.type));
+  if (f.from)  c.push(where('timestamp', '>=', Timestamp.fromDate(new Date(f.from + 'T00:00:00'))));
+  if (f.to)    c.push(where('timestamp', '<=', Timestamp.fromDate(new Date(f.to + 'T23:59:59.999'))));
+  c.push(orderBy('timestamp', 'desc'));
+  if (cursor) c.push(startAfter(cursor));
+  c.push(limit(PAGE_SIZE));
+  return query(collection(db, 'activity_log'), ...c);
+}
+
+async function loadMore() {
+  if (feed.loading || feed.done || !feed.started) return;
+  const gen = feed.gen;
+  feed.loading = true; render();
+  const before = feed.items.length;
+  let pages = 0;
+  try {
+    while (!feed.done && pages < MAX_RAW_PAGES_PER_LOAD && feed.items.length - before < PAGE_SIZE) {
+      const snap = await getDocs(buildQuery(feed.filters, feed.cursor)); pages++;
+      if (gen !== feed.gen) return; // "apply" was pressed meanwhile: this answer belongs to the old filters
+      countReads('activity_log', Math.max(snap.size, 1));
+      if (snap.size < PAGE_SIZE) feed.done = true;
+      if (snap.docs.length) feed.cursor = snap.docs[snap.docs.length - 1];
+      snap.docs.forEach(d => { const a = { id: d.id, ...d.data() }; if (passesSafetyChecks(a)) feed.items.push(a); });
+    }
+  } catch (e) {
+    if (gen !== feed.gen) return;
+    console.warn('activity log error:', e);
+    feed.done = true; // do not retry in a loop while scrolling
+    feed.error = /index/i.test(String(e && e.message)) ? 'index' : 'error';
   }
-  return Array.from(map.values());
+  feed.loading = false; render();
+}
+
+// "apply" (or first open, or refresh): forget what was loaded and start again from the newest entry with the chosen filters
+function startFeed() {
+  feed = { items: [], cursor: null, done: false, loading: false, started: true, filters: readFilters(), gen: feed.gen + 1, error: null };
+  render();
+  loadMore();
+}
+
+function render() {
+  if (!feed.started) return;
+  const list   = document.getElementById('activity-list');
+  const bottom = document.getElementById('activity-bottom');
+  const count  = document.getElementById('activity-count');
+  if (count) count.textContent = feed.items.length ? `(${feed.items.length}${feed.done ? '' : '+'})` : '';
+  list.innerHTML = feed.items.map(a => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-size:14px;font-weight:700">🙏 ${displayName(a.name)}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <div style="font-size:11px;color:var(--text-dim);white-space:nowrap">${fullDateTime(a.timestamp)}</div>
+            <button onclick="deleteActivity('${a.id}')" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:var(--danger);font-size:12px;padding:4px 8px;cursor:pointer">🗑</button>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:4px">${a.action}${a.details ? ' — ' + a.details : ''}</div>
+      </div>`).join('');
+  if (feed.loading) bottom.innerHTML = '<div class="spinner" style="margin:0 auto 6px"></div>جاري التحميل…';
+  else if (feed.error === 'index') bottom.textContent = '⚠️ الفلتر ده محتاج index في Firestore — شغّل: firebase deploy --only firestore:indexes';
+  else if (feed.error) bottom.textContent = '⚠️ مقدرناش نجيب الأنشطة، دوس "تطبيق" تاني';
+  else if (feed.done) bottom.textContent = feed.items.length ? '— آخر النتائج —' : 'لا يوجد نشاط مطابق';
+  else bottom.textContent = '';
 }
 
 export function initOnlineTab() {
-  // Filter dropdown — from the registered deacons list (خانة الخدام), not user accounts
-  if (onlineUnsub) { onlineUnsub(); onlineUnsub = null; }
+  // Filter dropdowns — servants from the registered deacons list (خانة الخدام), types from the app's action list
   const sel = document.getElementById('online-deacon-filter');
   const cur = sel.value;
   sel.innerHTML = '<option value="">كل الخدام</option>' +
-    DEACONS.filter(d => !isExcludedName(d))
-      .map(d => `<option value="${d}"${cur===d?' selected':''}>${d}</option>`).join('');
-
-  // Live activity feed (latest 100, admin's own actions excluded, و"مسؤول السنة" يشوف نشاط سنته بس)
-  if (activityUnsub) activityUnsub();
-  activityUnsub = onSnapshot(
-    query(collection(db, 'activity_log'), orderBy('timestamp', 'desc')),
-    snap => {
-      let items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => inCurrentSection(a) && a.role !== 'admin' && !isExcludedName(a.name));
-      // أدمن: يشوف نشاط السنة الدراسية النشطة (activeGrade) بس — مسؤول سنة: يشوف نشاط سنته بس
-      if (state.currentUserRole === 'admin') { if (state.activeGrade) items = items.filter(a => a.grade === state.activeGrade); }
-      else items = items.filter(a => a.grade === state.currentUserGrade);
-      activityItemsCache = items.slice(0, 100);
-      renderOnlineTab();
-    },
-    err => console.warn('activity_log listener error:', err)
-  );
-
-  loadDeaconAttendance();
+    DEACONS.filter(d => !isExcludedName(d)).map(d => `<option value="${d}"${cur === d ? ' selected' : ''}>${d}</option>`).join('');
+  const typeSel = document.getElementById('activity-type');
+  if (typeSel.options.length <= 1) {
+    typeSel.innerHTML = '<option value="">كل الأنواع</option>' + ACTIVITY_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+  }
+  // infinite scroll: when the end of the list comes into view, load the next page
+  if (!observer && 'IntersectionObserver' in window) {
+    observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: '200px' });
+    observer.observe(document.getElementById('activity-sentinel'));
+  }
+  // the class can change between visits: start again when it did (or on the first visit)
+  if (!feed.started || (feed.filters && feed.filters.grade !== classForUser())) startFeed();
 }
 
 window.switchOnlineSubTab = (name, btn) => {
@@ -93,49 +161,20 @@ window.switchOnlineSubTab = (name, btn) => {
   document.getElementById('online-subpanel-attendance').style.display = name === 'attendance' ? 'block' : 'none';
 };
 
-window.renderOnlineTab = () => {
-  const filterName = document.getElementById('online-deacon-filter').value;
-
-  // Activity feed — filtered by selected deacon's name if one is chosen
-  const items = filterName ? activityItemsCache.filter(a => displayName(a.name) === filterName) : activityItemsCache;
-  const el = document.getElementById('activity-list');
-  if (!items.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📜</div>لا يوجد نشاط بعد</div>';
-    return;
-  }
-  el.innerHTML = items.map(a => `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div style="font-size:14px;font-weight:700">🙏 ${displayName(a.name)}</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <div style="font-size:11px;color:var(--text-dim);white-space:nowrap">${fullDateTime(a.timestamp)}</div>
-          <button onclick="deleteActivity('${a.id}')" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:var(--danger);font-size:12px;padding:4px 8px;cursor:pointer;line-height:1">🗑</button>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-dim);margin-top:4px">${a.action}${a.details ? ' — ' + a.details : ''}</div>
-    </div>`).join('');
+// "apply" button: read the filters and start again (this is the only thing that triggers a new server query)
+window.applyActivityFilters = () => startFeed();
+window.clearActivityFilters = () => {
+  ['online-deacon-filter', 'activity-type', 'activity-from', 'activity-to'].forEach(id => { document.getElementById(id).value = ''; });
+  startFeed();
 };
 
 window.deleteActivity = async (id) => {
   if (!confirm('هتحذف النشاط ده؟')) return;
   try {
     await deleteDoc(doc(db, 'activity_log', id));
-    activityItemsCache = activityItemsCache.filter(a => a.id !== id);
-    renderOnlineTab();
+    feed.items = feed.items.filter(a => a.id !== id);
+    render();
   } catch (e) {
     showToast('تعذّر الحذف', 'error');
-  }
-};
-
-window.deleteAllActivities = async () => {
-  if (!activityItemsCache.length) { showToast('مفيش أنشطة تتحذف', 'info'); return; }
-  if (!confirm('هتحذف كل الأنشطة؟ الإجراء ده مش هينفع يترجع')) return;
-  try {
-    await Promise.all(activityItemsCache.map(a => deleteDoc(doc(db, 'activity_log', a.id))));
-    activityItemsCache = [];
-    renderOnlineTab();
-    showToast('تم حذف كل الأنشطة ✓', 'success');
-  } catch (e) {
-    showToast('تعذّر حذف كل الأنشطة', 'error');
   }
 };

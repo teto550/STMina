@@ -6,6 +6,7 @@ import { sectionTag } from '@/core/section';
 import { loadAllAttendance, renderTodayList } from '@/features/attendance/attendance';
 import { loadStudents } from '@/features/students/students';
 import { logActivity } from '@/core/presence';
+import { ensureAttendance } from '@/core/data';
 
 // ===== IMPORT ATTENDANCE FROM EXCEL =====
 export async function ensureXLSXLoaded() {
@@ -73,6 +74,7 @@ export function buildColumnDateMap(rows) {
 }
 
 window.startImportAttendance = async () => {
+  await ensureAttendance('full'); // duplicates are skipped by comparing with the existing history
   const fileInput = document.getElementById('import-file-input');
   const cutoff    = document.getElementById('import-cutoff-date').value;
   const status    = document.getElementById('import-status');
@@ -172,7 +174,7 @@ window.startImportAttendance = async () => {
         });
         await batch2.commit();
       }
-      await loadStudents();
+      await loadStudents({ force: true });
     }
 
     if (typeof renderTodayList === 'function') renderTodayList();

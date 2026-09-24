@@ -8,7 +8,8 @@ import { auth, db } from '@/core/firebase';
 import { SECTION, applySectionTheme } from '@/core/section';
 import { notifyManagersPush } from '@/features/shell/push';
 import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadConfig } from '@/core/config';
-import { logActivity, stopPresence } from '@/core/presence';
+import { logActivity } from '@/core/presence';
+import { refreshAllData } from '@/core/data';
 import { getDocFast, loadProfileCache } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { clearSplashWatchdog } from '@/core/splash';
@@ -160,7 +161,6 @@ async function sendUnauthorizedAttemptAlert(email, uid) {
 window.doLogout = async () => {
   if (state.partNotifUnsub) { state.partNotifUnsub(); state.partNotifUnsub = null; }
   await logActivity('خرج من التطبيق');
-  stopPresence();
   await signOut(auth);
 };
 
@@ -267,9 +267,9 @@ onAuthStateChanged(auth, async user => {
     state.currentUserIsPhaseLead = false;
     state.activeGrade = null;
     window.__loginLogged = false;
+    refreshAllData(); // forget the short-lived read cache so the next person on this device starts clean
     applySectionTheme(false);
-    stopPresence();
-    if (state.todayAttendanceUnsub) { state.todayAttendanceUnsub(); state.todayAttendanceUnsub = null; }
+      if (state.todayAttendanceUnsub) { state.todayAttendanceUnsub(); state.todayAttendanceUnsub = null; }
     clearSplashWatchdog();
         document.getElementById('splash-screen').style.display  = 'none';
     document.getElementById('auth-screen').style.display    = 'flex';

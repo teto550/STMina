@@ -7,6 +7,7 @@ import { sectionTag } from '@/core/section';
 import { loadStudents } from '@/features/students/students';
 import { loadAllAttendance, renderTodayList } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
+import { ensureAttendance } from '@/core/data';
 
 // ===== IMPORT STUDENTS DATA (+ optional attendance) FROM ONE EXCEL SHEET — للسنة الدراسية النشطة (activeGrade) بس =====
 // الشيت فيه كل حاجة سوا: بيانات المخدوم + أعمدة حضور بعدها (أول 3 صفوف سنة/شهر/يوم، والبيانات تبدأ من الصف الرابع)
@@ -132,6 +133,7 @@ function renderImportStudentsMapping() {
 }
 
 window.startImportStudentsData = async () => {
+  await ensureAttendance('full'); // duplicates are skipped by comparing with the existing history
   const cutoff = document.getElementById('import-students-cutoff-date').value;
   const status = document.getElementById('import-students-status');
   const btn    = document.getElementById('import-students-start-btn');
@@ -210,7 +212,7 @@ window.startImportStudentsData = async () => {
     }
 
     log('⏳ تحديث قائمة المخدومين…');
-    await loadStudents();
+    await loadStudents({ force: true });
 
     // ===== أعمدة الحضور (اختياري) — بتبدأ من العمود اللي الأدمن حدده =====
     if (attStartCol !== -1 && cutoff) {
@@ -270,7 +272,7 @@ window.startImportStudentsData = async () => {
           });
           await batch2.commit();
         }
-        await loadStudents();
+        await loadStudents({ force: true });
       }
     } else {
       log('ℹ️ مفيش أعمدة حضور محددة — اتحدّثت بيانات المخدومين بس من غير حضور.');

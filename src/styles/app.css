@@ -237,3 +237,13 @@
     #active-grade-bar.is-dragging, #main-tabs.is-dragging, .grade-filter.is-dragging { cursor: grabbing; }
     #active-grade-bar.is-dragging *, #main-tabs.is-dragging *, .grade-filter.is-dragging * { cursor: grabbing; }
   }
+
+  /* ===== Home screen (no data is loaded until a screen is opened) ===== */
+  .home-class { font-size: 13px; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 6px; }
+  .home-hint { font-size: 13px; color: var(--text-dim); text-align: center; margin-bottom: 16px; }
+  .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .home-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 22px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: border-color 0.2s, transform 0.1s; }
+  .home-tile:hover { border-color: var(--accent); }
+  .home-tile:active { transform: scale(0.98); }
+  .home-icon { font-size: 30px; line-height: 1; }
+  .home-refresh { display: block; margin: 18px auto 0; background: transparent; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 600; padding: 8px 16px; cursor: pointer; }

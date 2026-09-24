@@ -4,6 +4,7 @@ import { DEACONS } from '@/features/servants/deacons';
 import { DEACON_ATTENDANCE } from '@/features/servants/deacon-attendance';
 import { studentPhonesLabel } from '@/features/students/students';
 import { genderizeText } from '@/core/section';
+import { ensureStudents, ensureDeacons, ensureDeaconAttendance } from '@/core/data';
 
 // كل الأقسام المتاحة — المستخدم بيختار منها اللي عايزه
 const DASH_SECTIONS = [
@@ -226,13 +227,15 @@ function buildDashboardHTML() {
   return out || `<div class="dash-empty">مختارتش أي قسم — دوس ⚙️ واختار الأقسام</div>`;
 }
 
-window.openDashboard = () => {
+window.openDashboard = async () => {
   // خزّن اختيارات المستخدم لو الشاشة دي اتفتحت من مودال الإعدادات
   const boxes = document.querySelectorAll('#dash-options input[type=checkbox]');
   if (boxes.length) {
     saveDashPrefs(Array.from(boxes).filter(b => b.checked).map(b => b.value));
   }
   closeDashModal();
+  // the dashboard needs the students, the servants and the servants' attendance: load them now (cached for a few minutes)
+  await Promise.all([ensureStudents(), ensureDeacons(), ensureDeaconAttendance()]);
   if (!DEACONS.length) { showToast('مفيش خدام مسجلين للسنة دي', 'info'); return; }
   document.getElementById('dash-subtitle').textContent =
     `${state.activeGrade || 'كل السنوات'} · ${DEACONS.length} خادم · ${state.allStudents.length} مخدوم`;

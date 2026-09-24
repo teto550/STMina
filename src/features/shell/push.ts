@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { http, workerUrl } from '@/core/http';
 import { updateDoc, doc } from 'firebase/firestore';
 import { app, auth, db } from '@/core/firebase';
 
@@ -121,14 +122,10 @@ export async function notifyManagersPush(user) {
   if (!isPushWorkerReady()) return;
   try {
     const idToken = await user.getIdToken();
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
-    await fetch(PUSH_WORKER_URL.replace(/\/+$/, '') + '/new-deacon', {
-      method: 'POST',
+    await http.post(workerUrl(PUSH_WORKER_URL, '/new-deacon'), null, {
       headers: { 'Authorization': 'Bearer ' + idToken },
-      signal: ctrl.signal
+      timeout: 10000
     });
-    clearTimeout(timer);
   } catch (e) { console.warn('push notify error:', e); }
 }
 
@@ -138,14 +135,8 @@ export async function notifyDeaconPush(deaconName, part) {
   if (!isPushWorkerReady()) return;
   try {
     const idToken = await auth.currentUser.getIdToken();
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
-    await fetch(PUSH_WORKER_URL.replace(/\/+$/, '') + '/new-part', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + idToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deaconName, type: part.type, title: part.title, date: part.date, grade: part.grade }),
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
+    await http.post(workerUrl(PUSH_WORKER_URL, '/new-part'),
+      { deaconName, type: part.type, title: part.title, date: part.date, grade: part.grade },
+      { headers: { 'Authorization': 'Bearer ' + idToken }, timeout: 10000 });
   } catch (e) { console.warn('part push notify error:', e); }
 }

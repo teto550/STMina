@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, query, collection, where } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { credsEsc } from '@/features/import-export/import-creds';
-import { getDocFast } from '@/core/firestore-helpers';
+import { getDocFast, getDocsTtl } from '@/core/firestore-helpers';
+import { inCurrentSection } from '@/core/section';
 import { db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
 
@@ -31,40 +32,40 @@ window.openProfile = (id) => {
     <button onclick="changeStar('${id}',1)" style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);border-radius:8px;color:var(--success);font-size:16px;font-weight:700;width:32px;height:32px;cursor:pointer">+</button>
   ` : '';
 
-  // Attendance stats - use stored count + calculate last date + full dates list
-  let lastDate = null;
-  const attendDates = [];
-  Object.entries(state.allAttendance).forEach(([date, rec]) => {
-    if (rec[id]) {
-      attendDates.push(date);
-      if (!lastDate || date > lastDate) lastDate = date;
-    }
-  });
-  attendDates.sort().reverse(); // الأحدث أولاً
-
-  document.getElementById('prof-count').textContent = Math.max(s.attendanceCount || 0, attendDates.length);
-  if (lastDate) {
-    const p = lastDate.split('-');
-    document.getElementById('prof-last').textContent = `${p[2]}/${p[1]}/${p[0]}`;
-  } else if (s.attendanceCount) {
-    // حضر قبل كده بس التواريخ التفصيلية اتشالت (بعد ترقية سنة) — العدد لسه محفوظ في ملفه
-    document.getElementById('prof-last').textContent = 'قبل الترقية الأخيرة';
-  } else {
-    document.getElementById('prof-last').textContent = 'لم يحضر بعد';
-  }
-
+  // Attendance of THIS student only: one small query, instead of loading the whole attendance history for a profile.
+  document.getElementById('prof-count').textContent = s.attendanceCount || 0;
+  document.getElementById('prof-last').textContent = '…';
   const datesCont = document.getElementById('prof-attend-dates');
-  if (attendDates.length) {
-    datesCont.innerHTML = attendDates.map(d => {
-      const dd = new Date(d + 'T00:00:00');
-      const label = dd.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
-      return `<span style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--success);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap">✅ ${label}</span>`;
-    }).join('');
-  } else if (s.attendanceCount) {
-    datesCont.innerHTML = `<div style="color:var(--text-dim);font-size:13px">✅ حضر ${s.attendanceCount} مرة قبل كده — التواريخ التفصيلية اتشالت بعد آخر ترقية سنة، بس العدد محفوظ</div>`;
-  } else {
-    datesCont.innerHTML = '<div style="color:var(--text-dim);font-size:13px">لم يحضر بعد</div>';
-  }
+  datesCont.innerHTML = '<div style="color:var(--text-dim);font-size:13px">جاري التحميل…</div>';
+  const profToken = window.__profToken = (window.__profToken || 0) + 1;
+  getDocsTtl(query(collection(db, 'attendance'), where('studentId', '==', id)), 'attendance-student:' + id)
+    .then(snap => snap.docs.map(d => d.data()).filter(inCurrentSection).map(d => d.date).sort().reverse()) // الأحدث أولاً
+    .catch(() => [])
+    .then(attendDates => {
+      if (profToken !== window.__profToken) return; // another profile was opened meanwhile
+      const lastDate = attendDates[0] || null;
+      document.getElementById('prof-count').textContent = Math.max(s.attendanceCount || 0, attendDates.length);
+      if (lastDate) {
+        const p = lastDate.split('-');
+        document.getElementById('prof-last').textContent = `${p[2]}/${p[1]}/${p[0]}`;
+      } else if (s.attendanceCount) {
+        // حضر قبل كده بس التواريخ التفصيلية اتشالت (بعد ترقية سنة) — العدد لسه محفوظ في ملفه
+        document.getElementById('prof-last').textContent = 'قبل الترقية الأخيرة';
+      } else {
+        document.getElementById('prof-last').textContent = 'لم يحضر بعد';
+      }
+      if (attendDates.length) {
+        datesCont.innerHTML = attendDates.map(d => {
+          const dd = new Date(d + 'T00:00:00');
+          const label = dd.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+          return `<span style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--success);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap">✅ ${label}</span>`;
+        }).join('');
+      } else if (s.attendanceCount) {
+        datesCont.innerHTML = `<div style="color:var(--text-dim);font-size:13px">✅ حضر ${s.attendanceCount} مرة قبل كده — التواريخ التفصيلية اتشالت بعد آخر ترقية سنة، بس العدد محفوظ</div>`;
+      } else {
+        datesCont.innerHTML = '<div style="color:var(--text-dim);font-size:13px">لم يحضر بعد</div>';
+      }
+    });
 
   // Details rows
   const phones = [

@@ -4,16 +4,14 @@ import { GRADES, SECTION, applySectionTheme, setupGenderObserver } from '@/core/
 import { canManageGrade, formatAssignedGradesLabel, getUserManagedGrades, isGradeManagerOf } from '@/core/session';
 import { saveProfileCache } from '@/core/firestore-helpers';
 import { clearSplashWatchdog } from '@/core/splash';
-import { logActivity, startPresence } from '@/core/presence';
+import { logActivity, touchLastActive } from '@/core/presence';
 import { approveDeacon, loadPendingDeacons } from '@/features/servants/approvals';
 import { setupPushBell } from '@/features/shell/push';
-import { loadParts, setupPartNotifications } from '@/features/servants/parts';
+import { setupPartNotifications } from '@/features/servants/parts';
 import { CLEANED_ATTENDANCE_GRADES } from '@/core/config';
 import { auth } from '@/core/firebase';
-import { loadDeaconsList } from '@/features/servants/deacons';
-import { loadStudents } from '@/features/students/students';
-import { listenTodayAttendance, loadAllAttendance, renderTodayList } from '@/features/attendance/attendance';
-import { initOnlineTab } from '@/features/servants/online';
+import { applyActiveGradeDeacons } from '@/features/servants/deacons';
+import { reloadOpenTab } from '@/features/shell/tabs';
 
 // بعد التأكد إن الحساب معتمد وبياناته كاملة: يدخل التطبيق فعليًا
 export async function enterApp(user, snapData) {
@@ -48,8 +46,8 @@ export async function enterApp(user, snapData) {
     // Show/hide tabs based on role
     applyRoleUI();
 
-    // Start presence heartbeat + log the login (once per session)
-    startPresence(user.uid);
+    // remember when the app was last opened (one write per page load) + log the login (once per session)
+    touchLastActive(user.uid);
     if (!window.__loginLogged) { window.__loginLogged = true; logActivity('دخل التطبيق'); }
 
     // Check for approve query param (admin link from email)
@@ -88,6 +86,8 @@ function applyRoleUI() {
   document.getElementById('add-star-btn').style.display = 'inline-block';
   // online/activity tab: admin (كل السنين) أو مسؤول سنة/مرحلة (نشاط وحضور الفصول المسموح لها بس)
   document.getElementById('tab-btn-online').style.display = isGradeManager ? '' : 'none';
+  const onlineTile = document.getElementById('home-tile-online'); if (onlineTile) onlineTile.style.display = isGradeManager ? '' : 'none';
+  const studentsTile = document.getElementById('home-tile-students'); if (studentsTile) studentsTile.style.display = '';
   // top bar subtitle: شارة حسب الدور + السنة الدراسية النشطة أو فصول المرحلة
   const roleIcon = isAdmin ? '👑' : (state.currentUserIsPhaseLead ? '🟣' : (state.currentUserIsLead ? '⭐' : '🙏'));
   const gradeText = state.currentUserIsPhaseLead && state.currentUserPhaseGrades.length
@@ -167,17 +167,16 @@ window.switchActiveGrade = async (g) => {
   if (gradeLabelEl) gradeLabelEl.textContent = `📚 بتتعامل دلوقتي مع خدام: ${state.activeGrade}`;
   document.getElementById('user-email-display').textContent =
     `👑 ${state.currentUserName} — ${state.activeGrade}`;
+  const homeClass = document.getElementById('home-class'); if (homeClass) homeClass.textContent = '📚 ' + state.activeGrade;
   updateAttendanceCleanupVisibility();
   state.currentDeacon = null;
-  await loadDeaconsList();
-  await loadStudents();
-  await loadAllAttendance();
-  renderTodayList();
+  // Switching class reads nothing by itself. The servants of all classes are already in memory once loaded, and the
+  // students/parts of the new class are fetched only if a screen that shows them is open (otherwise when it opens).
+  if (state.ALL_DEACONS_RAW.length) applyActiveGradeDeacons();
   backToDeaconList();
   updateDeaconsTabLabel();
-  if (document.getElementById('tab-online').style.display !== 'none') initOnlineTab();
   document.getElementById('add-part-btn-wrap').style.display = isGradeManagerOf(state.activeGrade) ? 'block' : 'none';
-  if (document.getElementById('tab-parts').style.display !== 'none') loadParts();
+  await reloadOpenTab();
   showToast('السنة الدراسية النشطة: ' + g, 'success');
 };
 
@@ -185,13 +184,10 @@ window.switchActiveGrade = async (g) => {
 async function initApp() {
   setDateDisplay();
   buildGradeFilters();
-  await loadDeaconsList();
-  await loadStudents();
-  await loadAllAttendance();
-  listenTodayAttendance();
-  renderTodayList();
-  buildDeaconChips(); // إعادة بناء شرائح الخدام بعد اكتمال تحميل المخدومين عشان تظهر الأعداد صح
   updateDeaconsTabLabel();
+  // Nothing is read from Firestore here: the user lands on the home screen and every screen loads its own data when it
+  // is opened (see core/data.ts and shell/tabs.ts).
+  window.switchTab('home', document.getElementById('tab-btn-home'));
 }
 
 function setDateDisplay() {
