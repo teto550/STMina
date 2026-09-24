@@ -182,6 +182,10 @@ Details in `docs/REACT.md`. No data or project-specific values; run `npm install
   `tsconfig.json` (`jsx`, test types), `package.json` (deps + scripts `test`, `typecheck`), `src/main.ts` (imports `@/react/bootstrap`).
 - The plain app is unchanged; React/Tailwind load on demand only when a React screen opens (`window.openReactScreen`).
 
+### C15. Planned: roles and access (design only)
+`docs/ROLES-DESIGN.md` (agreed decisions, data model, migration order) and `docs/TODO-CLEANUP.md`. Nothing implemented yet; the other
+project needs the same migration after it is done here.
+
 ## Firestore data notes (data is per project, but the same checks apply to the other project)
 Findings for THIS project on 2026-09-24 (Spark plan, database `(default)`). Nothing here is ported by copying data;
 re-run `node tools/firestore/analyze.cjs` in the other project and compare with the collections used in `src/`.

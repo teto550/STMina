@@ -35,3 +35,8 @@ New complex screens are written in React + TypeScript under `src/react/` and mou
 (`window.openReactScreen`); the plain screens stay as they are until they are touched. Conventions: Tailwind classes always use the
 `tw:` prefix and the app's colour tokens, logical (RTL-safe) utilities, forms with react-hook-form + zod, strict types, a test per
 screen. Never add a global Tailwind reset or unprefixed classes: that would change the old screens.
+
+## Roles design and clean-up list
+The agreed access design (roles with cells, people, sections) is in `docs/ROLES-DESIGN.md`; nothing of it is implemented until the user
+says so. `docs/TODO-CLEANUP.md` is the running list of clean-ups and waiting questions: at the start of a session mention it (together with
+the testing checklist), tick items when done and move them to "Done".
