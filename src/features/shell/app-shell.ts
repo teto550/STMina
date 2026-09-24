@@ -122,7 +122,8 @@ export function updateAttendanceCleanupVisibility() {
 export function buildActiveGradeBar() {
   const bar = document.getElementById('active-grade-bar');
   if (!bar) return;
-  const isManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
+  // a person with role-based access and several classes also switches between them
+  const isManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead || (state.accessSource === 'roles' && getUserManagedGrades().length > 1);
   if (!isManager) { bar.style.display = 'none'; return; }
   const allowedGrades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
   bar.style.display = 'flex';

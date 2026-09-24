@@ -6,6 +6,8 @@ export const GRADES: readonly Grade[] = [1, 2, 3, 4, 5, 6];
 /** Grades whose kids (boys and girls) are in ONE class in the girls' section, with female servants only. */
 export const MIXED_GRADES: readonly Grade[] = [1, 2];
 
+export const GRADE_NAMES: readonly string[] = ['سنة أولى ابتدائي', 'سنة تانية ابتدائي', 'سنة تالتة ابتدائي', 'سنة رابعة ابتدائي', 'سنة خامسة ابتدائي', 'سنة سادسة ابتدائي'];
+
 export const isMixedGrade = (grade: Grade): boolean => MIXED_GRADES.includes(grade);
 
 export const cellOf = (gender: Gender, grade: Grade): Cell => `${gender}:${grade}`;
@@ -72,3 +74,10 @@ export const canOpenSection = (access: Access, section: Section): boolean => acc
 
 /** A person with no role at all sees the "no access yet" screen. */
 export const hasNoAccess = (access: Access): boolean => !access.admin && access.cells.length === 0;
+
+/** The classes (grade names, in school order) a person may open in one section: their cells that belong to that section. */
+export function gradeNamesOfAccess(access: Access, section: Section): string[] {
+  const shown = new Set<Cell>(cellsOfSection(section));
+  const grades = new Set<Grade>(access.cells.filter((c) => shown.has(c)).map((c) => parseCell(c).grade));
+  return GRADES.filter((g) => grades.has(g)).map((g) => GRADE_NAMES[g - 1] as string);
+}

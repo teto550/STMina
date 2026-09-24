@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { state } from '@/core/state';
 import { GRADES, SECTION } from '@/core/section';
+import { gradeNamesOfAccess } from '@/core/access-config';
 
 const PHASE_GROUPS = {
   'سنة تالتة ابتدائي': ['سنة تالتة ابتدائي', 'سنة رابعة ابتدائي'],
@@ -34,6 +35,8 @@ export function getPhaseGradesForGrade(grade) {
 
 export function getUserManagedGrades() {
   if (state.currentUserRole === 'admin') return GRADES.slice();
+  // role-based access: the classes of the person's roles in this section
+  if (state.accessSource === 'roles' && state.access) return gradeNamesOfAccess(state.access, SECTION).filter(g => GRADES.includes(g));
   const allowed = [];
   if (state.currentUserIsPhaseLead && state.currentUserPhaseGrades.length) {
     state.currentUserPhaseGrades.forEach(g => { if (GRADES.includes(g) && !allowed.includes(g)) allowed.push(g); });

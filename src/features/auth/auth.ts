@@ -11,7 +11,7 @@ import { ADMIN_EMAIL, EMAILJS_PUBLIC, EMAILJS_SERVICE, EMAILJS_TEMPLATE, loadCon
 import { logActivity } from '@/core/presence';
 import { refreshAllData } from '@/core/data';
 import { resolveAccess } from '@/core/access';
-import { hasNoAccess } from '@/core/access-config';
+import { gradeNamesOfAccess, hasNoAccess } from '@/core/access-config';
 import { getDocFast, loadProfileCache } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { clearSplashWatchdog } from '@/core/splash';
@@ -267,6 +267,12 @@ onAuthStateChanged(auth, async user => {
 
     // Access is worked out before anything is shown: from the roles snapshot when the account has one, else from today's fields.
     { const r = resolveAccess({ ...snapData, role: state.currentUserRole }); state.access = r.access; state.accessSource = r.source; }
+    // With role-based access the roles decide the class(es); the old class/lead fields no longer do (the old flags stay in the data for rollback)
+    if (state.currentUserRole !== 'admin' && state.accessSource === 'roles') {
+      const names = gradeNamesOfAccess(state.access, SECTION);
+      state.currentUserGrade = names[0] || null;
+      state.currentUserIsLead = false; state.currentUserIsPhaseLead = false; state.currentUserPhaseGrades = [];
+    }
 
     // Role-based access and nothing assigned yet: a screen that says so (roles are given by an admin), instead of an empty app
     if (state.currentUserRole !== 'admin' && state.accessSource === 'roles' && hasNoAccess(state.access)) {

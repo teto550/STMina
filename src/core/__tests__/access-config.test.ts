@@ -1,5 +1,5 @@
 import {
-  canOpenSection, canSwitchSection, cellsOfSection, computeAccess, hasNoAccess, invalidCellsFor,
+  gradeNamesOfAccess, canOpenSection, canSwitchSection, cellsOfSection, computeAccess, hasNoAccess, invalidCellsFor,
   isCellAllowedFor, mixedGradeCells, parseCell, sectionOfCell, startSectionOf,
 } from '@/core/access-config';
 import type { Role } from '@/types/access';
@@ -69,5 +69,16 @@ describe('access', () => {
   it('no role = no access', () => {
     expect(hasNoAccess(computeAccess([]))).toBe(true);
     expect(hasNoAccess(computeAccess([role('a', ['male:3'])]))).toBe(false);
+  });
+});
+
+describe('gradeNamesOfAccess', () => {
+  const acc = computeAccess([role('a', ['male:3', 'male:4']), role('b', ['female:1', 'male:1'])]);
+  it('lists the classes of the section, in school order', () => {
+    expect(gradeNamesOfAccess(acc, 'boys')).toEqual(['سنة تالتة ابتدائي', 'سنة رابعة ابتدائي']);
+    expect(gradeNamesOfAccess(acc, 'girls')).toEqual(['سنة أولى ابتدائي']);
+  });
+  it('is empty for a section the person has no class in', () => {
+    expect(gradeNamesOfAccess(computeAccess([role('a', ['male:3'])]), 'girls')).toEqual([]);
   });
 });
