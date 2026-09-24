@@ -14,7 +14,7 @@ export async function loadAdminData(): Promise<AdminData> {
   countReads('admin/deacons', Math.max(people.size, 1));
   countReads('admin/users', Math.max(accounts.size, 1));
   return {
-    roles: roles.docs.map((d) => ({ id: d.id, name: str(d.data().name), admin: d.data().admin === true, cells: (d.data().cells ?? []) as Cell[] }) satisfies AdminRole),
+    roles: roles.docs.map((d) => ({ id: d.id, name: str(d.data().name), admin: d.data().admin === true, cells: (d.data().cells ?? []) as Cell[] }) satisfies AdminRole).sort((a, b) => a.name.localeCompare(b.name, 'ar')),
     people: people.docs
       .map((d): AdminPerson => ({ id: d.id, name: str(d.data().name), gender: (d.data().gender === 'female' ? 'female' : 'male') as Gender, roleIds: (d.data().roleIds ?? []) as string[], email: str(d.data().email) || undefined }))
       .sort((a, b) => a.name.localeCompare(b.name, 'ar')),

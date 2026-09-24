@@ -5,7 +5,8 @@ import { PeopleTab } from '@/react/admin/PeopleTab';
 import { RoleEditor } from '@/react/admin/RoleEditor';
 import { RoleCards, RoleMatrix } from '@/react/admin/RolesTab';
 import type { AdminData, AdminRole } from '@/react/admin/types';
-import { Segmented } from '@/react/admin/ui';
+import { filterRoles, sortRoles } from '@/react/admin/logic';
+import { Segmented, inputClass } from '@/react/admin/ui';
 import type { ScreenProps } from './registry';
 
 type Tab = 'roles' | 'people';
@@ -31,6 +32,7 @@ export default function AdminRoles({ close }: ScreenProps) {
   const [tab, setTab] = useState<Tab>('roles');
   const [editing, setEditing] = useState<{ role: AdminRole | null } | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [roleQuery, setRoleQuery] = useState('');
 
   const reload = useCallback(async () => {
     setFailed(false);
@@ -54,9 +56,19 @@ export default function AdminRoles({ close }: ScreenProps) {
           {note && <p role="status" className="tw:px-4 tw:text-sm tw:text-ok">{note}</p>}
           {failed && <div className="tw:p-6 tw:text-center"><p className="tw:mb-3 tw:text-bad">مقدرناش نحمّل البيانات</p><Button onClick={() => void reload()}>حاول تاني</Button></div>}
           {!data && !failed && <p className="tw:p-6 tw:text-center tw:text-dim">جاري التحميل…</p>}
-          {data && tab === 'roles' && (wide
-            ? <RoleMatrix data={data} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />
-            : <RoleCards data={data} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />)}
+          {data && tab === 'roles' && (
+            <>
+              <div className="tw:mx-auto tw:max-w-2xl tw:px-4 tw:pb-1">
+                <input className={inputClass} type="text" placeholder="ابحث في الأدوار" aria-label="بحث في الأدوار" value={roleQuery} onChange={(e) => setRoleQuery(e.target.value)} />
+              </div>
+              {(() => {
+                const roles = filterRoles(sortRoles(data.roles), roleQuery);
+                return wide
+                  ? <RoleMatrix data={data} roles={roles} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />
+                  : <RoleCards data={data} roles={roles} onOpen={(role) => setEditing({ role })} onNew={() => setEditing({ role: null })} />;
+              })()}
+            </>
+          )}
           {data && tab === 'people' && <div className="tw:mx-auto tw:max-w-2xl"><PeopleTab data={data} onChanged={(m) => void changed(m)} /></div>}
         </div>
       )}

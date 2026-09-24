@@ -6,6 +6,15 @@ import type { AdminAccount, AdminData, AdminPerson, AdminRole, WriteOp } from '.
 
 export const ADMIN_ROLE_ID = 'admin';
 
+/** Roles in alphabetical (Arabic) order. */
+export const sortRoles = (roles: AdminRole[]): AdminRole[] => [...roles].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+/** Local search over role names (spaces ignored, no reads). */
+export const filterRoles = (roles: AdminRole[], query: string): AdminRole[] => {
+  const q = query.replace(/\s+/g, ' ').trim().toLowerCase();
+  return q ? roles.filter((r) => r.name.replace(/\s+/g, ' ').toLowerCase().includes(q)) : roles;
+};
+
 export const membersOf = (roleId: string, people: AdminPerson[]): AdminPerson[] => people.filter((p) => p.roleIds.includes(roleId));
 
 export const rolesOfPerson = (person: AdminPerson, roles: AdminRole[]): AdminRole[] => roles.filter((r) => person.roleIds.includes(r.id));

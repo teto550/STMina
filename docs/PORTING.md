@@ -250,3 +250,4 @@ New `src/core/access.ts` (+ test), `state.access/accessSource` (`core/state.ts`)
 
 ### C22 - Roles step 4: admin screen (React)
 New: `src/react/screens/AdminRoles.tsx`, `src/react/admin/*` (types, logic, data, ui, PersonList, RoleEditor, RolesTab, PeopleTab), tests `src/react/__tests__/admin-logic.test.ts` + `AdminRoles.test.tsx`, registry entry `admin-roles`, admin-only menu entry (`index.html` `#admin-settings-wrap`, shown in `features/shell/app-shell.ts`), `.rx-root` list/button resets in `src/react/styles.css`, legacy admin kept in `core/access.ts`. Removed the `?react-check` page (`ReactCheck.tsx`, its test, its registry/bootstrap lines). Firestore rules for `roles` must be deployed in the other project too (C21).
+Also: roles are sorted alphabetically and searchable in the roles tab (`sortRoles`/`filterRoles` in `admin/logic.ts`, `RolesTab.tsx`, `screens/AdminRoles.tsx`); the admin screens say "أولاد" instead of "بنين".

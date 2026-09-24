@@ -27,6 +27,18 @@ describe('AdminRoles screen', () => {
     expect(card).toHaveTextContent('تالتة أولاد');
   });
 
+  it('roles tab: search filters the list and shows a message when nothing matches', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await screen.findByRole('button', { name: /تالتة أولاد/ });
+    await user.type(screen.getByLabelText('بحث في الأدوار'), 'أدم');
+    expect(screen.queryByRole('button', { name: /تالتة أولاد/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /أدمن/ })).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('بحث في الأدوار'));
+    await user.type(screen.getByLabelText('بحث في الأدوار'), 'زززز');
+    expect(screen.getByText('مفيش دور بالاسم ده')).toBeInTheDocument();
+  });
+
   it('people tab: lists everyone, filters by gender and by name in the browser', async () => {
     const user = userEvent.setup();
     render(<AdminRoles close={() => undefined} />);

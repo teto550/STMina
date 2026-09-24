@@ -1,4 +1,4 @@
-import { filterPeople, planAddAdmin, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
+import { filterPeople, filterRoles, planAddAdmin, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
 import type { AdminData } from '@/react/admin/types';
 
 const data = (): AdminData => ({
@@ -102,5 +102,19 @@ describe('planAddAdmin', () => {
     const plan = planAddAdmin({ id: 'p9', name: 'مينا', gender: 'male', email: 'a@b.c' }, data());
     expect(plan.errors[0]).toContain('بنفس الاسم');
     expect(plan.ops.some((o) => o.col === 'roles')).toBe(false);
+  });
+});
+
+describe('roles list', () => {
+  const roles = [
+    { id: '1', name: 'ثالثة أولاد', admin: false, cells: [] },
+    { id: '2', name: 'أدمن', admin: true, cells: [] },
+    { id: '3', name: 'رابعة  أولاد', admin: false, cells: [] },
+  ] as AdminData['roles'];
+  it('sorts alphabetically (Arabic)', () => expect(sortRoles(roles).map((r) => r.name)).toEqual(['أدمن', 'ثالثة أولاد', 'رابعة  أولاد']));
+  it('searches by name and ignores extra spaces', () => {
+    expect(filterRoles(roles, 'رابعة أولاد').map((r) => r.id)).toEqual(['3']);
+    expect(filterRoles(roles, '  أولاد ').map((r) => r.id)).toEqual(['1', '3']);
+    expect(filterRoles(roles, '')).toHaveLength(3);
   });
 });
