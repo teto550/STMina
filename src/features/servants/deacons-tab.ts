@@ -5,7 +5,6 @@ import { DEACONS, DEACON_ADMIN_MAP, DEACON_DOC_IDS, applyActiveGradeDeacons, loa
 import { formatAssignedGradesLabel, getPhaseGradesForGrade } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
-import { renameServant } from '@/core/servant-rename';
 import { loadPendingDeacons } from '@/features/servants/approvals';
 import { GRADES } from '@/core/section';
 import { renderTodayList } from '@/features/attendance/attendance';
@@ -310,58 +309,6 @@ window.confirmDeleteDeacon = () => {
   if (!name) return;
   closeDeleteDeaconModal();
   deleteDeacon(name);
-};
-
-// ===== تعديل اسم خادم — بيحدث اسمه في: deacons، حسابه (users) لو موجود، وكل مخدوميه =====
-window.openEditDeaconNameModal = () => {
-  if (!DEACONS.length) { showToast('مفيش خدام في السنة دي عشان تعدلهم', 'error'); return; }
-  const sel = document.getElementById('edit-deacon-name-select');
-  sel.innerHTML = DEACONS.map(d => `<option value="${d}">${d}</option>`).join('');
-  document.getElementById('edit-deacon-name-input').value = DEACONS[0] || '';
-  document.getElementById('edit-deacon-name-modal').style.display = 'block';
-};
-
-window.closeEditDeaconNameModal = () => {
-  document.getElementById('edit-deacon-name-modal').style.display = 'none';
-};
-
-window.confirmEditDeaconName = async () => {
-  if (state.currentUserRole !== 'admin' && !state.currentUserIsLead) { showToast('الأدمن أو مسؤول السنة بس يقدروا يعملوا كده', 'error'); return; }
-  const oldName = document.getElementById('edit-deacon-name-select').value;
-  const newName = document.getElementById('edit-deacon-name-input').value.trim();
-  if (!oldName) return;
-  if (!newName) { showToast('اكتب الاسم الجديد', 'error'); return; }
-  if (newName === oldName) { closeEditDeaconNameModal(); return; }
-  if (DEACONS.includes(newName)) { showToast('في خادم تاني بنفس الاسم ده في نفس السنة', 'error'); return; }
-  const docId = DEACON_DOC_IDS[oldName];
-  if (!docId) { showToast('مش لاقي الخادم في القاعدة', 'error'); return; }
-  if (!confirm(`هتغيّر اسم "${oldName}" لـ "${newName}"؟ هيتحدث في كل حاجة مرتبطة بيه.`)) return;
-  try {
-    // one shared rename: the servant, their logins, their kids, their attendance and their part assignments
-    const r = await renameServant(docId, oldName, newName);
-    if (!r.ok) { showToast(r.error || 'مقدرناش نغيّر الاسم', 'error'); return; }
-    const linkedUser = DEACON_ADMIN_MAP[oldName];
-    if (linkedUser) { delete DEACON_ADMIN_MAP[oldName]; DEACON_ADMIN_MAP[newName] = { ...linkedUser }; }
-    const affected = state.allStudents.filter(s => s.deacon === oldName);
-    affected.forEach(s => { s.deacon = newName; });
-
-    // تحديث محلي فوري
-    const rawEntry = state.ALL_DEACONS_RAW.find(x => x.id === docId);
-    if (rawEntry) rawEntry.name = newName;
-    if (state.currentDeacon === oldName) state.currentDeacon = newName;
-    if (state.currentUserName === oldName) state.currentUserName = newName;
-
-    applyActiveGradeDeacons();
-    renderDeaconList();
-    renderStudentsList();
-    renderTodayList();
-    closeEditDeaconNameModal();
-    showToast(`تم تغيير الاسم لـ "${newName}" ✓ (اتحدث في ${affected.length} مخدوم)`, 'success');
-    logActivity('عدّل اسم خادم', `${oldName} → ${newName}`);
-  } catch(e) {
-    console.error(e);
-    showToast('حدث خطأ، حاول تاني', 'error');
-  }
 };
 
 window.renderDeaconList = () => {

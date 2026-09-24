@@ -367,7 +367,6 @@
         <div id="deacon-tab-grade-label" style="font-size:13px;color:var(--text-dim);margin-bottom:10px;text-align:center"></div>
         <div style="display:flex;gap:10px">
         <button onclick="openAddDeaconModal()" style="flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:var(--radius-sm);color:#fff;font-family:Cairo,sans-serif;font-size:15px;font-weight:700;padding:13px;cursor:pointer">➕ إضافة خادم جديد</button>
-        <button onclick="openEditDeaconNameModal()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:Cairo,sans-serif;font-size:15px;font-weight:700;padding:13px;cursor:pointer">✏️ تعديل اسم خادم</button>
         </div>
         <button onclick="openDashModal()" style="width:100%;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:var(--radius-sm);color:var(--success);font-family:Cairo,sans-serif;font-size:15px;font-weight:700;padding:13px;cursor:pointer;margin-top:10px">📊 داشبورد الخدام</button>
         <button onclick="openDeleteDeaconModal()" style="width:100%;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:var(--radius-sm);color:var(--danger);font-family:Cairo,sans-serif;font-size:15px;font-weight:700;padding:13px;cursor:pointer;margin-top:10px">🗑 حذف خادم</button>
@@ -730,25 +729,6 @@
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn-secondary" onclick="closeDeleteDeaconModal()">إلغاء</button>
       <button class="btn-primary" style="background:var(--danger)" onclick="confirmDeleteDeacon()">🗑 حذف</button>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT DEACON NAME MODAL -->
-<div id="edit-deacon-name-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;overflow-y:auto;padding:20px">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:480px;margin:0 auto;padding:24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:18px;font-weight:700">✏️ تعديل اسم الخادم</div>
-      <button onclick="closeEditDeaconNameModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
-    </div>
-    <label class="field-label">اختر الخادم</label>
-    <select id="edit-deacon-name-select" class="field-select" onchange="document.getElementById('edit-deacon-name-input').value=this.value"></select>
-    <label class="field-label">الاسم الجديد *</label>
-    <input type="text" id="edit-deacon-name-input" class="field-input" placeholder="الاسم الجديد">
-    <div style="font-size:12px;color:var(--text-dim);margin-top:6px">هيتحدث الاسم في كل مكان: قايمة الخدام، حسابه لو عنده تسجيل دخول، وكل المخدومين اللي متسجلين تحت اسمه.</div>
-    <div style="display:flex;gap:10px;margin-top:8px">
-      <button class="btn-secondary" onclick="closeEditDeaconNameModal()">إلغاء</button>
-      <button class="btn-primary" onclick="confirmEditDeaconName()">💾 حفظ التعديل</button>
     </div>
   </div>
 </div>
