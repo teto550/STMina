@@ -16,7 +16,6 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Decide what to do with `part_notifications` (needs a rule or removal of the feature).
 
 ## B. Project hygiene
-- [ ] Deploy the updated Firestore rules (`firebase deploy --only firestore:rules`): admin may rename a part assignment (needed for the rename of a servant to also update `parts_distribution`).
 - [ ] Switch GitHub Pages to the build (`deploy:ghpages`, source = `gh-pages`) and bump the service worker cache version at go-live.
 - [ ] Replace the runtime CDN scripts (EmailJS, SheetJS, ExcelJS) with bundled packages loaded on demand.
 - [ ] Type the data model and remove `// @ts-nocheck` file by file (React code is already strict).
@@ -37,6 +36,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 
 ## Done
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.
+- [x] Firestore rules deployed (roles collection, users.deaconId/access locked to admins, admin may rename part assignments) on 2026-09-25.
 - [x] QR feature removed (scanner, generation, print-all cards).
 - [x] Legacy Firestore collections `paragraphs` and `deacon_attendance` and the leftover fields deleted (backup in `backups/`).
 - [x] "مستر" removed from servant names (all collections).
