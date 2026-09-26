@@ -40,7 +40,7 @@
 
   /* APP */
   #app-screen { display: none; min-height: 100dvh; flex-direction: column; }
-  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 100; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); position: relative; z-index: 100; /* scrolls with the page (was sticky: it covered half of a phone screen); relative + z-index keep the settings menu above the content */ }
   .top-bar-title { font-size: 18px; font-weight: 700; }
   .top-bar-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
   .icon-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 18px; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }

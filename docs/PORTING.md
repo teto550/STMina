@@ -278,3 +278,6 @@ New `src/core/servants-index.ts` (+ test): `deaconNameOf`, `isDeaconOf`, `deacon
 
 ### C30 - Missing imports fix + the undefined-name check
 C29 shipped without the `servants-index` imports in `students/students.ts`, `servants/parts.ts`, `servants/deacon-attendance.ts` and `import-export/import-students.ts` (the kids list kept loading: "deaconNameOf is not defined"). Fixed, and new `tools/check-undefined-names.cjs` (`npm run check:names`, now part of `npm run build`) reports names used but never defined in the `@ts-nocheck` files. Copy the tool to the other project and run it after porting.
+
+### C31 - The top banner scrolls with the page
+`src/styles/app.css` `.top-bar`: `position: sticky; top: 0` -> `position: relative` (z-index kept so the settings menu stays above the content). On a phone the sticky banner (about 100 px, with a see-through gradient) covered a large part of the screen while scrolling.
