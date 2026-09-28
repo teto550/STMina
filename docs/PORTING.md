@@ -281,3 +281,6 @@ C29 shipped without the `servants-index` imports in `students/students.ts`, `ser
 
 ### C31 - The top banner scrolls with the page
 `src/styles/app.css` `.top-bar`: `position: sticky; top: 0` -> `position: relative` (z-index kept so the settings menu stays above the content). On a phone the sticky banner (about 100 px, with a see-through gradient) covered a large part of the screen while scrolling.
+
+### C32 - GitHub Actions builds and deploys to GitHub Pages
+New `.github/workflows/deploy-pages.yml`: on push to `main` (or manual), runs `npm ci && npm run build` and publishes `dist/` to Pages via `actions/deploy-pages`. Needs Settings -> Pages -> Source = "GitHub Actions" set once per repo (in the browser; the REST API refused this PUT from the CLI). Once set, `npm run deploy:ghpages` (local build pushed to the `gh-pages` branch) is no longer needed, though it still works as a manual fallback. This file was committed straight to `main` (workflow files only take effect from the default branch) and should be copied to the other project too.
