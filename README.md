@@ -35,7 +35,8 @@ All three build first (`npm run build`).
 
 Notes:
 - All sites use the **same Firebase project**, so test and live share the same Firestore data and users.
-- GitHub Pages currently serves the `main` branch root. Before the first `deploy:ghpages` **and before merging this
-  branch into `main`**, switch Pages to the `gh-pages` branch (Settings → Pages, or
-  `gh api -X PUT repos/teto550/STMina/pages -f "source[branch]=gh-pages" -f "source[path]=/"`).
+- GitHub Pages can build itself via `.github/workflows/deploy-pages.yml`: it runs on every push to `main` (or
+  manually from the Actions tab). One-time setup: Settings → Pages → Source → "GitHub Actions" (the GitHub API
+  refused to flip this from the CLI, so it has to be done in the browser). Once set, `npm run deploy:ghpages`
+  (local build pushed to the `gh-pages` branch) is no longer needed.
   The public URL stays `https://teto550.github.io/STMina/`. To roll back, switch the source back to the old branch/commit.
