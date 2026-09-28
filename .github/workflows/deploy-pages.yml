@@ -31,6 +31,21 @@ jobs:
       # and `npm install` is used (still exact per the committed lockfile: package.json/-lock.json are unchanged).
       - run: npm install --no-audit --no-fund
       - run: npm run build
+        env:
+          # .env.local is git-ignored (never committed), so the build needs these from GitHub Actions repository
+          # secrets instead: Settings -> Secrets and variables -> Actions -> New repository secret, one per name
+          # below, values copied from your local .env.local. VITE_APPCHECK_DEBUG_TOKEN is dev-only and deliberately
+          # left out (baking a debug App Check bypass token into a public build would defeat App Check).
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
+          VITE_FCM_VAPID_KEY: ${{ secrets.VITE_FCM_VAPID_KEY }}
+          VITE_PUSH_WORKER_URL: ${{ secrets.VITE_PUSH_WORKER_URL }}
+          VITE_ASSISTANT_WORKER_URL: ${{ secrets.VITE_ASSISTANT_WORKER_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
