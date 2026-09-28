@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # pinned to match the npm version the lockfile was generated with locally: a newer npm on the runner
+      # was stricter about an optional nested dependency (ajv-formats) and refused `npm ci` (2026-09-28).
+      - run: npm install -g npm@10.8.2
       - run: npm ci
       - run: npm run build
       - uses: actions/configure-pages@v5
