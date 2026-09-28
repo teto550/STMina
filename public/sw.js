@@ -1,7 +1,7 @@
 // ===== خدمة ابتدائي — Service Worker =====
 // كل ما تعدّل حاجة في index.html وتنزلها على GitHub Pages، غيّر رقم النسخة
 // دي (CACHE_VERSION) عشان المتصفح يجيب النسخة الجديدة بدل القديمة المخزنة.
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `sanmina-kids-${CACHE_VERSION}`;
 
 // الملفات الأساسية اللي لازم تتخزن عشان الموقع يفتح بالكامل من غير نت
@@ -11,9 +11,6 @@ const APP_SHELL = [
   './manifest.json',
   './icon-192.png',
   'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js',
 ];
 
 // ===== INSTALL: خزّن الـ app shell =====

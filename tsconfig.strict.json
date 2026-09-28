@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/react",
+    "src/types",
+    "src/vite-env.d.ts"
+  ]
+}
