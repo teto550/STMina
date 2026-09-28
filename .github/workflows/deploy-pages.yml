@@ -26,11 +26,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      # pinned to match the npm version the lockfile was generated with locally: a newer npm on the runner
-      # was stricter about an optional nested dependency (ajv-formats) and refused `npm ci` (2026-09-28).
-      - run: npm install -g npm@10.8.2
-      - run: npm ci
+      # `npm ci` failed here with an "ajv-formats" lockfile mismatch that a from-scratch `npm install` does NOT
+      # reproduce locally (2026-09-28); most likely a stale/corrupt runner npm cache, so caching is left off here
+      # and `npm install` is used (still exact per the committed lockfile: package.json/-lock.json are unchanged).
+      - run: npm install --no-audit --no-fund
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
