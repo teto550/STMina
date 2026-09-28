@@ -284,3 +284,14 @@ C29 shipped without the `servants-index` imports in `students/students.ts`, `ser
 
 ### C32 - GitHub Actions builds and deploys to GitHub Pages
 New `.github/workflows/deploy-pages.yml`: on push to `main` (or manual), runs `npm ci && npm run build` and publishes `dist/` to Pages via `actions/deploy-pages`. Needs Settings -> Pages -> Source = "GitHub Actions" set once per repo (in the browser; the REST API refused this PUT from the CLI). Once set, `npm run deploy:ghpages` (local build pushed to the `gh-pages` branch) is no longer needed, though it still works as a manual fallback. This file was committed straight to `main` (workflow files only take effect from the default branch) and should be copied to the other project too.
+
+### C33 - GitHub Pages Actions workflow: fixed npm ci failure, added Firebase config via secrets
+Two follow-up fixes to `.github/workflows/deploy-pages.yml` (C32): (1) `npm ci` failed on the runner with an
+ajv-formats lockfile mismatch a from-scratch `npm install` does not reproduce locally -> switched to
+`npm install --no-audit --no-fund`, no npm cache. (2) The build had no Firebase config (`.env.local` is
+git-ignored) and the deployed site threw `auth/invalid-api-key` -> the build step now reads
+`VITE_FIREBASE_API_KEY`/`_AUTH_DOMAIN`/`_PROJECT_ID`/`_STORAGE_BUCKET`/`_MESSAGING_SENDER_ID`/`_APP_ID`,
+`VITE_RECAPTCHA_SITE_KEY`, `VITE_FCM_VAPID_KEY`, `VITE_PUSH_WORKER_URL`, `VITE_ASSISTANT_WORKER_URL` from
+GitHub Actions repository secrets of the same names (Settings -> Secrets and variables -> Actions), values
+copied from `.env.local`. `VITE_APPCHECK_DEBUG_TOKEN` is deliberately NOT a secret here (dev-only App Check
+bypass; must never ship in a public build). Needs repo secrets added once per project when porting.
