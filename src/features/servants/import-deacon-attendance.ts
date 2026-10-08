@@ -12,11 +12,12 @@ import {
 } from '@/features/servants/deacon-attendance';
 
 // ===== رفع حضور الخدام القديم من إكسيل (أدمن بس) — بيكتب في deaconAttendance بنفس شكل التسجيل اليدوي =====
+// بيكتب مباشرة بعد المطابقة (زرار "ابدأ الرفع")؛ "معاينة بس" بتعرض التقرير من غير حفظ.
 // الشيت: أسماء الخدام في عمود، وأعمدة التواريخ فيها TRUE/FALSE (أو 1 / ✓ / حاضر).
 // بيتعرف على شكلين: (1) صف عناوين فيه تواريخ كاملة، (2) أول 3 صفوف = سنة/شهر/يوم (زي كشف مدارس الأحد).
 // أي (خادم + يوم + نوع) متسجل قبل كده بيتخطى — فالاستيراد ممكن يتعاد من غير تكرار.
 
-let plan = null; // { type, items: [{ name, date }], ... } — بتتبني في المعاينة وبتتكتب في "ابدأ الرفع"
+let plan = null; // { type, items: [{ name, date }] } — بتتبني من الملف (معاينة أو أول ما تدوس ابدأ) وبتتكتب في "ابدأ الرفع"
 
 const $ = (id) => document.getElementById(id);
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -34,7 +35,7 @@ window.openImportDeaconAttModal = () => {
   $('import-deacon-att-file').value = '';
   $('import-deacon-att-cutoff').value = '';
   $('import-deacon-att-preview-btn').disabled = false;
-  $('import-deacon-att-start-btn').disabled = true;
+  $('import-deacon-att-start-btn').disabled = false;
   $('import-deacon-att-start-btn').textContent = '▶ ابدأ الرفع';
   setStatus('');
   $('import-deacon-att-modal').style.display = 'block';
@@ -46,10 +47,10 @@ window.closeImportDeaconAttModal = () => {
   document.body.style.overflow = '';
 };
 
-// أي تغيير في الملف/النوع/التاريخ بيلغي المعاينة القديمة
+// أي تغيير في الملف/النوع/التاريخ بيلغي الخطة القديمة
 window.onImportDeaconAttInputChange = () => {
   plan = null;
-  $('import-deacon-att-start-btn').disabled = true;
+  $('import-deacon-att-start-btn').disabled = false;
   $('import-deacon-att-start-btn').textContent = '▶ ابدأ الرفع';
 };
 
@@ -145,16 +146,16 @@ function matchServant(rawName, roster) {
   return {};
 }
 
-// ---------- step 1: preview (بيقرأ ويطابق من غير ما يكتب أي حاجة) ----------
-window.previewImportDeaconAtt = async () => {
+// ---------- step 1: قراءة الملف ومطابقة الأسماء (من غير ما يكتب أي حاجة) ----------
+// بيرجّع الخطة { type, items } أو null لو مفيش حاجة تتكتب
+async function buildImportPlan() {
   const fileInput = $('import-deacon-att-file');
-  if (!fileInput.files.length) { showToast('اختار ملف الإكسيل الأول', 'error'); return; }
+  if (!fileInput.files.length) { showToast('اختار ملف الإكسيل الأول', 'error'); return null; }
   const type = $('import-deacon-att-type').value === 'meeting' ? 'meeting' : 'sunday';
   const cutoff = $('import-deacon-att-cutoff').value; // اختياري
   const btn = $('import-deacon-att-preview-btn');
   btn.disabled = true;
   plan = null;
-  $('import-deacon-att-start-btn').disabled = true;
   let text = '';
   const log = (line) => { text += line + '\n'; setStatus(text); };
   setStatus('');
@@ -178,7 +179,7 @@ window.previewImportDeaconAtt = async () => {
 
     const items = [];
     const unmatched = [], ambiguous = [];
-    let matched = 0, skippedExisting = 0;
+    let matched = 0, skippedExisting = 0, nameRows = 0, presentCells = 0;
     const seenPairs = new Set();
 
     for (let r = layout.firstDataRow; r < rows.length; r++) {
@@ -186,6 +187,7 @@ window.previewImportDeaconAtt = async () => {
       if (!row) continue;
       const rawName = row[layout.nameCol];
       if (!rawName || typeof rawName !== 'string' || !/[\u0621-\u064A]/.test(rawName)) continue;
+      nameRows++;
       const res = matchServant(rawName, roster);
       if (res.ambiguous) { ambiguous.push(rawName.trim()); continue; }
       if (!res.servant) { unmatched.push(rawName.trim()); continue; }
@@ -193,6 +195,7 @@ window.previewImportDeaconAtt = async () => {
       const name = res.servant.name; // اسم الخادم المسجل في البرنامج (مش اسم الشيت)
       dateCols.forEach(({ col, date }) => {
         if (!isPresentCell(row[col])) return;
+        presentCells++;
         const key = name + '|' + date;
         if (seenPairs.has(key)) return;
         seenPairs.add(key);
@@ -201,7 +204,8 @@ window.previewImportDeaconAtt = async () => {
       });
     }
 
-    log(`🙏 اتطابق ${matched} خادم من الملف`);
+    log(`👥 أسماء في الملف: ${nameRows} — اتطابق منهم: ${matched} (عدد الخدام المسجلين في البرنامج: ${roster.length})`);
+    log(`✔️ خانات حضور (TRUE) للأسماء المتطابقة: ${presentCells}`);
     log(`🆕 سجلات حضور جديدة هتتضاف: ${items.length}`);
     if (skippedExisting) log(`⏭ متسجلة قبل كده وهتتخطى: ${skippedExisting}`);
     if (ambiguous.length) {
@@ -214,31 +218,45 @@ window.previewImportDeaconAtt = async () => {
     }
 
     if (!items.length) {
-      log('✅ مفيش سجلات جديدة تتضاف.');
-    } else {
-      const dates = [...new Set(items.map((i) => i.date))].sort();
-      log(`📆 من ${dates[0]} إلى ${dates[dates.length - 1]} (${dates.length} يوم)`);
-      log('👆 راجع التقرير، ولو تمام دوس "ابدأ الرفع".');
-      plan = { type, items };
-      $('import-deacon-att-start-btn').disabled = false;
+      log(matched === 0
+        ? '❌ مفيش ولا اسم اتطابق مع الخدام المسجلين — راجع الأسماء في الشيت.'
+        : presentCells === 0
+          ? '❌ لقيت الأسماء بس مفيش ولا خانة حضور (TRUE) — راجع شكل الشيت.'
+          : '✅ مفيش سجلات جديدة تتضاف (كلها متسجلة قبل كده).');
+      return null;
     }
+    const dates = [...new Set(items.map((i) => i.date))].sort();
+    log(`📆 من ${dates[0]} إلى ${dates[dates.length - 1]} (${dates.length} يوم)`);
+    plan = { type, items };
+    return plan;
   } catch (e) {
     console.error('import deacon attendance preview error:', e);
     log('❌ ' + (e.message || e));
     showToast('حصل خطأ في قراءة الملف', 'error');
+    return null;
   } finally {
     btn.disabled = false;
   }
+}
+
+window.previewImportDeaconAtt = async () => {
+  const p = await buildImportPlan();
+  if (p) setStatus($('import-deacon-att-status').textContent + '\n👆 دي معاينة بس — دوس "ابدأ الرفع" عشان تتحفظ.');
 };
 
-// ---------- step 2: write ----------
+// ---------- step 2: الكتابة ----------
 window.startImportDeaconAtt = async () => {
   if (state.currentUserRole !== 'admin') { showToast('الاستيراد للأدمن بس', 'error'); return; }
-  if (!plan || !plan.items.length) { showToast('اعمل معاينة الأول', 'error'); return; }
-  const { type, items } = plan;
   const startBtn = $('import-deacon-att-start-btn');
   const previewBtn = $('import-deacon-att-preview-btn');
-  startBtn.disabled = true; previewBtn.disabled = true; startBtn.textContent = 'جاري الحفظ…';
+  startBtn.disabled = true; previewBtn.disabled = true; startBtn.textContent = 'جاري القراءة…';
+  if (!plan) await buildImportPlan(); // لو مفيش معاينة قبل كده بنقرأ الملف الأول
+  if (!plan || !plan.items.length) {
+    startBtn.disabled = false; previewBtn.disabled = false; startBtn.textContent = '▶ ابدأ الرفع';
+    return;
+  }
+  startBtn.textContent = 'جاري الحفظ…';
+  const { type, items } = plan;
   let text = $('import-deacon-att-status').textContent + '\n';
   const log = (line) => { text += line + '\n'; setStatus(text); };
 
@@ -277,7 +295,7 @@ window.startImportDeaconAtt = async () => {
   } catch (e) {
     console.error('import deacon attendance error:', e);
     log('❌ حدث خطأ أثناء الحفظ: ' + (e.message || e));
-    log('ممكن تعيد: اللي اتحفظ هيتخطى لو عملت معاينة تاني (بعد تحديث البيانات).');
+    log('ممكن تعيد الرفع: اللي اتحفظ بالفعل هيتخطى ومش هيتكرر.');
     showToast('حدث خطأ أثناء الاستيراد', 'error');
     startBtn.disabled = false; startBtn.textContent = '▶ ابدأ الرفع';
   } finally {
