@@ -6,6 +6,7 @@ import { sectionTag } from '@/core/section';
 import { deaconIdOfName } from '@/core/servants-index';
 import { ensureDeacons, ensureDeaconAttendance } from '@/core/data';
 import { logActivity } from '@/core/presence';
+import { todayKey } from '@/core/utils';
 import { buildColumnDateMap, ensureXLSXLoaded, normalizeName } from '@/features/import-export/import-attendance';
 import {
   DEACON_ATTENDANCE, getCurrentUserScopedDeaconRows, renderDeaconAttDatesList
@@ -146,6 +147,18 @@ function matchServant(rawName, roster) {
   return {};
 }
 
+// أقرب اسم مسجل (بعدد الكلمات المشتركة) — تلميح في التقرير بس، مش بيتكتب بيه حاجة
+function closestHint(rawName, roster) {
+  const toks = cleanServantName(rawName).split(' ');
+  let best = null, bestScore = 0;
+  roster.forEach((r) => {
+    const st = r._n.split(' ');
+    const score = toks.filter((t) => st.includes(t)).length;
+    if (score > bestScore) { bestScore = score; best = r; }
+  });
+  return best ? `  ← أقرب اسم مسجل: ${best.name}` : '  ← مفيش اسم قريب في البرنامج';
+}
+
 // ---------- step 1: قراءة الملف ومطابقة الأسماء (من غير ما يكتب أي حاجة) ----------
 // بيرجّع الخطة { type, items } أو null لو مفيش حاجة تتكتب
 async function buildImportPlan() {
@@ -172,7 +185,11 @@ async function buildImportPlan() {
 
     const layout = detectLayout(rows);
     const dateCols = layout.dateCols.filter((d) => !cutoff || d.date <= cutoff);
-    log(`📅 تواريخ في الملف: ${layout.dateCols.length}${cutoff ? ` (هيتستورد ${dateCols.length} لحد ${cutoff})` : ''}`);
+    const allDates = layout.dateCols.map((d) => d.date).sort();
+    log(`📅 تواريخ في الملف: ${allDates.length} (من ${allDates[0]} إلى ${allDates[allDates.length - 1]})${cutoff ? ` — هيتستورد ${dateCols.length} لحد ${cutoff}` : ''}`);
+    log(`   أول 5 تواريخ كما اتقرت: ${layout.dateCols.slice(0, 5).map((d) => d.date).join(' ، ')}`);
+    const future = layout.dateCols.filter((d) => d.date > todayKey()).length;
+    if (future) log(`⚠️ ${future} تاريخ في المستقبل (بعد النهاردة) — غالبًا اتقرت غلط (يوم/شهر أو السنة). راجع أول 5 تواريخ فوق.`);
 
     const roster = getCurrentUserScopedDeaconRows().map((r) => ({ name: r.name, _n: cleanServantName(r.name) }));
     const existing = DEACON_ATTENDANCE[type] || {};
@@ -187,10 +204,11 @@ async function buildImportPlan() {
       if (!row) continue;
       const rawName = row[layout.nameCol];
       if (!rawName || typeof rawName !== 'string' || !/[\u0621-\u064A]/.test(rawName)) continue;
+      if (/^\s*(ال)?[اإأ]سم\s*$/.test(rawName)) continue; // خانة عنوان العمود مش خادم
       nameRows++;
       const res = matchServant(rawName, roster);
       if (res.ambiguous) { ambiguous.push(rawName.trim()); continue; }
-      if (!res.servant) { unmatched.push(rawName.trim()); continue; }
+      if (!res.servant) { unmatched.push(rawName.trim() + closestHint(rawName, roster)); continue; }
       matched++;
       const name = res.servant.name; // اسم الخادم المسجل في البرنامج (مش اسم الشيت)
       dateCols.forEach(({ col, date }) => {
