@@ -100,13 +100,15 @@ service cloud.firestore {
     }
 
     // 🆕 ===== student_secrets (باسوردات المخدومين) =====
-    // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش ولا بيتمسح.
+    // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش.
+    // بيتمسح بس لما الأدمن يحذف المخدوم نفسه (حذف المخدومين من تاب المخدومين).
     // أدمن بس (قرار الأدوار: مسؤول المرحلة مبقاش يشوف الباسوردات).
     match /student_secrets/{docId} {
       allow get: if isAdmin();
       allow list: if isAdmin();
       allow create: if isAdmin() && request.resource.data.password is string;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // ===== attendance / deaconAttendance =====
