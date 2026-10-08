@@ -298,3 +298,7 @@ bypass; must never ship in a public build). Needs repo secrets added once per pr
 
 ### C34 - Admin bulk delete of kids (select / select all) that also removes their data
 `index.html` (`#bulk-delete-wrap`, `#bulk-bar`, buttons above the kids list; admin only), `features/students/students.ts` (`currentStudentsList`, select mode `toggleSelectMode`/`toggleSel`/`selectAllVisibleStudents`, `deleteSelectedStudents`, `purgeStudents`; `deleteStudent` now fully purges for admins: `student_secrets` + all `attendance` of the kid + the kid doc, in chunks of 30; non-admins keep the old behaviour). A JSON backup of the deleted kids (photos left out) and their attendance records is downloaded after each delete. `firestore.rules`: `student_secrets` now `allow delete: if isAdmin()` (update stays false). DEPLOY THE RULES in the other project too (`firebase deploy --only firestore:rules`). Costs reads/deletes per kid's attendance records (free-plan quota), a run stopped by the quota can simply be repeated.
+
+### C35 - Kids import: servant names are matched leniently
+`features/import-export/import-students.ts`: the servant column is matched against the roster (`resolveDeacon`: drops a leading "مستر/", normalises letters, needs exactly one match in the section; `ensureDeacons()` first). Servants that do not match are NOT written as free text any more: they are listed in the import log (the kid keeps its current servant). Needed because sheets write "مستر/ <name>" while the roster stores the plain name.
+
