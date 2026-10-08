@@ -9,8 +9,7 @@ import { sectionTag } from '@/core/section';
 import { loadStudents } from '@/features/students/students';
 import { loadAllAttendance, renderTodayList } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
-import { ensureAttendance } from '@/core/data';
-import { parseAftiqadSheet } from '@/features/import-export/aftiqad-sheet';
+import { ensureAttendance, ensureDeacons } from '@/core/data';
 
 // ===== IMPORT STUDENTS DATA (+ optional attendance) FROM ONE EXCEL SHEET — للسنة الدراسية النشطة (activeGrade) بس =====
 // الشيت فيه كل حاجة سوا: بيانات المخدوم + أعمدة حضور بعدها (أول 3 صفوف سنة/شهر/يوم، والبيانات تبدأ من الصف الرابع)
@@ -18,9 +17,6 @@ import { parseAftiqadSheet } from '@/features/import-export/aftiqad-sheet';
 let importStudentsWB = null;
 
 let importStudentsSheetRows = null;
-
-// نتيجة قراءة شيت الافتقاد (كل مخدوم 3 صفوف) — null لو الشيت بالشكل العادي
-let importStudentsAftiqad = null;
 
 const IMPORT_STUDENT_FIELDS = [
   { key: 'name',         label: 'الاسم',           required: true  },
@@ -32,6 +28,16 @@ const IMPORT_STUDENT_FIELDS = [
   { key: 'dob',          label: 'تاريخ الميلاد',     required: false },
 ];
 
+// اسم الخادم في الشيت (زي "مستر/ افرايم محفوظ") بيتطابق مع قايمة الخدام بعد شيل "مستر/" وتوحيد الحروف.
+// لو مفيش تطابق واحد واضح (اسمين في خلية، أو خادم مش في القايمة) مش بنخمّن: الخانة بتتسيب زي ما هي وبتظهر في التقرير.
+function resolveDeacon(raw, section) {
+  const strip = n => normalizeName((n || '').toString().replace(/^\s*(مستر|مس|ابونا|أبونا)\s*[\/\-:]?\s*/, ''));
+  const wanted = strip(raw);
+  if (!wanted) return null;
+  const hits = (state.ALL_DEACONS_RAW || []).filter(d => (d.section || 'boys') === section && strip(d.name) === wanted);
+  return hits.length === 1 ? hits[0] : null;
+}
+
 window.openImportStudentsModal = () => {
   if (state.currentUserRole !== 'admin') return;
   if (!state.activeGrade) { showToast('اختار السنة الدراسية الأول من الشريط فوق', 'error'); return; }
@@ -39,7 +45,7 @@ window.openImportStudentsModal = () => {
   document.getElementById('import-students-sheet-wrap').style.display = 'none';
   document.getElementById('import-students-mapping').style.display = 'none';
   document.getElementById('import-students-mapping-fields').innerHTML = '';
-  importStudentsWB = null; importStudentsSheetRows = null; importStudentsAftiqad = null;
+  importStudentsWB = null; importStudentsSheetRows = null;
   const status = document.getElementById('import-students-status');
   status.style.display = 'none';
   status.textContent = '';
@@ -82,7 +88,7 @@ window.onImportStudentsFileChange = async () => {
   document.getElementById('import-students-start-btn').disabled = true;
   document.getElementById('import-students-sheet-wrap').style.display = 'none';
   document.getElementById('import-students-mapping').style.display = 'none';
-  importStudentsWB = null; importStudentsSheetRows = null; importStudentsAftiqad = null;
+  importStudentsWB = null; importStudentsSheetRows = null;
   if (!fileInput.files.length) return;
   try {
     await ensureXLSXLoaded();
@@ -104,10 +110,6 @@ window.onImportStudentsSheetChange = () => {
   const sheetName = sheetSel.value || importStudentsWB.SheetNames[0];
   const ws = importStudentsWB.Sheets[sheetName];
   importStudentsSheetRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
-  // لو الشيت بشكل كشف الافتقاد (مستر/ فلان + كل مخدوم 3 صفوف) نقراه أوتوماتيك من غير ما نحتاج تحديد أعمدة
-  importStudentsAftiqad = parseAftiqadSheet(importStudentsSheetRows, XLSX, { preferServants: ['بولا ميلاد'] });
-  if (importStudentsAftiqad.ok) { showAftiqadPreview(importStudentsAftiqad); return; }
-  importStudentsAftiqad = null;
   renderImportStudentsMapping();
 };
 
@@ -143,7 +145,6 @@ function renderImportStudentsMapping() {
 }
 
 window.startImportStudentsData = async () => {
-  if (importStudentsAftiqad) { await runAftiqadImport(); return; }
   await ensureAttendance('full'); // duplicates are skipped by comparing with the existing history
   const cutoff = document.getElementById('import-students-cutoff-date').value;
   const status = document.getElementById('import-students-status');
@@ -177,6 +178,8 @@ window.startImportStudentsData = async () => {
     const nameToStudent = {};
     scoped.forEach(s => { nameToStudent[normalizeName(s.name)] = s; });
 
+    await ensureDeacons(); // الخدام لازم يكونوا متحملين عشان نطابق أسماءهم
+    const unmatchedDeacons = new Map(); // اسم الخادم في الشيت -> عدد المخدومين
     let toCreate = 0, toUpdate = 0, skipped = 0;
     const batchOps = []; // { type:'set'|'update', ref, data }
 
@@ -187,7 +190,12 @@ window.startImportStudentsData = async () => {
       if (!rawName || typeof rawName !== 'string' || !rawName.trim()) { skipped++; continue; }
       const name = rawName.trim();
       const fields = {};
-      if (colMap.deacon !== -1 && row[colMap.deacon])             { fields.deacon = row[colMap.deacon].toString().trim(); fields.deaconId = deaconIdOfName(fields.deacon, sectionTag()); }
+      if (colMap.deacon !== -1 && row[colMap.deacon]) {
+        const rawDeacon = row[colMap.deacon].toString().trim();
+        const hit = resolveDeacon(rawDeacon, sectionTag());
+        if (hit) { fields.deacon = hit.name; fields.deaconId = hit.id; }
+        else unmatchedDeacons.set(rawDeacon, (unmatchedDeacons.get(rawDeacon) || 0) + 1);
+      }
       if (colMap.phoneDad !== -1 && row[colMap.phoneDad])         fields.phoneDad     = row[colMap.phoneDad].toString().trim();
       if (colMap.phoneMom !== -1 && row[colMap.phoneMom])         fields.phoneMom     = row[colMap.phoneMom].toString().trim();
       if (colMap.phoneStudent !== -1 && row[colMap.phoneStudent]) fields.phoneStudent = row[colMap.phoneStudent].toString().trim();
@@ -213,6 +221,11 @@ window.startImportStudentsData = async () => {
     }
 
     log(`👤 هيتم إضافة ${toCreate} مخدوم جديد، وتحديث بيانات ${toUpdate} مخدوم موجود${skipped ? ` (اتجاهل ${skipped} صف من غير اسم)` : ''}`);
+
+    if (unmatchedDeacons.size) {
+      log('⚠️ خدام في الشيت ماتطابقوش مع قايمة الخدام (المخدومين دول اتسجلوا من غير خادم، حددهم بعد الرفع):');
+      unmatchedDeacons.forEach((n, name) => log(`   • ${name} (${n} مخدوم)`));
+    }
 
     const CHUNK = 400;
     for (let i = 0; i < batchOps.length; i += CHUNK) {
@@ -306,141 +319,3 @@ window.startImportStudentsData = async () => {
     btn.disabled = false; btn.textContent = '▶ ابدأ الرفع';
   }
 };
-
-// ===== شيت الافتقاد: معاينة قبل الرفع =====
-function showAftiqadPreview(p) {
-  const status = document.getElementById('import-students-status');
-  const withAtt = p.students.reduce((n, s) => n + s.attendance.length, 0);
-  status.style.display = 'block';
-  status.textContent = [
-    '✅ اتعرّف على شكل كشف الافتقاد (كل مخدوم 3 صفوف) — مش محتاج تحدد أعمدة',
-    `👥 ${p.students.length} مخدوم — ${p.servants.length} خادم افتقاد${p.servants.length ? ': ' + p.servants.join('، ') : ''}`,
-    p.dateCount ? `📅 ${p.dateCount} تاريخ حضور (من ${p.dateMin} لحد ${p.dateMax}) — هيتسجّل الحضور بس لما الخلية تكون TRUE ولحد النهارده (${withAtt} حضور في الشيت)` : 'ℹ️ مفيش تواريخ حضور في الشيت',
-    `🧾 أعمدة اتعرّف عليها: ${p.foundCols.join('، ')}`,
-    p.missingCols.length ? `➖ مش موجودة في الشيت: ${p.missingCols.join('، ')}` : '',
-    ...p.warnings.map(w => '⚠️ ' + w),
-  ].filter(Boolean).join('\n');
-  document.getElementById('import-students-mapping').style.display = 'none';
-  document.getElementById('import-students-start-btn').disabled = false;
-}
-
-// ===== شيت الافتقاد: الرفع =====
-async function runAftiqadImport() {
-  const status = document.getElementById('import-students-status');
-  const btn    = document.getElementById('import-students-start-btn');
-  const log = (line) => { status.textContent += line + '\n'; status.scrollTop = status.scrollHeight; };
-  if (!state.activeGrade) { showToast('اختار السنة الدراسية الأول من الشريط فوق', 'error'); return; }
-
-  await ensureAttendance('full'); // duplicates are skipped by comparing with the existing history
-  status.style.display = 'block';
-  status.textContent = '';
-  btn.disabled = true; btn.textContent = 'جاري المعالجة…';
-
-  try {
-    const parsed = importStudentsAftiqad;
-    const today = new Date().toISOString().slice(0, 10);
-    log(`📚 هيتم الرفع للسنة الدراسية النشطة: ${state.activeGrade}`);
-
-    const scoped = state.allStudents.filter(s => s.grade === state.activeGrade);
-    const nameToStudent = {};
-    scoped.forEach(s => { nameToStudent[normalizeName(s.name)] = s; });
-
-    let toCreate = 0, toUpdate = 0;
-    const batchOps = [];
-    parsed.students.forEach((p, i) => {
-      const fields = {};
-      if (p.servant) { fields.deacon = p.servant; fields.deaconId = deaconIdOfName(p.servant, sectionTag()); }
-      ['phoneDad', 'phoneMom', 'phoneStudent', 'phoneOther', 'address', 'school', 'confessor', 'dob'].forEach(k => { if (p[k]) fields[k] = p[k]; });
-
-      const existing = nameToStudent[normalizeName(p.name)];
-      if (existing) {
-        if (Object.keys(fields).length) batchOps.push({ type: 'update', ref: doc(db, 'students', existing.id), data: fields });
-        toUpdate++;
-      } else {
-        const sid = 'STU-' + Date.now().toString(36).toUpperCase() + '-' + i;
-        const ref = doc(collection(db, 'students'));
-        batchOps.push({ type: 'set', ref, data: {
-          name: p.name, grade: state.activeGrade, sid,
-          dob: '', address: '', phoneDad: '', phoneMom: '', phoneStudent: '', confessor: '', deacon: '', deaconId: null,
-          attendanceCount: 0, starCount: 0, photo: '', section: sectionTag(), createdAt: serverTimestamp(),
-          ...(newKidFields(sectionTag(), state.activeGrade) || {}),
-          ...fields
-        }});
-        toCreate++;
-      }
-    });
-    log(`👤 هيتم إضافة ${toCreate} مخدوم جديد، وتحديث بيانات ${toUpdate} مخدوم موجود`);
-
-    const CHUNK = 400;
-    for (let i = 0; i < batchOps.length; i += CHUNK) {
-      const chunk = batchOps.slice(i, i + CHUNK);
-      const batch = writeBatch(db);
-      chunk.forEach(op => { if (op.type === 'set') batch.set(op.ref, op.data); else batch.update(op.ref, op.data); });
-      await batch.commit();
-      log(`   ✓ اتحفظ بيانات ${Math.min(i + CHUNK, batchOps.length)}/${batchOps.length}`);
-    }
-
-    log('⏳ تحديث قائمة المخدومين…');
-    await loadStudents({ force: true });
-
-    // ===== الحضور: TRUE بس، ولحد النهارده =====
-    const nameToStudent2 = {};
-    state.allStudents.filter(s => s.grade === state.activeGrade).forEach(s => { nameToStudent2[normalizeName(s.name)] = s; });
-    const toWrite = [];
-    let future = 0;
-    parsed.students.forEach(p => {
-      const student = nameToStudent2[normalizeName(p.name)];
-      if (!student) return;
-      p.attendance.forEach(date => {
-        if (date > today) { future++; return; }
-        if (state.allAttendance[date] && state.allAttendance[date][student.id]) return;
-        toWrite.push({ studentId: student.id, date });
-      });
-    });
-    log(`🆕 عدد سجلات الحضور الجديدة: ${toWrite.length}`);
-    if (future) log(`⚠️ اتجاهل ${future} حضور بتاريخ في المستقبل`);
-
-    if (toWrite.length) {
-      let written = 0;
-      for (let i = 0; i < toWrite.length; i += CHUNK) {
-        const chunk = toWrite.slice(i, i + CHUNK);
-        const batch = writeBatch(db);
-        chunk.forEach(item => {
-          const ref = doc(collection(db, 'attendance'));
-          batch.set(ref, { studentId: item.studentId, date: item.date, section: sectionTag(), timestamp: serverTimestamp() });
-        });
-        await batch.commit();
-        written += chunk.length;
-        log(`   ✓ اتحفظ حضور ${written}/${toWrite.length}`);
-      }
-      await loadAllAttendance();
-      const affectedIds = [...new Set(toWrite.map(t => t.studentId))];
-      for (let i = 0; i < affectedIds.length; i += CHUNK) {
-        const chunk = affectedIds.slice(i, i + CHUNK);
-        const batch2 = writeBatch(db);
-        chunk.forEach(sid => {
-          let count = 0;
-          Object.values(state.allAttendance).forEach(rec => { if (rec[sid]) count++; });
-          batch2.update(doc(db, 'students', sid), { attendanceCount: count });
-        });
-        await batch2.commit();
-      }
-      await loadStudents({ force: true });
-    }
-
-    if (typeof renderTodayList === 'function') renderTodayList();
-    if (typeof renderDeaconList === 'function') renderDeaconList();
-    if (typeof renderStats === 'function') renderStats();
-    if (typeof renderStudentsList === 'function') renderStudentsList();
-
-    log('🎉 تم رفع البيانات بنجاح!');
-    showToast('تم الرفع بنجاح ✓', 'success');
-    logActivity('رفع بيانات مخدومين من إكسيل (شيت افتقاد)', `${state.activeGrade} — ${toCreate} جديد / ${toUpdate} تحديث`);
-    btn.disabled = false; btn.textContent = '✓ تم';
-  } catch (e) {
-    console.error('import aftiqad error:', e);
-    log('❌ حدث خطأ أثناء الرفع: ' + (e.message || e));
-    showToast('حدث خطأ أثناء الرفع', 'error');
-    btn.disabled = false; btn.textContent = '▶ ابدأ الرفع';
-  }
-}
