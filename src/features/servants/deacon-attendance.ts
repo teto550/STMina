@@ -26,6 +26,10 @@ let currentDeaconAttMode = 'present';  // 'present' | 'absent'
 
 let selectedDeaconAttDate = null;
 
+// اليوم اللي بيتحضّر فيه من خانة التحضير: null = النهاردة (بيتحسب كل مرة، فلو التطبيق فضل مفتوح لبكرة يبقى بكرة)
+let attDaySelected = null;
+const attDay = () => attDaySelected || todayKey();
+
 // السجلات القديمة اللي اتسجلت قبل ما نفصل النوعين بتتحسب "مدارس أحد"
 const normAttType = t => (t === 'meeting' ? 'meeting' : 'sunday');
 
@@ -120,13 +124,18 @@ window.renderDeaconAttPicker = () => {
   if (!cont) return;
   const type = currentDeaconAttType;
   const info = DEACON_ATT_TYPES[type];
-  const todayMap = attTodayMap(type);
+  const dayKey = attDay();
+  const todayMap = attMap(type)[dayKey] || {};
   const allNames = allDeaconNames();
 
   const typeLbl = document.getElementById('sd-att-type-label');
   if (typeLbl) typeLbl.textContent = info.label;
   const todayLbl = document.getElementById('sd-att-today-label');
-  if (todayLbl) todayLbl.textContent = new Date().toLocaleDateString('ar-EG', { weekday:'long', day:'numeric', month:'long' });
+  if (todayLbl) todayLbl.textContent = new Date(dayKey + 'T12:00:00').toLocaleDateString('ar-EG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const dateEl = document.getElementById('sd-att-date');
+  if (dateEl) { dateEl.max = todayKey(); if (dateEl.value !== dayKey) dateEl.value = dayKey; }
+  const cntLbl = document.getElementById('sd-att-count-label');
+  if (cntLbl) cntLbl.textContent = dayKey === todayKey() ? 'حاضر النهاردة' : 'حاضر في اليوم ده';
   const cntEl = document.getElementById('sd-att-today-count');
   if (cntEl) cntEl.textContent = allNames.filter(n => todayMap[n]).length;
 
@@ -153,25 +162,39 @@ window.onDeaconAttSearch = () => renderDeaconAttPicker();
 
 window.deaconToggleAttendance = async (name) => {
   const type = currentDeaconAttType;
-  if (attTodayMap(type)[name]) {
-    await doRemoveDeaconAttendance(name, todayKey(), type);
+  const key = attDay();
+  if (attMap(type)[key] && attMap(type)[key][name]) {
+    await doRemoveDeaconAttendance(name, key, type);
     showToast(`تم إلغاء تسجيل ${name}`, 'info');
   } else {
-    await markDeaconAttendance(name, type);
+    await markDeaconAttendance(name, type, key);
   }
 };
 
-window.markDeaconAttendance = async (name, type) => {
+// اختيار يوم معيّن من التقويم للتحضير فيه (النهاردة هو الافتراضي)
+window.setDeaconAttDay = (value) => {
+  attDaySelected = value && value !== todayKey() ? value : null;
+  renderDeaconAttPicker();
+};
+window.resetDeaconAttDay = () => {
+  attDaySelected = null;
+  renderDeaconAttPicker();
+};
+// كل مرة تتفتح خانة الخدام بنرجع للنهاردة
+export function resetDeaconAttDay() { attDaySelected = null; }
+
+window.markDeaconAttendance = async (name, type, dateKey) => {
   const t = normAttType(type || currentDeaconAttType);
-  if (attTodayMap(t)[name]) return;
-  const key = todayKey();
+  const key = dateKey || todayKey(); // من غير تاريخ = النهاردة (المساعد الصوتي وغيره)
+  if (attMap(t)[key] && attMap(t)[key][name]) return;
+  const dayNote = key === todayKey() ? '' : ` (${dateKeyLabel(key)})`;
   // بنولّد الـ ID محلي فورًا (مش محتاج نت) عشان الواجهة تتحدث فورًا حتى لو أوفلاين
   const ref = doc(collection(db, 'deaconAttendance'));
 
-  attTodayMap(t)[name] = true;
+  if (key === todayKey()) attTodayMap(t)[name] = true;
   if (!attMap(t)[key]) attMap(t)[key] = {};
   attMap(t)[key][name] = ref.id;
-  showToast(`✅ ${name} — ${DEACON_ATT_TYPES[t].short}`, 'success');
+  showToast(`✅ ${name} — ${DEACON_ATT_TYPES[t].short}${dayNote}`, 'success');
   navigator.vibrate && navigator.vibrate([60,30,60]);
   // نفضّي خانة البحث بعد كل تسجيل عشان يكتب اسم الخادم اللي بعده على طول
   const searchEl = document.getElementById('sd-att-search');
@@ -183,7 +206,7 @@ window.markDeaconAttendance = async (name, type) => {
 
   setDoc(ref, { name, deaconId: deaconIdOfName(name, sectionTag()), date: key, type: t, section: sectionTag(), ts: serverTimestamp() })
     .catch(e => console.warn('markDeaconAttendance sync error (هيتزامن لما النت يرجع):', e));
-  if (typeof logActivity === 'function') logActivity('سجّل حضور خادم', `${name} — ${DEACON_ATT_TYPES[t].short}`);
+  if (typeof logActivity === 'function') logActivity('سجّل حضور خادم', `${name} — ${DEACON_ATT_TYPES[t].short}${dayNote}`);
 };
 
 async function doRemoveDeaconAttendance(name, dateKey, type) {
