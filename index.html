@@ -668,6 +668,7 @@
         </div>
 
         <button class="btn-primary" id="sd-att-dates-btn" style="margin-bottom:14px" onclick="toggleDeaconAttDatesList()">📅 عرض أيام الحضور</button>
+        <button class="btn-secondary" id="sd-import-att-btn" style="width:100%;margin-bottom:14px" onclick="openImportDeaconAttModal()">📤 رفع حضور الخدام القديم من إكسيل</button>
         <div id="deacon-att-dates-wrap" style="display:none">
           <div class="tabs" style="margin-bottom:14px" id="deacon-att-mode-tabs">
             <button class="tab active" id="deacon-att-mode-btn-present" onclick="setDeaconAttMode('present',this)">✅ حضور</button>
@@ -784,6 +785,33 @@
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn-secondary" onclick="closeImportModal()">إلغاء</button>
       <button class="btn-primary" id="import-start-btn" onclick="startImportAttendance()">▶ ابدأ الاستيراد</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT SERVANTS ATTENDANCE MODAL (admin) -->
+<div id="import-deacon-att-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;overflow-y:auto;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:520px;margin:0 auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700">📤 رفع حضور الخدام القديم</div>
+      <button onclick="closeImportDeaconAttModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text-dim);line-height:1.8;margin-bottom:16px">
+      الشيت: أسماء الخدام في عمود، وأعمدة التواريخ فيها true/false. البرنامج بيطابق الأسماء مع الخدام المسجلين وبيعرضلك تقرير (معاينة) قبل ما يكتب أي حاجة. أي حضور متسجل قبل كده بيتخطى، فمفيش تكرار لو رفعت الملف مرتين.
+    </div>
+    <label class="field-label">نوع الحضور *</label>
+    <select id="import-deacon-att-type" class="field-select" onchange="onImportDeaconAttInputChange()">
+      <option value="sunday">⛪ مدارس الأحد</option>
+      <option value="meeting">👥 اجتماع الخدام</option>
+    </select>
+    <label class="field-label">ملف الإكسيل *</label>
+    <input type="file" id="import-deacon-att-file" class="field-input" accept=".xlsx,.xls" onchange="onImportDeaconAttInputChange()">
+    <label class="field-label">استورد لحد تاريخ (شامل) — اختياري</label>
+    <input type="date" id="import-deacon-att-cutoff" class="field-input" onchange="onImportDeaconAttInputChange()">
+    <div id="import-deacon-att-status" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px;font-size:13px;line-height:1.8;max-height:300px;overflow-y:auto;white-space:pre-wrap"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-secondary" id="import-deacon-att-preview-btn" style="flex:1" onclick="previewImportDeaconAtt()">🔍 معاينة</button>
+      <button class="btn-primary" id="import-deacon-att-start-btn" style="flex:1" onclick="startImportDeaconAtt()" disabled>▶ ابدأ الرفع</button>
     </div>
   </div>
 </div>
