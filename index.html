@@ -654,6 +654,7 @@
         <div id="deacon-att-dates-wrap" style="display:none">
           <div class="tabs" style="margin-bottom:14px" id="deacon-att-mode-tabs">
             <button class="tab active" id="deacon-att-mode-btn-present" onclick="setDeaconAttMode('present',this)">✅ حضور</button>
+            <button class="tab" id="deacon-att-mode-btn-excuse" onclick="setDeaconAttMode('excuse',this)">📝 اعتذار</button>
             <button class="tab" id="deacon-att-mode-btn-absent" onclick="setDeaconAttMode('absent',this)">📋 غياب</button>
           </div>
           <div id="deacon-att-dates-list"></div>
@@ -804,12 +805,13 @@
       <button onclick="closeImportDeaconAttModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
     </div>
     <div style="font-size:13px;color:var(--text-dim);line-height:1.8;margin-bottom:16px">
-      الشيت: أسماء الخدام في عمود، وأعمدة التواريخ فيها true/false. البرنامج بيطابق الأسماء مع الخدام المسجلين وبيكتب الحضور مباشرة، وبيعرضلك تقرير بالأسماء اللي مش لاقيها (دي مش بتتكتب). "معاينة بس" بتعرض التقرير من غير ما تحفظ. أي حضور متسجل قبل كده بيتخطى، فمفيش تكرار لو رفعت الملف مرتين.
+      الشيت: أسماء الخدام في عمود، وكل أسبوع فيه عمود حضور لمدارس الأحد وعمود لاجتماع الخدام (أو أعمدة تواريخ فيها true/false). خانات "إعتذار" بتتتجاهل. البرنامج بيطابق الأسماء مع الخدام المسجلين وبيكتب الحضور مباشرة، وبيعرضلك تقرير بالأسماء اللي مش لاقيها (دي مش بتتكتب). "معاينة بس" بتعرض التقرير من غير ما تحفظ. أي حضور متسجل قبل كده بيتخطى، فمفيش تكرار لو رفعت الملف مرتين.
     </div>
     <label class="field-label">نوع الحضور *</label>
     <select id="import-deacon-att-type" class="field-select" onchange="onImportDeaconAttInputChange()">
-      <option value="sunday">⛪ مدارس الأحد</option>
-      <option value="meeting">👥 اجتماع الخدام</option>
+      <option value="both">⛪👥 الاتنين (من الشيت)</option>
+      <option value="sunday">⛪ مدارس الأحد بس</option>
+      <option value="meeting">👥 اجتماع الخدام بس</option>
     </select>
     <label class="field-label">ملف الإكسيل *</label>
     <input type="file" id="import-deacon-att-file" class="field-input" accept=".xlsx,.xls" onchange="onImportDeaconAttInputChange()">
