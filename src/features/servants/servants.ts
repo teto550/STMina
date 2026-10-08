@@ -4,7 +4,7 @@ import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconUsersMap, loadDeaconsList } from '@/features/servants/deacons';
-import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttendance, renderDeaconAttDatesList } from '@/features/servants/deacon-attendance';
+import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttendance, renderDeaconAttDatesList, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
@@ -35,6 +35,7 @@ let currentServantsTab = 'att'; // 'att' | 'list'
 window.openServantsDirectory = async () => {
   if (state.currentUserRole !== 'admin') { showToast('دليل الخدام للأدمن بس', 'error'); return; }
   state.servantsDirectoryOpen = true;
+  resetDeaconAttDay(); // التحضير بيبدأ على اليوم اللي اتفتحت فيه الخانة
   showServantsDirectorySection();
   buildActiveGradeBar();
   const searchEl = document.getElementById('servants-directory-search');
