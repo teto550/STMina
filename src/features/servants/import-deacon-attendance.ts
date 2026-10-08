@@ -9,7 +9,7 @@ import { logActivity } from '@/core/presence';
 import { todayKey } from '@/core/utils';
 import { buildColumnDateMap, ensureXLSXLoaded, normalizeName } from '@/features/import-export/import-attendance';
 import {
-  DEACON_ATTENDANCE, getCurrentUserScopedDeaconRows, renderDeaconAttDatesList
+  DEACON_ATTENDANCE, DEACON_EXCUSES, getCurrentUserScopedDeaconRows, renderDeaconAttDatesList
 } from '@/features/servants/deacon-attendance';
 
 // ===== رفع حضور الخدام القديم من إكسيل (أدمن بس) — بيكتب في deaconAttendance بنفس شكل التسجيل اليدوي =====
@@ -77,7 +77,10 @@ function isPresentCell(v) {
   return ['true', 'yes', 'y', '1', '✓', '✔', 'حاضر', 'حضر', 'present', 'p', 'ح'].includes(s);
 }
 
-// بيرجّع { dateCols: [{col, date}], firstDataRow, nameCol }
+const TYPE_LABEL = { sunday: '⛪ مدارس الأحد', meeting: '👥 اجتماع الخدام' };
+
+// بيرجّع { dateCols: [{col, date, cols: {sunday, meeting}}], firstDataRow, nameCol, dual }
+// dual = كل أسبوع فيه عمودين حضور (مدارس الأحد ثم اجتماع الخدام، وبينهم أعمدة "إعتذار" بتتتجاهل)
 function detectLayout(rows) {
   // (1) صف عناوين فيه تواريخ كاملة
   let hdr = -1, best = 1;
@@ -87,20 +90,43 @@ function detectLayout(rows) {
   }
   if (hdr >= 0) {
     const dateCols = [];
-    (rows[hdr] || []).forEach((c, i) => { const d = toIsoDate(c); if (d) dateCols.push({ col: i, date: d }); });
+    (rows[hdr] || []).forEach((c, i) => { const d = toIsoDate(c); if (d) dateCols.push({ col: i, date: d, cols: { sunday: i, meeting: i, sundayExcuse: null, meetingExcuse: null } }); });
     const firstDateCol = dateCols[0].col;
+
+    // صف عناوين "حضور / إعتذار": أول عمود حضور في كل مجموعة = مدارس الأحد، التاني = اجتماع الخدام
+    let ph = -1, phBest = 1;
+    for (let r = 0; r < Math.min(rows.length, 8); r++) {
+      const cnt = (rows[r] || []).filter((c) => /^\s*حضور/.test(String(c || ''))).length;
+      if (cnt > phBest) { phBest = cnt; ph = r; }
+    }
+    let dual = false;
+    if (ph >= 0) {
+      dateCols.forEach((d, i) => {
+        const end = i + 1 < dateCols.length ? dateCols[i + 1].col : (rows[ph] || []).length;
+        const pc = [], ec = [];
+        for (let c = d.col; c < end; c++) {
+          const h = String((rows[ph] || [])[c] || '');
+          if (/^\s*حضور/.test(h)) pc.push(c);
+          else if (/^\s*[إاأ]عتذار/.test(h)) ec.push(c);
+        }
+        if (pc.length) {
+          d.cols = { sunday: pc[0], meeting: pc.length > 1 ? pc[1] : null, sundayExcuse: ec[0] ?? null, meetingExcuse: ec[1] ?? null };
+          if (pc.length > 1) dual = true;
+        }
+      });
+    }
     let nameCol = 0, bestTxt = -1;
     for (let c = 0; c < firstDateCol; c++) {
       let t = 0;
       for (let r = hdr + 1; r < rows.length; r++) { const v = (rows[r] || [])[c]; if (typeof v === 'string' && /[\u0621-\u064A]/.test(v)) t++; }
       if (t > bestTxt) { bestTxt = t; nameCol = c; }
     }
-    return { dateCols, firstDataRow: hdr + 1, nameCol };
+    return { dateCols, firstDataRow: Math.max(hdr, ph) + 1, nameCol, dual };
   }
   // (2) أول 3 صفوف سنة/شهر/يوم (نفس كشف مدارس الأحد)
   const map = buildColumnDateMap(rows);
-  const dateCols = Object.entries(map).map(([c, date]) => ({ col: parseInt(c), date }));
-  if (dateCols.length) return { dateCols, firstDataRow: 3, nameCol: 0 };
+  const dateCols = Object.entries(map).map(([c, date]) => ({ col: parseInt(c), date, cols: { sunday: parseInt(c), meeting: parseInt(c), sundayExcuse: null, meetingExcuse: null } }));
+  if (dateCols.length) return { dateCols, firstDataRow: 3, nameCol: 0, dual: false };
   throw new Error('مش لاقي تواريخ في الشيت (لا صف عناوين بتواريخ، ولا أول 3 صفوف سنة/شهر/يوم)');
 }
 
@@ -164,7 +190,8 @@ function closestHint(rawName, roster) {
 async function buildImportPlan() {
   const fileInput = $('import-deacon-att-file');
   if (!fileInput.files.length) { showToast('اختار ملف الإكسيل الأول', 'error'); return null; }
-  const type = $('import-deacon-att-type').value === 'meeting' ? 'meeting' : 'sunday';
+  const typeSel = $('import-deacon-att-type').value; // 'sunday' | 'meeting' | 'both'
+  const types = typeSel === 'both' ? ['sunday', 'meeting'] : [typeSel === 'meeting' ? 'meeting' : 'sunday'];
   const cutoff = $('import-deacon-att-cutoff').value; // اختياري
   const btn = $('import-deacon-att-preview-btn');
   btn.disabled = true;
@@ -184,6 +211,7 @@ async function buildImportPlan() {
     log(`📄 الشيت: ${sheetName}`);
 
     const layout = detectLayout(rows);
+    if (types.length > 1 && !layout.dual) throw new Error('الشيت ده مفيهوش عمودين حضور لكل أسبوع (مدارس الأحد + اجتماع الخدام) — اختار نوع واحد من القايمة.');
     const dateCols = layout.dateCols.filter((d) => !cutoff || d.date <= cutoff);
     const allDates = layout.dateCols.map((d) => d.date).sort();
     log(`📅 تواريخ في الملف: ${allDates.length} (من ${allDates[0]} إلى ${allDates[allDates.length - 1]})${cutoff ? ` — هيتستورد ${dateCols.length} لحد ${cutoff}` : ''}`);
@@ -192,11 +220,14 @@ async function buildImportPlan() {
     if (future) log(`⚠️ ${future} تاريخ في المستقبل (بعد النهاردة) — غالبًا اتقرت غلط (يوم/شهر أو السنة). راجع أول 5 تواريخ فوق.`);
 
     const roster = getCurrentUserScopedDeaconRows().map((r) => ({ name: r.name, _n: cleanServantName(r.name) }));
-    const existing = DEACON_ATTENDANCE[type] || {};
+    const stats = {};
+    types.forEach((t) => { stats[t] = { present: 0, pSkipped: 0, pAdded: 0, excuse: 0, eSkipped: 0, eAdded: 0, conflicts: 0 }; });
+    const marksIn = (row) => types.reduce((n, t) => n + dateCols.reduce((m, d) =>
+      m + (d.cols[t] != null && isPresentCell(row[d.cols[t]]) ? 1 : 0) + (d.cols[t + 'Excuse'] != null && isPresentCell(row[d.cols[t + 'Excuse']]) ? 1 : 0), 0), 0);
 
     const items = [];
     const unmatched = [], ambiguous = [];
-    let matched = 0, skippedExisting = 0, nameRows = 0, presentCells = 0;
+    let matched = 0, nameRows = 0;
     const seenPairs = new Set();
 
     for (let r = layout.firstDataRow; r < rows.length; r++) {
@@ -207,25 +238,48 @@ async function buildImportPlan() {
       if (/^\s*(ال)?[اإأ]سم\s*$/.test(rawName)) continue; // خانة عنوان العمود مش خادم
       nameRows++;
       const res = matchServant(rawName, roster);
-      if (res.ambiguous) { ambiguous.push(rawName.trim()); continue; }
-      if (!res.servant) { unmatched.push(rawName.trim() + closestHint(rawName, roster)); continue; }
+      if (res.ambiguous) { ambiguous.push(`${rawName.trim()} (${marksIn(row)} حضور مش هيترفع)`); continue; }
+      if (!res.servant) { unmatched.push(`${rawName.trim()} (${marksIn(row)} حضور مش هيترفع)` + closestHint(rawName, roster)); continue; }
       matched++;
       const name = res.servant.name; // اسم الخادم المسجل في البرنامج (مش اسم الشيت)
-      dateCols.forEach(({ col, date }) => {
-        if (!isPresentCell(row[col])) return;
-        presentCells++;
-        const key = name + '|' + date;
-        if (seenPairs.has(key)) return;
-        seenPairs.add(key);
-        if (existing[date] && existing[date][name]) { skippedExisting++; return; }
-        items.push({ name, date });
+      types.forEach((t) => {
+        const existingP = DEACON_ATTENDANCE[t] || {};
+        const existingE = DEACON_EXCUSES[t] || {};
+        dateCols.forEach((d) => {
+          const pCol = d.cols[t], eCol = d.cols[t + 'Excuse'];
+          const isP = pCol != null && isPresentCell(row[pCol]);
+          const isE = eCol != null && isPresentCell(row[eCol]);
+          const key = t + '|' + name + '|' + d.date;
+          if (!isP && !isE) return;
+          if (seenPairs.has(key)) return;
+          seenPairs.add(key);
+          if (isP) { // الحضور له الأولوية لو الاتنين متعلّمين
+            stats[t].present++;
+            if (isE) stats[t].conflicts++;
+            if (existingP[d.date] && existingP[d.date][name]) { stats[t].pSkipped++; return; }
+            const replaceId = existingE[d.date] && existingE[d.date][name]; // كان معتذر وبقى حاضر
+            items.push({ name, date: d.date, type: t, status: 'present', replaceId: replaceId || null });
+            stats[t].pAdded++;
+            return;
+          }
+          stats[t].excuse++;
+          if (existingP[d.date] && existingP[d.date][name]) { stats[t].conflicts++; return; } // حاضر في البرنامج
+          if (existingE[d.date] && existingE[d.date][name]) { stats[t].eSkipped++; return; }
+          items.push({ name, date: d.date, type: t, status: 'excuse' });
+          stats[t].eAdded++;
+        });
       });
     }
 
     log(`👥 أسماء في الملف: ${nameRows} — اتطابق منهم: ${matched} (عدد الخدام المسجلين في البرنامج: ${roster.length})`);
-    log(`✔️ خانات حضور (TRUE) للأسماء المتطابقة: ${presentCells}`);
-    log(`🆕 سجلات حضور جديدة هتتضاف: ${items.length}`);
-    if (skippedExisting) log(`⏭ متسجلة قبل كده وهتتخطى: ${skippedExisting}`);
+    const presentCells = types.reduce((n, t) => n + stats[t].present + stats[t].excuse, 0);
+    types.forEach((t) => {
+      const x = stats[t];
+      log(`${TYPE_LABEL[t]}:`);
+      log(`   ✓ حضور: ${x.present} في الشيت — 🆕 جديد ${x.pAdded} — ⏭ متسجل قبل كده ${x.pSkipped}`);
+      log(`   📝 اعتذار: ${x.excuse} في الشيت — 🆕 جديد ${x.eAdded} — ⏭ متسجل قبل كده ${x.eSkipped}`);
+      if (x.conflicts) log(`   ⚠️ ${x.conflicts} خادم متعلّم حضور واعتذار (أو حاضر في البرنامج) في نفس اليوم — الحضور هو اللي اتاخد`);
+    });
     if (ambiguous.length) {
       log(`⚠️ أسماء ليها أكتر من تطابق (مش هتتكتب) (${ambiguous.length}):`);
       ambiguous.forEach((n) => log('   • ' + n));
@@ -239,13 +293,13 @@ async function buildImportPlan() {
       log(matched === 0
         ? '❌ مفيش ولا اسم اتطابق مع الخدام المسجلين — راجع الأسماء في الشيت.'
         : presentCells === 0
-          ? '❌ لقيت الأسماء بس مفيش ولا خانة حضور (TRUE) — راجع شكل الشيت.'
+          ? '❌ لقيت الأسماء بس مفيش ولا خانة حضور — راجع شكل الشيت.'
           : '✅ مفيش سجلات جديدة تتضاف (كلها متسجلة قبل كده).');
       return null;
     }
     const dates = [...new Set(items.map((i) => i.date))].sort();
     log(`📆 من ${dates[0]} إلى ${dates[dates.length - 1]} (${dates.length} يوم)`);
-    plan = { type, items };
+    plan = { items };
     return plan;
   } catch (e) {
     console.error('import deacon attendance preview error:', e);
@@ -274,13 +328,13 @@ window.startImportDeaconAtt = async () => {
     return;
   }
   startBtn.textContent = 'جاري الحفظ…';
-  const { type, items } = plan;
+  const { items } = plan;
   let text = $('import-deacon-att-status').textContent + '\n';
   const log = (line) => { text += line + '\n'; setStatus(text); };
 
   try {
     log('⏳ جاري الحفظ على قاعدة البيانات…');
-    const CHUNK = 400;
+    const CHUNK = 200; // كل عنصر ممكن يبقى عمليتين (إضافة + حذف اعتذار قديم) والحد 500 عملية في الباتش
     const section = sectionTag();
     let written = 0;
     for (let i = 0; i < items.length; i += CHUNK) {
@@ -289,14 +343,22 @@ window.startImportDeaconAtt = async () => {
       const refs = chunk.map((it) => {
         const ref = doc(collection(db, 'deaconAttendance'));
         // نفس الحقول اللي بيكتبها التسجيل اليدوي (markDeaconAttendance)
-        batch.set(ref, { name: it.name, deaconId: deaconIdOfName(it.name, section), date: it.date, type, section, ts: serverTimestamp() });
+        const data = { name: it.name, deaconId: deaconIdOfName(it.name, section), date: it.date, type: it.type, section, ts: serverTimestamp() };
+        if (it.status === 'excuse') data.status = 'excuse'; // الاعتذار في نفس الكوليكشن بعلامة status
+        batch.set(ref, data);
+        if (it.replaceId) batch.delete(doc(db, 'deaconAttendance', it.replaceId)); // كان معتذر وبقى حاضر
         return ref;
       });
       await batch.commit();
       // تحديث الذاكرة فورًا من غير قراءة تانية من السيرفر
       chunk.forEach((it, k) => {
-        if (!DEACON_ATTENDANCE[type][it.date]) DEACON_ATTENDANCE[type][it.date] = {};
-        DEACON_ATTENDANCE[type][it.date][it.name] = refs[k].id;
+        const target = it.status === 'excuse' ? DEACON_EXCUSES : DEACON_ATTENDANCE;
+        if (!target[it.type][it.date]) target[it.type][it.date] = {};
+        target[it.type][it.date][it.name] = refs[k].id;
+        if (it.replaceId && DEACON_EXCUSES[it.type][it.date]) {
+          delete DEACON_EXCUSES[it.type][it.date][it.name];
+          if (!Object.keys(DEACON_EXCUSES[it.type][it.date]).length) delete DEACON_EXCUSES[it.type][it.date];
+        }
       });
       written += chunk.length;
       log(`   ✓ اتحفظ ${written}/${items.length}`);
@@ -305,7 +367,7 @@ window.startImportDeaconAtt = async () => {
     renderDeaconAttDatesList();
     if (window.renderServantsDirectory && state.servantsDirectoryOpen) window.renderServantsDirectory();
 
-    log(`🎉 تم استيراد ${written} سجل حضور خدام بنجاح!`);
+    log(`🎉 تم استيراد ${written} سجل (حضور + اعتذار) بنجاح!`);
     showToast('تم الاستيراد بنجاح ✓', 'success');
     logActivity('استيراد حضور خدام من إكسيل', `${written} سجل`);
     plan = null;
