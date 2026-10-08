@@ -647,6 +647,19 @@
 
       <!-- ===== TAB 1: الحضور ===== -->
       <div id="sd-tab-att">
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="btn-primary" id="sd-att-dates-btn" style="flex:1;margin:0" onclick="toggleDeaconAttDatesList()">📅 عرض أيام الحضور</button>
+          <button class="btn-secondary" id="sd-import-att-btn" style="flex:1;margin:0" onclick="openImportDeaconAttModal()">📤 رفع حضور من إكسيل</button>
+        </div>
+        <div id="deacon-att-dates-wrap" style="display:none">
+          <div class="tabs" style="margin-bottom:14px" id="deacon-att-mode-tabs">
+            <button class="tab active" id="deacon-att-mode-btn-present" onclick="setDeaconAttMode('present',this)">✅ حضور</button>
+            <button class="tab" id="deacon-att-mode-btn-absent" onclick="setDeaconAttMode('absent',this)">📋 غياب</button>
+          </div>
+          <div id="deacon-att-dates-list"></div>
+          <div id="deacon-att-day-detail" style="display:none;margin-top:14px"></div>
+        </div>
+
         <div class="tabs" id="sd-type-tabs" style="margin-bottom:14px">
           <button class="tab active" id="sd-type-btn-sunday" onclick="setDeaconAttType('sunday',this)">⛪ مدارس الأحد</button>
           <button class="tab" id="sd-type-btn-meeting" onclick="setDeaconAttType('meeting',this)">👥 اجتماع الخدام</button>
@@ -660,23 +673,17 @@
             </div>
             <div style="text-align:center;flex-shrink:0">
               <div id="sd-att-today-count" style="font-size:24px;font-weight:900;color:var(--success)">0</div>
-              <div style="font-size:10px;color:var(--text-dim)">حاضر النهاردة</div>
+              <div id="sd-att-count-label" style="font-size:10px;color:var(--text-dim)">حاضر النهاردة</div>
             </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <input type="date" id="sd-att-date" class="field-input" style="flex:1;margin:0" onchange="setDeaconAttDay(this.value)">
+            <button class="btn-secondary" style="flex-shrink:0;padding:10px 14px" onclick="resetDeaconAttDay()">اليوم</button>
           </div>
           <input type="text" id="sd-att-search" class="search-input" style="margin-bottom:10px" placeholder="🔍 دوّر على اسم خادم…" oninput="renderDeaconAttPicker()" autocomplete="off">
           <div id="sd-att-picker"></div>
         </div>
 
-        <button class="btn-primary" id="sd-att-dates-btn" style="margin-bottom:14px" onclick="toggleDeaconAttDatesList()">📅 عرض أيام الحضور</button>
-        <button class="btn-secondary" id="sd-import-att-btn" style="width:100%;margin-bottom:14px" onclick="openImportDeaconAttModal()">📤 رفع حضور الخدام القديم من إكسيل</button>
-        <div id="deacon-att-dates-wrap" style="display:none">
-          <div class="tabs" style="margin-bottom:14px" id="deacon-att-mode-tabs">
-            <button class="tab active" id="deacon-att-mode-btn-present" onclick="setDeaconAttMode('present',this)">✅ حضور</button>
-            <button class="tab" id="deacon-att-mode-btn-absent" onclick="setDeaconAttMode('absent',this)">📋 غياب</button>
-          </div>
-          <div id="deacon-att-dates-list"></div>
-          <div id="deacon-att-day-detail" style="display:none;margin-top:14px"></div>
-        </div>
       </div>
 
       <!-- ===== TAB 2: الخدام ===== -->
@@ -797,7 +804,7 @@
       <button onclick="closeImportDeaconAttModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
     </div>
     <div style="font-size:13px;color:var(--text-dim);line-height:1.8;margin-bottom:16px">
-      الشيت: أسماء الخدام في عمود، وأعمدة التواريخ فيها true/false. البرنامج بيطابق الأسماء مع الخدام المسجلين وبيعرضلك تقرير (معاينة) قبل ما يكتب أي حاجة. أي حضور متسجل قبل كده بيتخطى، فمفيش تكرار لو رفعت الملف مرتين.
+      الشيت: أسماء الخدام في عمود، وأعمدة التواريخ فيها true/false. البرنامج بيطابق الأسماء مع الخدام المسجلين وبيكتب الحضور مباشرة، وبيعرضلك تقرير بالأسماء اللي مش لاقيها (دي مش بتتكتب). "معاينة بس" بتعرض التقرير من غير ما تحفظ. أي حضور متسجل قبل كده بيتخطى، فمفيش تكرار لو رفعت الملف مرتين.
     </div>
     <label class="field-label">نوع الحضور *</label>
     <select id="import-deacon-att-type" class="field-select" onchange="onImportDeaconAttInputChange()">
@@ -810,8 +817,8 @@
     <input type="date" id="import-deacon-att-cutoff" class="field-input" onchange="onImportDeaconAttInputChange()">
     <div id="import-deacon-att-status" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px;font-size:13px;line-height:1.8;max-height:300px;overflow-y:auto;white-space:pre-wrap"></div>
     <div style="display:flex;gap:10px;margin-top:14px">
-      <button class="btn-secondary" id="import-deacon-att-preview-btn" style="flex:1" onclick="previewImportDeaconAtt()">🔍 معاينة</button>
-      <button class="btn-primary" id="import-deacon-att-start-btn" style="flex:1" onclick="startImportDeaconAtt()" disabled>▶ ابدأ الرفع</button>
+      <button class="btn-secondary" id="import-deacon-att-preview-btn" style="flex:1" onclick="previewImportDeaconAtt()">🔍 معاينة بس</button>
+      <button class="btn-primary" id="import-deacon-att-start-btn" style="flex:1" onclick="startImportDeaconAtt()">▶ ابدأ الرفع</button>
     </div>
   </div>
 </div>
