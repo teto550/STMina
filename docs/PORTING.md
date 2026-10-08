@@ -295,3 +295,6 @@ git-ignored) and the deployed site threw `auth/invalid-api-key` -> the build ste
 GitHub Actions repository secrets of the same names (Settings -> Secrets and variables -> Actions), values
 copied from `.env.local`. `VITE_APPCHECK_DEBUG_TOKEN` is deliberately NOT a secret here (dev-only App Check
 bypass; must never ship in a public build). Needs repo secrets added once per project when porting.
+
+### C34 - Admin bulk delete of kids (select / select all) that also removes their data
+`index.html` (`#bulk-delete-wrap`, `#bulk-bar`, buttons above the kids list; admin only), `features/students/students.ts` (`currentStudentsList`, select mode `toggleSelectMode`/`toggleSel`/`selectAllVisibleStudents`, `deleteSelectedStudents`, `purgeStudents`; `deleteStudent` now fully purges for admins: `student_secrets` + all `attendance` of the kid + the kid doc, in chunks of 30; non-admins keep the old behaviour). A JSON backup of the deleted kids (photos left out) and their attendance records is downloaded after each delete. `firestore.rules`: `student_secrets` now `allow delete: if isAdmin()` (update stays false). DEPLOY THE RULES in the other project too (`firebase deploy --only firestore:rules`). Costs reads/deletes per kid's attendance records (free-plan quota), a run stopped by the quota can simply be repeated.
