@@ -41,5 +41,6 @@ import '@/features/shell/tabs';
 import '@/features/dashboard/stats';
 import '@/features/servants/online';
 import '@/features/servants/deacon-attendance';
+import '@/features/servants/import-deacon-attendance';
 import '@/features/shell/ui';
 import '@/core/pwa';
