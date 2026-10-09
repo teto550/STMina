@@ -14,8 +14,8 @@ import { avatarBox } from '@/features/students/photos';
 window.buildDeaconChips = async function() {
   const isAdmin = state.currentUserRole === 'admin';
   // "مسؤول" السنة بيشوف كل خدام سنته زي الأدمن بالظبط، بس من غير صلاحية تعيين أدمن/مسؤول
-  // roles design: every servant of a class (role-based access) sees the class's servants, like a lead does (without the admin/lead buttons)
-  const isGradeManager = isAdmin || state.currentUserIsLead || state.accessSource === 'roles';
+  // roles design: a servant with role-based access sees only his own served children in الافتقاد (no picker); only admin / lead see all the class's servants
+  const isGradeManager = isAdmin || state.currentUserIsLead || state.currentUserIsPhaseLead;
   const pickerWrap = document.getElementById('deacon-picker-wrap');
   const resultsTitle = document.getElementById('deacon-results-title');
 
@@ -127,6 +127,8 @@ window.deleteDeacon = async (name) => {
 };
 
 window.setDeacon = (d, btn) => {
+  // خادم عادي مايقدرش يختار غير نفسه (حماية من استدعاء الدالة من الـ console)
+  if (state.currentUserRole !== 'admin' && !state.currentUserIsLead && !state.currentUserIsPhaseLead && d !== state.currentUserName) return;
   state.currentDeacon = d;
   document.querySelectorAll('#deacon-chips .deacon-row').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
