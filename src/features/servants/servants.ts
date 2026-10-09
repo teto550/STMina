@@ -55,12 +55,20 @@ window.openServantsDirectory = async () => {
   } catch(e) {
     console.error('openServantsDirectory error:', e.code || e.message || e);
   }
-  const sub = document.getElementById('sd-subtitle');
-  if (sub) sub.textContent = `${state.activeGrade || 'كل السنوات'} · ${DEACONS.length} خادم`;
+  updateServantsDashStats();
   renderDeaconAttPicker();
   renderDeaconAttDatesList();
   renderServantsDirectory();
 };
+
+// كروت أرقام لوحة الخدام: عدد الخدام (نفس عدد قائمة الخدام) وطلبات الانضمام المعلّقة (من غير قراءة جديدة من Firestore)
+export function updateServantsDashStats() {
+  const servantsEl = document.getElementById('sd-stat-servants');
+  const pendingEl  = document.getElementById('sd-stat-pending');
+  if (servantsEl) servantsEl.textContent = String(getCurrentUserScopedDeaconRows().length);
+  if (pendingEl)  pendingEl.textContent  = String(state.pendingDeaconsCount || 0);
+}
+window.updateServantsDashStats = updateServantsDashStats;
 
 window.closeServantsDirectory = () => {
   state.servantsDirectoryOpen = false;
