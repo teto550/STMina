@@ -56,8 +56,9 @@ window.openServantsDirectory = async () => {
     console.error('openServantsDirectory error:', e.code || e.message || e);
   }
   updateServantsDashStats();
-  renderDeaconAttPicker();
-  renderDeaconAttDatesList();
+  // كل مرة تتفتح الخانة: تابع الحضور → حضور مدارس الأحد (مهما كان اللي اتفتح قبل كده)
+  window.setServantsTab('att', document.getElementById('sd-tab-btn-att'));
+  window.setDeaconAttType('sunday', document.getElementById('sd-type-btn-sunday'));
   renderServantsDirectory();
 };
 
