@@ -67,6 +67,7 @@ export async function loadPendingDeacons() {
   if (managedGrades.length) list = list.filter(u => managedGrades.includes(u.grade));
   state.pendingDeaconsCount = list.length;
   updateDeaconsTabLabel();
+  if (typeof window.updateServantsDashStats === 'function') window.updateServantsDashStats();
   const el    = document.getElementById('pending-list');
   const cnt   = document.getElementById('pending-count');
   if (!list.length) {
