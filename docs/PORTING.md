@@ -339,3 +339,7 @@ Removed (verified unreferenced by `index.html`, other modules and tests; build, 
 
 ### C44 - Servants directory: "🎂 أعياد ميلاد الشهر ده" filter
 `index.html`: new toggle button `#sd-flt-bday` under the status tabs of the servants directory (card label now "فلتر الحضور والغياب والاعتذار وأعياد الميلاد"). `features/servants/servants.ts`: new `dirFilterBirthday` + `window.toggleDirFilterBirthday` (reset by `resetDirFilter`), `dobMonthDay(dob)`; `renderServantsDirectory` keeps only servants whose `dob` (from `DEACON_ADMIN_MAP`, i.e. servants who registered) falls in the current month, sorted by day, shows "🎂 day/month" in the row, and combines (AND) with the attendance/excuse filter. Servants who have not registered or have no dob never match. No new reads, nothing project-specific.
+
+
+### C45 - Servants directory: with the حضر / غاب / اعتذر filter on, the two counters count THAT status
+`features/servants/servants.ts` `renderServantsDirectory`: when the status filter is not "الكل", the two boxes beside each servant (⛪ مدارس أحد / 👥 اجتماع خدام) show how many times he was present / absent / excused (matching the chosen filter, coloured green / red / orange, label "· حضر|غاب|اعتذر") over ALL sessions of that type (`recentDeaconSessions(type)` without a limit + `deaconStatusOn`, same definitions as C39/C40: absent = neither present nor excused). With "الكل" the boxes still show attendance counts as before. No new reads, nothing project-specific.

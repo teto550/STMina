@@ -179,12 +179,20 @@ window.renderServantsDirectory = () => {
     return;
   }
   const histIcon = { present: '✅', excuse: '📝', absent: '❌' };
+  // لما فلتر حضر/غاب/اعتذر يكون شغال: العدّادين جنب كل خادم بيعدّوا الحالة دي (مش الحضور بس) في كل مرات النوع ده
+  const metric = filtering ? (dirFilterStatus === 'present' ? 'present' : dirFilterStatus === 'excuse' ? 'excuse' : 'absent') : 'present';
+  const metricLbl = { present: 'حضر', excuse: 'اعتذر', absent: 'غاب' }[metric];
+  const metricColor = { present: 'var(--success)', excuse: 'var(--warning)', absent: 'var(--danger)' }[metric];
+  const allSessions = filtering ? { sunday: recentDeaconSessions('sunday'), meeting: recentDeaconSessions('meeting') } : null;
+  const metricCount = (name, type) => filtering
+    ? allSessions[type].filter(d => deaconStatusOn(name, type, d) === metric).length
+    : deaconAttendanceCount(name, type);
   listEl.innerHTML = all.map(x => {
     const u = DEACON_ADMIN_MAP[x.name];
     const safeName = x.name.replace(/'/g, "\\'");
     // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس (ALL_DEACONS_RAW ومصدر الحضور شاملين كل السنين أصلاً)
-    const sundayCount  = deaconAttendanceCount(x.name, 'sunday');
-    const meetingCount = deaconAttendanceCount(x.name, 'meeting');
+    const sundayCount  = metricCount(x.name, 'sunday');
+    const meetingCount = metricCount(x.name, 'meeting');
     return `
       <div class="deacon-row" onclick="openDeaconProfile('${safeName}')" style="display:flex;align-items:center;gap:12px;cursor:pointer">
         <div class="student-avatar" style="flex-shrink:0">${x.name.trim().charAt(0)}</div>
@@ -195,12 +203,12 @@ window.renderServantsDirectory = () => {
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${sundayCount ? 'var(--success)' : 'var(--text-dim)'}">${sundayCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">⛪ مدارس أحد</div>
+            <div style="font-size:17px;font-weight:900;color:${sundayCount ? metricColor : 'var(--text-dim)'}">${sundayCount}</div>
+            <div style="font-size:9px;color:var(--text-dim)">⛪ مدارس أحد${filtering ? ' · ' + metricLbl : ''}</div>
           </div>
           <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${meetingCount ? 'var(--success)' : 'var(--text-dim)'}">${meetingCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">👥 اجتماع خدام</div>
+            <div style="font-size:17px;font-weight:900;color:${meetingCount ? metricColor : 'var(--text-dim)'}">${meetingCount}</div>
+            <div style="font-size:9px;color:var(--text-dim)">👥 اجتماع خدام${filtering ? ' · ' + metricLbl : ''}</div>
           </div>
         </div>
       </div>`;
