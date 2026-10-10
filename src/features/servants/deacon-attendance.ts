@@ -9,6 +9,7 @@ import { getUserManagedGrades } from '@/core/session';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 import { logActivity } from '@/core/presence';
 import { getDocsTtl } from '@/core/firestore-helpers';
+import { sessionDates, statusOn } from '@/features/servants/attendance-stats';
 
 // ===== DEACON ATTENDANCE (حضور الخدام أنفسهم) — نوعين: مدارس الأحد + اجتماع الخدام =====
 const DEACON_ATT_TYPES = {
@@ -58,22 +59,13 @@ export function deaconAttendanceCount(name, type) {
 // آخر n أيام متسجل فيها حضور أو اعتذار لنوع معيّن، الأحدث أولاً (نفس تعريف "أيام الحضور" في القائمة) — بتغذّي فلتر آخر مرات حضور/غياب الخدام
 export function recentDeaconSessions(type, n) {
   const t = normAttType(type);
-  const map = DEACON_ATTENDANCE[t];
-  const eMap = DEACON_EXCUSES[t];
-  const names = new Set(allDeaconNames());
-  const has = (m, key) => Object.keys(m[key] || {}).some(x => names.has(x));
-  return [...new Set([...Object.keys(map), ...Object.keys(eMap)])]
-    .filter(key => has(map, key) || has(eMap, key))
-    .sort((a, b) => b.localeCompare(a))
-    .slice(0, n);
+  return sessionDates(DEACON_ATTENDANCE[t], DEACON_EXCUSES[t], new Set(allDeaconNames()), n);
 }
 
 // حالة خادم في يوم معيّن: 'present' | 'excuse' | 'absent' (غياب = مش حاضر ومش معتذر، زي تاب "غياب" في تفاصيل اليوم)
 export function deaconStatusOn(name, type, dateKey) {
   const t = normAttType(type);
-  if (DEACON_ATTENDANCE[t][dateKey] && DEACON_ATTENDANCE[t][dateKey][name]) return 'present';
-  if (DEACON_EXCUSES[t][dateKey] && DEACON_EXCUSES[t][dateKey][name]) return 'excuse';
-  return 'absent';
+  return statusOn(DEACON_ATTENDANCE[t], DEACON_EXCUSES[t], name, dateKey);
 }
 
 export async function loadDeaconAttendance() {
