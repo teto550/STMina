@@ -74,4 +74,3 @@ export function refreshAllData() {
   studentsKey = null;
   state.attendanceLevel = null;
 }
-export function forgetLoaded(...keys) { keys.forEach(k => delete loadedAt[k]); if (keys.includes('students')) studentsKey = null; }

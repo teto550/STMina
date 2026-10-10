@@ -1,13 +1,12 @@
 // @ts-nocheck
-import { deleteDoc, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { isDeaconOf } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { DEACONS, DEACON_ADMIN_MAP, DEACON_DOC_IDS, applyActiveGradeDeacons, loadDeaconUsersMap } from '@/features/servants/deacons';
 import { formatAssignedGradesLabel } from '@/core/session';
-import { auth, db } from '@/core/firebase';
+import { db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
 import { loadPendingDeacons } from '@/features/servants/approvals';
-import { renderTodayList } from '@/features/attendance/attendance';
 import { ensureAttendance } from '@/core/data';
 import { avatarBox } from '@/features/students/photos';
 
@@ -51,11 +50,9 @@ window.buildDeaconChips = async function() {
     document.getElementById('deacon-chips').innerHTML = orderedDeacons.map(d => {
       const { notCalledThisMonth, neverContacted, calledCount, visitedCount } = deaconStats[d];
       const u = DEACON_ADMIN_MAP[d];
-      const isDeaconAdmin = u && u.role === 'admin';
       const isDeaconLead  = u && u.isLead;
       const isDeaconPhaseLead = u && u.isPhaseLead;
       const phaseLabel = u && u.phaseGrades && u.phaseGrades.length ? ` 🟣 ${formatAssignedGradesLabel(u.phaseGrades)}` : '';
-      const safeName = d.replace(/'/g, "\\'");
       // Access is given with roles now (admin screen "المستخدمين والأدوار"); the old admin / lead / phase-lead toggles were removed.
       // Accounts that still carry the old flags keep working and show their badges here.
       let adminBtn = '';
@@ -185,19 +182,6 @@ window.isVisitedThisMonth = (s) => {
   const now = new Date();
   const m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
   return m === 0;
-};
-
-// هل تم افتقاد المخدوم تليفونيًا الأسبوع ده؟ (الأسبوع من السبت للجمعة)
-window.isVisitedThisWeek = (s) => {
-  if (!s.lastVisitPhone) return false;
-  const d = new Date(s.lastVisitPhone + 'T00:00:00');
-  if (isNaN(d.getTime())) return false;
-  const now = new Date();
-  const day = now.getDay(); // 0=أحد .. 6=سبت
-  const diffToSaturday = (day + 1) % 7; // بداية الأسبوع = السبت
-  const weekStart = new Date(now); weekStart.setHours(0,0,0,0); weekStart.setDate(now.getDate() - diffToSaturday);
-  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
-  return d >= weekStart && d < weekEnd;
 };
 
 // ===== حذف خادم عبر مودال اختيار =====

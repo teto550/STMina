@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getDocs, collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { deaconIdOfName } from '@/core/servants-index';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
@@ -191,9 +191,6 @@ window.renderDeaconAttPicker = () => {
     </div>`;
   }).join('');
 };
-
-// اسم قديم لسه متستخدم في أماكن تانية
-window.onDeaconAttSearch = () => renderDeaconAttPicker();
 
 window.deaconToggleAttendance = async (name) => {
   const type = currentDeaconAttType;

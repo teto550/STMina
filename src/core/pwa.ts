@@ -21,7 +21,7 @@ window.addEventListener('beforeinstallprompt', e => {
 document.getElementById('install-btn').addEventListener('click', async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
+  await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('install-banner').style.display = 'none';
 });
