@@ -331,3 +331,7 @@ Removed (verified unreferenced by `index.html`, other modules and tests; build, 
 
 ### C42 - Servants section: registered servants first, then the ones who have not registered yet
 `features/servants/deacon-attendance.ts`: new exported `isRegisteredDeacon(name)` (has an approved account = is in `DEACON_ADMIN_MAP`) and `sortRegisteredFirst(items, getName?)` (registered first, then not registered; each group alphabetical in Arabic); imports `DEACON_ADMIN_MAP` from `features/servants/deacons`. The attendance picker (`renderDeaconAttPicker`) uses it instead of the plain alphabetical sort and shows a small divider "⏳ لسه ماسجلوش في البرنامج" before the first unregistered servant (only when both groups exist). `features/servants/servants.ts`: `renderServantsDirectory` uses the same sort. No extra Firestore reads (needs `ensureDeaconUsers()`, which `openServantsDirectory` already awaits). Nothing project-specific.
+
+
+### C43 - Servants directory: "📝 اعتذر" filter next to حضر / غاب
+`index.html`: new tab `data-status="excuse"` in `#sd-flt-status-tabs` (label of the card is now "فلتر الحضور والغياب والاعتذار"). `features/servants/servants.ts`: `renderServantsDirectory` maps the chosen status to `present | excuse | absent` (`want`), so the servants kept are the ones excused on EVERY one of the last n sessions (same rule and same hint/✅📝❌ icons as C39; `deaconStatusOn` already returned `excuse`). No new reads, nothing project-specific.

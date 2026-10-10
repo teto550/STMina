@@ -32,7 +32,7 @@ window.toggleRegGradFields = function() {
 // ===== خانة الخدام: تابين — الحضور + ملفات الخدام (من كل السنين الدراسية) =====
 
 // فلتر تاب "الخدام": حضر/غاب في آخر 1-4 مرات من نوع معيّن (مدارس الأحد أو اجتماع الخدام)
-let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent'
+let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent' | 'excuse'
 let dirFilterType = 'sunday';  // 'sunday' | 'meeting'
 
 function resetDirFilter() {
@@ -137,7 +137,7 @@ window.renderServantsDirectory = () => {
   if (filtering) {
     const wantN = parseInt(document.getElementById('sd-flt-count')?.value || '1') || 1;
     sessions = recentDeaconSessions(dirFilterType, wantN);
-    const want = dirFilterStatus === 'present' ? 'present' : 'absent';
+    const want = dirFilterStatus === 'present' ? 'present' : dirFilterStatus === 'excuse' ? 'excuse' : 'absent';
     all = sessions.length ? all.filter(x => sessions.every(d => deaconStatusOn(x.name, dirFilterType, d) === want)) : [];
     if (hintEl) {
       const lbl = d => { const [, m, dd] = d.split('-'); return `${dd}/${m}`; };
