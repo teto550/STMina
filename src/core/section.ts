@@ -26,14 +26,6 @@ export const ALL_GRADES   = SECTION === 'girls' ? GIRLS_GRADES : BOYS_GRADES;
 
 export let GRADES = ALL_GRADES.slice();
 
-// قايمة السنين في فورم تسجيل الخادم (بتظهر قبل الدخول) حسب القسم
-(function fillRegGradeSelect() {
-  const sel = document.getElementById('reg-grade');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">اختر السنة الدراسية</option>' +
-    GRADES.map(g => `<option value="${g}">${g}</option>`).join('');
-})();
-
 // تحويل كلمة "خدام/خادم" لصيغة مؤنثة "خادمات/خادمة" في كل نص ظاهر للمستخدم لو القسم النشط بنات
 const GENDER_SWAP_MAP = {
   'للخدام': 'للخادمات', 'للخادم': 'للخادمة',
@@ -98,26 +90,9 @@ export const GENDERS = ['male', 'female'];
 export const genderOfSection = (section) => (section === 'girls' ? 'female' : 'male');
 export const sectionOfGender = (gender) => (gender === 'female' ? 'girls' : 'boys');
 
-// Which section an ACCOUNT belongs to: its gender decides (female -> girls, male -> boys). Accounts created before the
-// gender field existed fall back to the older `section` field, and a missing value means boys, like the old data.
-export const accountSection = (data) => {
-  if (data && GENDERS.includes(data.gender)) return sectionOfGender(data.gender);
-  return (data && data.section === 'girls') ? 'girls' : 'boys';
-};
-
-// What to do with a logged-in account given the section this device is on:
-//   'ok'        -> admin, or the account belongs to this device's section
-//   'redirect'  -> switch the device to the account's own section and reload (first time)
-//   'deny'      -> we already tried that once and it did not stick: do not let her in
-export function checkAccountSection(role, data, redirectedTo, access) {
-  if (role === 'admin') return { action: 'ok' };
-  // with role-based access the sections of the person's classes decide; otherwise the account's gender does
-  const fromRoles = access && access.sections && access.sections.length;
-  if (fromRoles && canOpenSection(access, SECTION)) return { action: 'ok' };
-  const mine = fromRoles ? access.sections[0] : accountSection(data);
-  if (mine === SECTION) return { action: 'ok' };
-  return redirectedTo === mine ? { action: 'deny', target: mine } : { action: 'redirect', target: mine };
-}
+// Which section an ACCOUNT belongs to, and the check at login: see core/account-section.ts (pure, tested). The checks that used to be
+// here moved into the React sign-in (src/api/account.ts); `accountSection` is kept for the old code that still asks.
+export { accountSection } from '@/core/account-section';
 
 // Point this device at a section; false if the browser refuses to store it (private mode).
 export function switchDeviceToSection(target) {
@@ -158,10 +133,8 @@ export function applySectionTheme(inApp) {
 
 // registration form: the new servant's gender (male = boys' section, female = girls' section). Changing it reloads the page,
 // because the classes and the servants list shown in the form depend on the section.
-const regGender = document.getElementById('reg-gender');
-if (regGender) regGender.value = genderOfSection(SECTION);
-window.changeRegGender = (value) => {
+export function changeRegGender(value) {
   if (!switchDeviceToSection(sectionOfGender(value))) return;
   try { sessionStorage.setItem('openRegisterTab', '1'); } catch (e) {}
   location.reload();
-};
+}

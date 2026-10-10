@@ -27,93 +27,8 @@
   <div style="color:rgba(255,255,255,0.65);font-family:Cairo,sans-serif;font-size:14px">جاري التحميل…</div>
 </div>
 
-<!-- AUTH -->
-<div id="auth-screen" style="display:none">
-  <img src="icon-192.png" style="width:110px;height:110px;border-radius:20px;object-fit:cover;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
-  <div class="auth-title">خدمة ابتدائي</div>
-  <div class="auth-sub">تسجيل الحضور بسرعة وسهولة</div>
-  <div class="auth-card">
-    <!-- Auth tabs -->
-    <div class="tabs" style="margin-bottom:20px">
-      <button class="tab active" id="auth-tab-login" onclick="switchAuthTab('login')">تسجيل دخول</button>
-      <button class="tab" id="auth-tab-register" onclick="switchAuthTab('register')">خادم جديد</button>
-    </div>
-
-    <!-- LOGIN PANEL -->
-    <div id="auth-panel-login">
-      <label class="field-label">البريد الإلكتروني</label>
-      <input type="email" id="login-email" class="field-input" placeholder="example@gmail.com" dir="ltr">
-      <label class="field-label">كلمة المرور</label>
-      <input type="password" id="login-pass" class="field-input" placeholder="••••••••" dir="ltr">
-      <button class="btn-primary" id="login-btn" onclick="doLogin()">دخول</button>
-      <div id="login-error" style="color:var(--danger);font-size:13px;text-align:center;margin-top:10px;display:none;"></div>
-    </div>
-
-    <!-- REGISTER PANEL -->
-    <div id="auth-panel-register" style="display:none">
-      <label class="field-label">النوع *</label>
-      <select id="reg-gender" class="field-input" style="font-family:Cairo,sans-serif" onchange="changeRegGender(this.value)">
-        <option value="male">خادم</option>
-        <option value="female">خادمه</option>
-      </select>
-      <label class="field-label">السنة الدراسية اللي هتخدم فيها *</label>
-      <select id="reg-grade" class="field-input" style="font-family:Cairo,sans-serif" onchange="populateRegDeaconSelect()">
-        <option value="">اختر السنة الدراسية</option>
-        <option value="سنة تالتة ابتدائي">سنة تالتة ابتدائي</option>
-        <option value="سنة رابعة ابتدائي">سنة رابعة ابتدائي</option>
-        <option value="سنة خامسة ابتدائي">سنة خامسة ابتدائي</option>
-        <option value="سنة سادسة ابتدائي">سنة سادسة ابتدائي</option>
-      </select>
-      <label class="field-label">الاسم الكامل *</label>
-      <select id="reg-name" class="field-input" style="font-family:Cairo,sans-serif">
-        <option value="">اختر السنة الدراسية الأول</option>
-      </select>
-      <label class="field-label">البريد الإلكتروني *</label>
-      <input type="email" id="reg-email" class="field-input" placeholder="example@gmail.com" dir="ltr">
-      <label class="field-label">رقم التليفون *</label>
-      <div id="reg-phones" class="phone-list">
-        <div class="phone-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-          <input type="tel" id="reg-phone" class="field-input phone-input" dir="ltr" placeholder="01xxxxxxxxx" style="margin-bottom:0;flex:1">
-          <button type="button" onclick="removePhoneRow(this)" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:var(--danger);width:36px;height:36px;flex-shrink:0;cursor:pointer;font-size:16px;visibility:hidden">✕</button>
-        </div>
-      </div>
-      <button type="button" onclick="addPhoneRow('reg-phones')" style="width:100%;background:rgba(var(--accent-rgb),0.08);border:1px dashed rgba(var(--accent-rgb),0.35);border-radius:8px;color:var(--accent);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;padding:9px;cursor:pointer;margin-bottom:14px">➕ إضافة رقم تليفون تاني</button>
-      <label class="field-label">العنوان</label>
-      <input type="text" id="reg-address" class="field-input" placeholder="العنوان بالتفصيل">
-      <label class="field-label">تاريخ الميلاد</label>
-      <input type="date" id="reg-dob" class="field-input">
-      <label class="field-label">الحالة الدراسية *</label>
-      <select id="reg-grad-status" class="field-select" onchange="toggleRegGradFields()">
-        <option value="student">لسه بيدرس</option>
-        <option value="graduated">متخرج</option>
-      </select>
-      <div id="reg-grad-fields-wrap">
-        <label class="field-label">الكلية</label>
-        <input type="text" id="reg-college" class="field-input" placeholder="مثلاً: كلية الهندسة">
-        <label class="field-label">الجامعة</label>
-        <select id="reg-university" class="field-select">
-          <option value="">اختر الجامعة</option>
-        </select>
-      </div>
-      <label class="field-label">كلمة المرور *</label>
-      <input type="password" id="reg-pass" class="field-input" placeholder="6 أحرف على الأقل" dir="ltr">
-      <button class="btn-primary" id="reg-btn" onclick="doRegister()">📨 طلب تسجيل</button>
-      <div id="reg-error" style="color:var(--danger);font-size:13px;text-align:center;margin-top:10px;display:none;"></div>
-      <div id="reg-success" style="display:none;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);border-radius:10px;padding:14px;margin-top:12px;font-size:14px;color:var(--success);text-align:center;line-height:1.6">
-        ✅ تم إرسال طلبك للأدمن<br>
-        <span style="color:var(--text-dim);font-size:12px">انتظر موافقة الأدمن عشان تقدر تدخل</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- PENDING SCREEN -->
-<div id="pending-screen" style="display:none;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,rgba(var(--accent-rgb),0.12) 0%,transparent 65%)">
-  <div id="pending-icon" style="font-size:56px;margin-bottom:16px">⏳</div>
-  <div id="pending-title" style="font-size:22px;font-weight:900;margin-bottom:8px">في انتظار الموافقة</div>
-  <div id="pending-text" style="color:var(--text-dim);font-size:14px;text-align:center;line-height:1.7;max-width:300px">حسابك قيد المراجعة من الأدمن.<br>هتقدر تدخل بعد الموافقة عليه.</div>
-  <button onclick="doLogout()" style="margin-top:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-family:Cairo,sans-serif;font-size:14px;padding:10px 20px;cursor:pointer">🚪 خروج</button>
-</div>
+<!-- AUTH: the login / new-servant screen is React (src/react/screens/AuthScreen.tsx), mounted into this element at start-up -->
+<div id="auth-screen"></div>
 
 <!-- COMPLETE PROFILE SCREEN (بيظهر أول دخول للخادم لو بياناته لسه ناقصة — مرة واحدة بس) -->
 <div id="complete-profile-screen" style="display:none;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,rgba(var(--accent-rgb),0.12) 0%,transparent 65%)">
@@ -176,11 +91,6 @@
 
   <!-- Active grade switcher — admin only, lets them jump between the 4 primary classes -->
   <div id="active-grade-bar" style="display:none;gap:8px;overflow-x:auto;padding:10px 16px 2px;background:var(--surface);border-bottom:1px solid var(--border);scrollbar-width:none"></div>
-
-  <!-- One-time button: assigns any pre-existing (old, single-grade) deacons/students/accounts to a chosen grade -->
-  <div id="legacy-migrate-wrap" style="display:none;padding:10px 16px 0;background:var(--surface);border-bottom:1px solid var(--border)">
-    <button onclick="migrateLegacyData()" style="width:100%;background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.35);border-radius:var(--radius-sm);color:#f39c12;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;padding:10px;cursor:pointer">🔄 ترحيل الخدام/المخدومين القدامى لسنة معيّنة (مرة واحدة)</button>
-  </div>
 
   <div id="assistant-status" style="display:none;background:linear-gradient(135deg,#8e44ad,#5e3370);border-bottom:1px solid var(--border);padding:12px 20px;font-family:Cairo,sans-serif">
     <div style="display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:13px"><span class="voice-pulse-dot" style="background:#fff"></span> <span id="assistant-hint">بيسمع دلوقتي… اتكلم براحتك</span></div>

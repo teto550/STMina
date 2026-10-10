@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/react/lib/utils';
@@ -28,12 +29,21 @@ const buttonVariants = cva(
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** shows a turning circle before the label and disables the button (use while its action is running) */
+  loading?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
-    return <Comp ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+  ({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }, ref) => {
+    if (asChild) {
+      return <Slot ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props}>{children}</Slot>;
+    }
+    return (
+      <button ref={ref} className={cn(buttonVariants({ variant, size }), className)} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+        {loading && <LoaderCircle className="tw:size-4 tw:animate-spin" aria-hidden="true" />}
+        {children}
+      </button>
+    );
   }
 );
 Button.displayName = 'Button';

@@ -4,12 +4,10 @@ import { canSwitchSection } from '@/core/access-config';
 import { GRADES, SECTION, applySectionTheme, setupGenderObserver } from '@/core/section';
 import { canManageGrade, formatAssignedGradesLabel, getUserManagedGrades, isGradeManagerOf } from '@/core/session';
 import { saveProfileCache } from '@/core/firestore-helpers';
-import { clearSplashWatchdog } from '@/core/splash';
 import { logActivity, touchLastActive } from '@/core/presence';
 import { approveDeacon, loadPendingDeacons } from '@/features/servants/approvals';
 import { setupPushBell } from '@/features/shell/push';
 import { setupPartNotifications } from '@/features/servants/parts';
-import { CLEANED_ATTENDANCE_GRADES } from '@/core/config';
 import { auth } from '@/core/firebase';
 import { applyActiveGradeDeacons } from '@/features/servants/deacons';
 import { reloadOpenTab } from '@/features/shell/tabs';
@@ -30,10 +28,6 @@ export async function enterApp(user, snapData) {
 
     saveProfileCache(user.uid, { access: snapData && snapData.access, gender: snapData && snapData.gender, section: (snapData && snapData.section) || 'boys', role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
 
-    clearSplashWatchdog();
-        document.getElementById('splash-screen').style.display  = 'none';
-    document.getElementById('auth-screen').style.display    = 'none';
-    document.getElementById('pending-screen').style.display = 'none';
     document.getElementById('complete-profile-screen').style.display = 'none';
     document.getElementById('app-screen').style.display     = 'flex';
     document.getElementById('user-email-display').textContent = state.currentUserName;
@@ -104,18 +98,6 @@ function applyRoleUI() {
   if (gradeLabelEl) gradeLabelEl.textContent = state.activeGrade ? `📚 بتتعامل دلوقتي مع خدام: ${state.activeGrade}` : '';
   buildActiveGradeBar();
   updateDeaconsTabLabel();
-  const migrateWrap = document.getElementById('legacy-migrate-wrap');
-  if (migrateWrap) migrateWrap.style.display = (isAdmin && !state.LEGACY_MIGRATED) ? 'block' : 'none';
-  updateAttendanceCleanupVisibility();
-}
-
-// زرار "تنظيف حضور قديم" بيظهر للأدمن بس، وبس لو فيه فصل نشط (activeGrade) لسه
-// معملوش تنظيف قبل كده — بمجرد ما يتنضف الفصل الزرار بيختفي ليه تلقائي
-export function updateAttendanceCleanupVisibility() {
-  const cleanupWrap = document.getElementById('attendance-cleanup-wrap');
-  if (!cleanupWrap) return;
-  const isAdmin = state.currentUserRole === 'admin';
-  cleanupWrap.style.display = (isAdmin && state.activeGrade && !CLEANED_ATTENDANCE_GRADES.includes(state.activeGrade)) ? 'block' : 'none';
 }
 
 // ===== شريط تبديل السنة الدراسية (أدمن بس) =====
@@ -175,7 +157,6 @@ window.switchActiveGrade = async (g) => {
   document.getElementById('user-email-display').textContent =
     `👑 ${state.currentUserName} — ${state.activeGrade}`;
   const homeClass = document.getElementById('home-class'); if (homeClass) homeClass.textContent = '📚 ' + state.activeGrade;
-  updateAttendanceCleanupVisibility();
   state.currentDeacon = null;
   // Switching class reads nothing by itself. The servants of all classes are already in memory once loaded, and the
   // students/parts of the new class are fetched only if a screen that shows them is open (otherwise when it opens).

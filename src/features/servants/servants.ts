@@ -23,11 +23,6 @@ export function populateUniversitySelect(selectId) {
     EGYPT_UNIVERSITIES.map(u => `<option${cur === u ? ' selected' : ''}>${u}</option>`).join('');
 }
 
-window.toggleRegGradFields = function() {
-  const status = document.getElementById('reg-grad-status').value;
-  const wrap = document.getElementById('reg-grad-fields-wrap');
-  if (wrap) wrap.style.display = status === 'student' ? 'block' : 'none';
-};
 
 // ===== خانة الخدام: تابين — الحضور + ملفات الخدام (من كل السنين الدراسية) =====
 let currentServantsTab = 'att'; // 'att' | 'list'
@@ -217,7 +212,7 @@ window.openMyProfile = async () => {
   openDeaconProfile(name);
 };
 
-// "✏️ تعديل بيانات الخادم" is a React screen (src/react/screens/EditServant.tsx); this only prepares its data and applies the result
+// "✏️ تعديل بيانات الخادم" is a React screen (src/react/screens/edit-servant/index.tsx); this only prepares its data and applies the result
 window.openEditDeaconProfile = (name) => {
   const nm = name || document.getElementById('dprof-name').textContent;
   const u = DEACON_ADMIN_MAP[nm];

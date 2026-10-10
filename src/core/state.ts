@@ -1,7 +1,6 @@
 // @ts-nocheck
 // Shared mutable state (was module-level `let` variables in the single-file script).
 export const state = {
-  LEGACY_MIGRATED: false, // هل اتعمل ترحيل البيانات القديمة (قبل نظام السنين المتعددة) ولا لسه
   currentUserRole: null, // 'admin' | 'deacon'
   pendingDeaconsCount: 0, // عدد طلبات تسجيل الخدام المعلّقة للسنة الدراسية الحالية (شارة تاب الخدام)
   currentUserName: '',

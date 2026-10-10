@@ -29,7 +29,9 @@ export function sectionOfCell(cell: Cell): Section {
 /** The cells a section shows: girls = female 1-6 plus the boys of the mixed grades; boys = male 3-6. */
 export function cellsOfSection(section: Section): Cell[] {
   return GRADES.flatMap((grade) => {
-    if (isMixedGrade(grade)) return section === 'girls' ? [cellOf('female', grade), cellOf('male', grade)] : [];
+    if (isMixedGrade(grade)) {
+      return section === 'girls' ? [cellOf('female', grade), cellOf('male', grade)] : [];
+    }
     return [cellOf(genderOfSection(section), grade)];
   });
 }
@@ -43,7 +45,9 @@ export const mixedGradeCells = (grade: Grade): Cell[] => [cellOf('female', grade
  */
 export function isCellAllowedFor(gender: Gender, cell: Cell): boolean {
   const { gender: cellGender, grade } = parseCell(cell);
-  if (isMixedGrade(grade)) return gender === 'female';
+  if (isMixedGrade(grade)) {
+    return gender === 'female';
+  }
   return cellGender === gender;
 }
 

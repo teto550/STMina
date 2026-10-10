@@ -4,18 +4,19 @@ The app is still the plain TypeScript/DOM app. React was added **next to it**: a
 of the page (or full-screen over the app), and the plain screens stay as they are. Screens can be moved to React one at a
 time, or never.
 
-## What was added (2026-09-25)
+## What exists
 | Piece | Where |
 | --- | --- |
-| React 19, `@vitejs/plugin-react` | `vite.config.ts` |
-| Tailwind CSS 4 (`tw:` prefix, no reset, colours from the app's own CSS variables) | `src/react/styles.css` |
-| shadcn/ui-style components (Radix Slot + class-variance-authority + tailwind-merge); example: Button | `src/react/components/ui/`, `src/react/lib/utils.ts` (`cn`) |
-| Forms: `react-hook-form` + `zod` (+ `@hookform/resolvers`); icons: `lucide-react` | used by screens |
-| Mounting: `mountIsland()`, the screen registry and `window.openReactScreen(name, container?)` | `src/react/mount.tsx`, `src/react/screens/registry.ts`, `src/react/bootstrap.ts` |
-| Second screen (migrated from a plain modal): "تعديل بيانات الخادم" | `src/react/screens/EditServant.tsx` |
-| First real screen: admin "المستخدمين والأدوار" (`openReactScreen('admin-roles')`, admin-only settings menu entry) | `src/react/screens/AdminRoles.tsx`, `src/react/admin/` |
-| Tests: Vitest + Testing Library (`npm test`) | `src/react/__tests__/` |
-| Strict TypeScript for React code only (`tsconfig.strict.json`; the old code stays non-strict) | `npm run typecheck` runs both |
+| React 19, `@vitejs/plugin-react`; Tailwind CSS 4 (`tw:` prefix, no reset, colours from the app's own CSS variables) | `vite.config.ts`, `src/react/styles.css` |
+| Mounting: `mountIsland()` (wraps every screen in the React Query provider), the screen registry, `window.openReactScreen(name, container?, props?)` | `src/react/mount.tsx`, `src/react/screens/registry.ts`, `src/react/bootstrap.ts` |
+| **Screens**, one folder each with an `index.tsx` (+ subfolders `components/`, `login/`, ... when they need parts) | `src/react/screens/<name>/` : `auth` (login + "new servant", mounted at start-up into `#auth-screen`, no props), `admin-roles`, `edit-servant` |
+| **Hooks** (React Query), one file per feature with several hooks: `useAuth.ts` (`useAuthUser`, `useAccount`, `useLogin`, `useLogout`, `useRegister`, `useIsRegistering`), `useServants.ts` (`useRoster`), `useAfter.ts` | `src/react/hooks/` |
+| **API functions** the hooks wrap (plain async functions, no React; Firebase calls, the account check, the email through axios) | `src/api/` (`auth.ts`, `account.ts`, `roster.ts`, `email.ts`, `errors.ts`) |
+| **Schemas** (zod), grouped by topic: `auth.ts` (login, registration), `servant.ts`, `admin.ts`, `common.ts` | `src/schemas/` |
+| **Shared UI**: `Alert` (error / success / warning / info; title, icon, close button, auto-dismiss, action), `Spinner`, `Button` (`loading`), `Input`, `PasswordInput` (eye), `Field`, `Segmented`, `Sheet`, `Chip`, `CheckRow`, `SwitchCard` | `src/react/components/ui/` |
+| **Form fields** wired to react-hook-form (`<FormProvider>`): `TextField`, `PasswordField`, `SelectField`, `PhoneListField` | `src/react/components/form/`, `src/react/components/phone-list-field.tsx` |
+| Tests: Vitest + Testing Library (`npm test`); `renderWithQuery()` renders a screen inside a fresh React Query client | `src/react/__tests__/`, `src/api/__tests__/`, `src/schemas/__tests__/`, `src/test/render.tsx` |
+| Strict TypeScript for `src/react`, `src/api`, `src/schemas`, `src/types` (`tsconfig.strict.json`; the old code stays non-strict) | `npm run typecheck` runs both |
 
 ## Why it cannot break the old screens
 - The React code and the Tailwind CSS are separate chunks loaded **on demand** the first time a React screen opens. A normal page
@@ -27,24 +28,30 @@ time, or never.
 - Available colour tokens: `bg`, `surface`, `surface-2`, `accent`, `accent-2`, `fg`, `dim`, `line`, `ok`, `warn`, `bad`
   (e.g. `tw:bg-surface`, `tw:text-dim`, `tw:border-line`, `tw:rounded-card`, `tw:rounded-field`).
 
-## Rule for this project
-**All new screens are built in React.** Existing (plain) screens are migrated one at a time when they change substantially, and each migration
-is verified (behaviour, mobile and desktop, tests) before the next one starts. The first real React screen is the admin "users and roles" screen.
-Screens are **mobile first** (most users are on phones) and work on desktop: design the phone layout first, add breakpoints (`tw:md:`) for wider
-screens, touch targets at least 44px, RTL-safe (logical utilities).
+## Rules for this project (the user's, also in CLAUDE.md)
+- **All new screens, and any screen the user asks to rewrite, are React + TypeScript.** Old plain screens migrate one at a time, each
+  verified before the next. Mobile first, touch targets at least 44px, RTL-safe (logical utilities).
+- **Component style:** `export const Name: FC<NameProps> = ({ a, b }) => { ... };` with `type NameProps = {...}` defined above.
+- **Screens are folders** (`screens/<name>/index.tsx`, a thin wrapper); parts live in subfolders; a few-line one-off piece is inlined.
+- **Schemas are global** in `src/schemas/<topic>.ts`; forms = react-hook-form + the zod resolver, using the shared form fields.
+- **Data through hooks:** `src/react/hooks/use<Feature>.ts` (React Query) wrapping plain functions in `src/api/`; non-Firebase HTTP uses the
+  axios instance (`src/core/http.ts`). Every screen shows a **visible loader** and a **visible error** (with retry).
+- **react-if for conditions:** tabs are `<Switch><Case condition=...>`; async states are loading -> error -> empty -> data, on an enum (example: `auth/register/ClassAndNameFields.tsx`).
+- **No side channels** (event buses, globals) between old code and React when React can own the logic. A screen opened by the old code
+  gets props only for data it truly needs from the caller (`edit-servant` gets the servant); `auth` takes none.
+- **Every change to a React screen/component updates its tests.**
 
 ## Adding a React screen
-1. Create `src/react/screens/MyScreen.tsx` with a default export component (props: `{ close?: () => void }`).
-2. Register it in `src/react/screens/registry.ts`: `'my-screen': () => import('./MyScreen')`.
-3. Open it from old code: `window.openReactScreen('my-screen', undefined, { ...props })` (full-screen overlay; props are optional)
-   or `window.openReactScreen('my-screen')` or
-   `window.openReactScreen('my-screen', document.getElementById('some-panel'))` (embedded in the old layout).
-4. Read the old state with `import { state } from '@/core/state'`; call old global functions through typed declarations in
-   `src/react/globals.d.ts` (e.g. `window.showToast`). Firebase (`db`, `auth`) is imported from `@/core/firebase` like everywhere else.
-5. Write a test next to it in `src/react/__tests__/` and run `npm test` and `npm run typecheck`.
+1. Create `src/react/screens/my-screen/index.tsx` with a default export component (`const MyScreen: FC<ScreenProps> = ...`; `ScreenProps`
+   is `{ close?: () => void }` from `../registry`), and put its parts in subfolders next to it.
+2. Register it in `src/react/screens/registry.ts`: `'my-screen': () => import('./my-screen')`.
+3. Open it from old code: `window.openReactScreen('my-screen', undefined, { ...props })` (full-screen overlay; props optional)
+   or `window.openReactScreen('my-screen', document.getElementById('some-panel'))` (embedded in the old layout).
+4. Data: add hooks to `src/react/hooks/use<Feature>.ts` over functions in `src/api/`; validation in `src/schemas/<topic>.ts`.
+   The old state is `import { state } from '@/core/state'`; old globals are typed in `src/react/globals.d.ts` (e.g. `window.showToast`).
+5. Write the tests in `src/react/__tests__/` (mock `@/api/*` modules, render with `renderWithQuery`), then `npm test` and `npm run typecheck`.
 
-More shadcn/ui components: copy the pattern of `button.tsx` (add the `tw:` prefix to every class, use the tokens above). Radix
-primitives (`@radix-ui/react-dialog`, `-checkbox`, ...) are installed when a component needs them.
+More shadcn/ui components: copy the pattern of `button.tsx` (add the `tw:` prefix to every class, use the tokens above).
 
 ## Commands
 `npm run dev` · `npm test` · `npm run typecheck` (old code + strict React code) · `npm run build` (typecheck + build)

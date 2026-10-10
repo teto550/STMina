@@ -81,3 +81,18 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] Add a kid in the boys' section (gets gender male + cell), and in the girls' section grade 1 (the ولد/بنت choice appears; grade 3 does not show it).
 - [ ] Kids' passwords: only the admin sees them (a phase lead no longer does). Rules are deployed (2026-09-25).
 - [ ] Rename a servant (edit screen and admin screen): kids, attendance and parts follow.
+
+## The React login screen (2026-10-10) - needs a real account, I cannot sign in for you
+- [ ] Open the test link logged out: the login screen appears right after the splash (no blank flash), looks the same as before.
+- [ ] Sign in as an admin and as a servant: works, the app opens. A wrong password shows "بيانات خاطئة، حاول تاني" and the ✕ closes it.
+- [ ] Sign out, sign in again: the button works again and the password field is empty.
+- [ ] Accounts that cannot come in see a screen with the reason and a "خروج" button (they stay signed in until they press it): pending ("في انتظار الموافقة"), rejected, not registered (an account that exists only in Firebase Auth; the admin also gets the security email once EmailJS is configured), wrong section (when the device cannot be switched), no class, and "no access yet" (approved but no class). An account of the OTHER section instead reloads straight into its own section.
+- [ ] "خادم جديد": the class list matches the section, the name list shows that class's servants, fill everything, send: the confirmation shows, the form empties, the admin gets the email/push, and the account appears as pending.
+- [ ] Registering with an email that already exists says "الإيميل ده مسجل بالفعل".
+- [ ] Change "النوع" to خادمه: the page reloads in the girls section and comes back on the "خادم جديد" tab.
+- [ ] Slow or no network: the loading picture shows, and after 7 seconds the login form appears with a "connection problem" warning.
+- [ ] Reload while signed in: the loading picture, then the app (no flash of the login form). Sign out from the app's menu: the login form comes back, with the password field empty.
+- [ ] Registering: the new account must NOT show the loading picture or the "not registered" message while the request runs; at the end the form shows the confirmation. The admin gets the email (now sent through EmailJS's web API, not the old script).
+- [ ] The eye in the password field (login and "خادم جديد") shows and hides what you typed; the browser's own password-manager fill still works.
+- [ ] Error / confirmation boxes (login, registration, admin screens, rename) have a ✕ that closes them; the "saved" box in the roles screen also closes itself after a few seconds.
+- [ ] Admins now come ONLY from their role (`users.role = 'admin'`, given by the roles screen): sign in with each of your admin accounts and check they still get the admin menu. (An account that was admin only because its email matched the old `config/settings.adminEmail` is no longer an admin.)

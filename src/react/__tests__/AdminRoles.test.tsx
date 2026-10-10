@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import type { AdminData } from '@/react/admin/types';
+import type { AdminData } from '@/react/screens/admin-roles/types';
 
 const data: AdminData = {
   roles: [{ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] }, { id: 'adm', name: 'أدمن', admin: true, cells: [] }],
@@ -13,9 +13,9 @@ const data: AdminData = {
   accounts: [{ uid: 'u3', name: 'بيتر', email: 'c@x', role: 'deacon', deaconId: 'p3' }],
 };
 const commit = vi.fn(async (_ops: unknown[]) => undefined);
-vi.mock('@/react/admin/data', () => ({ loadAdminData: vi.fn(async () => structuredClone(data)), loadNameLinks: vi.fn(async () => ({ students: ['s1'], attendance: ['a1', 'a2'], parts: [] })), commit: (ops: unknown[]) => commit(ops), newId: () => 'newid' }));
+vi.mock('@/react/screens/admin-roles/data', () => ({ loadAdminData: vi.fn(async () => structuredClone(data)), loadNameLinks: vi.fn(async () => ({ students: ['s1'], attendance: ['a1', 'a2'], parts: [] })), commit: (ops: unknown[]) => commit(ops), newId: () => 'newid' }));
 
-import AdminRoles from '@/react/screens/AdminRoles';
+import AdminRoles from '@/react/screens/admin-roles';
 
 beforeEach(() => commit.mockClear());
 

@@ -8,7 +8,7 @@ vi.mock('@/core/firebase', () => ({ db: {} }));
 vi.mock('firebase/firestore', () => ({ doc: (_db: unknown, col: string, id: string) => `${col}/${id}`, setDoc: (...a: unknown[]) => setDoc(...a) }));
 vi.mock('@/core/servant-rename', () => ({ renameServant: (...a: unknown[]) => renameServant(...a) }));
 
-import EditServant from '@/react/screens/EditServant';
+import EditServant from '@/react/screens/edit-servant';
 
 const servant = { name: 'مينا باسم', uid: 'u1', personId: 'p1', phones: ['01000000000'], address: 'القاهرة', dob: '2000-01-01', graduated: false, college: 'هندسة', university: 'جامعة القاهرة' };
 

@@ -16,6 +16,11 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Decide what to do with `part_notifications` (needs a rule or removal of the feature).
 
 ## B. Project hygiene
+- [ ] **Delete the Firestore `config` collection** (and its rule `match /config/{docId}` in `firestore.rules`) once you are sure: nothing in the app reads or writes it any
+      more (2026-10-10). Take a backup first (`config/settings` held `adminEmail`, `legacyMigrated: true`, `cleanedAttendanceGrades: [سنة رابعة ابتدائي]`).
+- [ ] **Email to the admin (new servant registered):** it was NOT working before either (the EmailJS service/template/public key were empty in `config/settings`). It now reads
+      `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY` and `VITE_ADMIN_EMAIL` (`.env.local`, and the GitHub Actions secrets of the same
+      names). Fill them in from the EmailJS dashboard to turn it on; until then nothing is sent and nothing else is affected.
 - [ ] ID migration steps 5-6 (docs/ID-MIGRATION.md): after a quiet period, read/write ids only and remove the name link fields; delete `tools/firestore/backfill-deacon-ids.cjs` once run here and in the other project.
 - [ ] Switch GitHub Pages to the build (`deploy:ghpages`, source = `gh-pages`) and bump the service worker cache version at go-live.
 - [ ] Replace the runtime CDN scripts (EmailJS, SheetJS, ExcelJS) with bundled packages loaded on demand.
@@ -34,6 +39,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
+- [x] `loadConfig` and the `config` collection are no longer used: admins come only from roles; the one-time legacy-data migration button and the manual old-attendance cleanup tool (whose "done" marks lived in `config/settings`) were removed; the email settings moved to env variables (2026-10-10).
 - [x] Old admin / lead / phase-lead toggle buttons removed from the servants tab (roles are the only way to give access).
 - [x] Kids' passwords are admin only (display + rules; the import stays, admin only); rules deployed 2026-09-25.
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.

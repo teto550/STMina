@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && npm run check:names && vite build",
+    "build": "npm run typecheck && npm run check:names && npm run check:braces && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.strict.json",
     "deploy:test": "npm run build && firebase hosting:channel:deploy test --expires 30d",
@@ -13,11 +13,13 @@
     "deploy:ghpages": "npm run build && gh-pages -d dist --dotfiles --message \"Deploy build\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:names": "node tools/check-undefined-names.cjs"
+    "check:names": "node tools/check-undefined-names.cjs",
+    "check:braces": "node tools/check-braces.cjs --skip-nocheck src"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@radix-ui/react-slot": "^1.3.3",
+    "@tanstack/react-query": "^5.104.1",
     "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -26,10 +28,12 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.88.0",
+    "react-if": "^4.1.6",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.9",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",

@@ -31,7 +31,9 @@ window.openReactScreen = async (name, container, props) => {
 };
 
 window.closeReactOverlay = () => {
-  if (!overlay) return;
+  if (!overlay) {
+    return;
+  }
   const el = overlay;
   overlay = null;
   import('./mount').then(({ unmountIsland }) => { unmountIsland(el); el.remove(); });

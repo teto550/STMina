@@ -33,7 +33,9 @@ function isCell(value: unknown): value is Cell {
 /** The snapshot stored on the account by the admin screen, or null when there is none (or it is unusable). */
 export function storedAccess(data: AccountData | null | undefined): Access | null {
   const snapshot = data?.access;
-  if (!snapshot || !Array.isArray(snapshot.cells)) return null;
+  if (!snapshot || !Array.isArray(snapshot.cells)) {
+    return null;
+  }
   const role: Role = { id: 'snapshot', name: 'snapshot', admin: snapshot.admin === true, cells: snapshot.cells.filter(isCell) };
   return computeAccess([role]);
 }
@@ -46,8 +48,15 @@ export function legacyAccess(data: AccountData | null | undefined): Access {
   const gender = asGender(data?.gender);
   const grades = new Set<Grade>();
   const own = gradeNumber(data?.grade);
-  if (own) grades.add(own);
-  (data?.phaseGrades ?? []).forEach((name) => { const g = gradeNumber(name); if (g) grades.add(g); });
+  if (own) {
+    grades.add(own);
+  }
+  (data?.phaseGrades ?? []).forEach((name) => {
+    const g = gradeNumber(name);
+    if (g) {
+      grades.add(g);
+    }
+  });
   const cells = [...grades].flatMap((grade) => (isMixedGrade(grade) ? mixedGradeCells(grade) : [cellOf(gender, grade)]));
   return computeAccess([{ id: 'legacy', name: 'legacy', admin: data?.role === 'admin', cells }]);
 }
@@ -58,7 +67,9 @@ export type AccessSource = 'roles' | 'legacy';
 export function resolveAccess(data: AccountData | null | undefined): { access: Access; source: AccessSource } {
   const stored = storedAccess(data);
   // an account that is an admin today stays an admin until the legacy flag is removed (no lock-out while both worlds exist)
-  if (stored) return { access: { ...stored, admin: stored.admin || data?.role === 'admin' }, source: 'roles' };
+  if (stored) {
+    return { access: { ...stored, admin: stored.admin || data?.role === 'admin' }, source: 'roles' };
+  }
   return { access: legacyAccess(data), source: 'legacy' };
 }
 
@@ -68,10 +79,16 @@ export function resolveAccess(data: AccountData | null | undefined): { access: A
  */
 export function newKidFields(section: 'boys' | 'girls', gradeName: string, chosen?: string | null): { gender: Gender; cell: Cell } | null {
   const grade = gradeNumber(gradeName);
-  if (!grade) return null;
+  if (!grade) {
+    return null;
+  }
   let gender: Gender | null = null;
-  if (section === 'boys') gender = 'male';
-  else if (!isMixedGrade(grade)) gender = 'female';
-  else if (chosen === 'male' || chosen === 'female') gender = chosen;
+  if (section === 'boys') {
+    gender = 'male';
+  } else if (!isMixedGrade(grade)) {
+    gender = 'female';
+  } else if (chosen === 'male' || chosen === 'female') {
+    gender = chosen;
+  }
   return gender ? { gender, cell: cellOf(gender, grade) } : null;
 }

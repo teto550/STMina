@@ -1,5 +1,5 @@
-import { filterPeople, filterRoles, planAddAdmin, planRename, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
-import type { AdminData } from '@/react/admin/types';
+import { filterPeople, filterRoles, planAddAdmin, planRename, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/screens/admin-roles/logic';
+import type { AdminData } from '@/react/screens/admin-roles/types';
 
 const data = (): AdminData => ({
   roles: [
