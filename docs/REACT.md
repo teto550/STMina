@@ -9,7 +9,7 @@ time, or never.
 | --- | --- |
 | React 19, `@vitejs/plugin-react`; Tailwind CSS 4 (`tw:` prefix, no reset, colours from the app's own CSS variables) | `vite.config.ts`, `src/react/styles.css` |
 | Mounting: `mountIsland()` (wraps every screen in the React Query provider), the screen registry, `window.openReactScreen(name, container?, props?)` | `src/react/mount.tsx`, `src/react/screens/registry.ts`, `src/react/bootstrap.ts` |
-| **Screens**, one folder each with an `index.tsx` (+ subfolders `components/`, `login/`, ... when they need parts) | `src/react/screens/<name>/` : `auth` (login + "new servant", mounted at start-up into `#auth-screen`, no props), `admin-roles`, `edit-servant` |
+| **Screens**, one folder each with an `index.tsx` (+ subfolders `components/`, `login/`, ... when they need parts) | `src/react/screens/<name>/` : `auth` (login + "new servant", mounted at start-up into `#auth-screen`, no props), `admin-roles`, `edit-servant`, `join-requests` (popup: `popupScreens` in the registry), `servants-filter`, `servants-list` |
 | **Hooks** (React Query), one file per feature with several hooks: `useAuth.ts` (`useAuthUser`, `useAccount`, `useLogin`, `useLogout`, `useRegister`, `useIsRegistering`), `useServants.ts` (`useRoster`), `useAfter.ts` | `src/react/hooks/` |
 | **API functions** the hooks wrap (plain async functions, no React; Firebase calls, the account check, the email through axios) | `src/api/` (`auth.ts`, `account.ts`, `roster.ts`, `email.ts`, `errors.ts`) |
 | **Schemas** (zod), grouped by topic: `auth.ts` (login, registration), `servant.ts`, `admin.ts`, `common.ts` | `src/schemas/` |

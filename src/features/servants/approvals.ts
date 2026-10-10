@@ -1,10 +1,7 @@
 // @ts-nocheck
-import { updateDoc, doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { isDeaconOf } from '@/core/servants-index';
-import { findApprovalPatch } from '@/core/access-link';
+import { fetchJoinRequests, approveJoinRequest } from '@/api/join-requests';
 import { state } from '@/core/state';
-import { db } from '@/core/firebase';
-import { logActivity } from '@/core/presence';
 import { GRADES, SECTION } from '@/core/section';
 import { getUserManagedGrades } from '@/core/session';
 
@@ -28,63 +25,44 @@ window.updateDeaconsTabLabel = function() {
   }
 };
 
-// ===== APPROVE / REJECT DEACON =====
-export async function approveDeacon(uid) {
-  // link the account to its person of the servants list and give it the access of that person's roles (never blocks the approval)
-  let link = {};
-  try {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (snap.exists()) link = await findApprovalPatch(snap.data());
-    // only an admin may change the access snapshot and the admin flag; a class lead approving just records the link
-    if (state.currentUserRole !== 'admin') link = link.deaconId ? { deaconId: link.deaconId } : {};
-  } catch (e) { console.warn('could not link the account to its person:', e); }
-  await updateDoc(doc(db, 'users', uid), { status: 'approved', ...link });
-  showToast('✅ تم قبول الخادم', 'success');
-  logActivity('وافق على طلب خادم', uid);
-  loadPendingDeacons();
+// ===== JOIN REQUESTS =====
+// The list, the details and approve / reject are a React popup (src/react/screens/join-requests); this keeps the counters
+// of the old screens in step with it.
+
+// the classes the reader decides on: the servants screen covers every class the reader manages; elsewhere the admin sees the active class
+function requestGrades() {
+  const onlyActive = state.currentUserRole === 'admin' && state.activeGrade && !state.servantsDirectoryOpen;
+  const grades = state.currentUserRole === 'admin' ? (onlyActive ? [state.activeGrade] : GRADES.slice()) : getUserManagedGrades();
+  return grades.length ? grades : [];
 }
 
-window.rejectDeacon = async (uid) => {
-  if (!confirm('هتحذف الطلب ده؟')) return;
-  await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
-  showToast('تم الرفض', 'error');
-  logActivity('رفض طلب خادم', uid);
-  loadPendingDeacons();
-};
-
-window.approveDeaconBtn = async (uid) => {
-  await approveDeacon(uid);
-};
-
-export async function loadPendingDeacons() {
-  const section = document.getElementById('pending-deacons-section');
-  const isGradeManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
-  if (!isGradeManager) { section.style.display = 'none'; return; }
-  const snap = await getDocs(query(collection(db, 'users'), where('status','==','pending')));
-  let list  = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => (u.section || 'boys') === SECTION);
-  // الأدمن يشوف بس طلبات السنة الدراسية النشطة (activeGrade)، ومسؤول السنة/المرحلة يشوف طلبات الفصول المسموح لها
-  const managedGrades = state.currentUserRole === 'admin' ? (state.activeGrade ? [state.activeGrade] : GRADES.slice()) : getUserManagedGrades();
-  if (managedGrades.length) list = list.filter(u => managedGrades.includes(u.grade));
-  state.pendingDeaconsCount = list.length;
+function setPendingCount(count) {
+  state.pendingDeaconsCount = count;
   updateDeaconsTabLabel();
   if (typeof window.updateServantsDashStats === 'function') window.updateServantsDashStats();
-  const el    = document.getElementById('pending-list');
-  const cnt   = document.getElementById('pending-count');
-  if (!list.length) {
-    section.style.display = 'none';
-    return;
-  }
-  section.style.display = 'block';
-  cnt.textContent = `${list.length} طلب جديد`;
-  el.innerHTML = list.map(u => `
-    <div style="background:var(--surface);border:1px solid rgba(243,156,18,0.3);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:12px;background:rgba(243,156,18,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🙋</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700">${u.name||'بدون اسم'}</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${u.email||''}</div>
-        ${u.grade ? `<div style="font-size:12px;color:var(--accent);margin-top:2px">📚 ${u.grade}</div>` : ''}
-      </div>
-      <button onclick="approveDeaconBtn('${u.id}')" style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);border-radius:8px;color:var(--success);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer">✓ قبول</button>
-      <button onclick="rejectDeacon('${u.id}')" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:var(--danger);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer">✕ رفض</button>
-    </div>`).join('');
 }
+
+// approval from the link in the admin email (?approve=uid)
+export async function approveDeacon(uid) {
+  await approveJoinRequest(uid, state.currentUserRole === 'admin');
+  showToast('✅ تم قبول الخادم', 'success');
+  loadPendingDeacons();
+}
+
+export async function loadPendingDeacons() {
+  const isGradeManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
+  if (!isGradeManager) return;
+  const list = await fetchJoinRequests({ section: SECTION, grades: requestGrades() });
+  setPendingCount(list.length);
+}
+
+window.openJoinRequests = () => {
+  const isGradeManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
+  if (!isGradeManager) return;
+  window.openReactScreen('join-requests', undefined, {
+    section: SECTION,
+    grades: requestGrades(),
+    isAdmin: state.currentUserRole === 'admin',
+    onCount: setPendingCount,
+  });
+};

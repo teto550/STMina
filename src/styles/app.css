@@ -150,11 +150,6 @@
   .date-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 14px; cursor: pointer; transition: all 0.2s; }
   .date-chip.active { background: rgba(var(--accent-rgb),0.15); border-color: var(--accent); color: var(--accent); }
   /* ===== DEACONS DASHBOARD ===== */
-  .dash-opt { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; margin-bottom: 8px; cursor: pointer; }
-  .dash-opt input { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
-  .dash-opt-txt { flex: 1; min-width: 0; }
-  .dash-opt-name { font-size: 14px; font-weight: 700; }
-  .dash-opt-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
   .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
   .dash-card-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
   .dash-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }

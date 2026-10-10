@@ -5,10 +5,11 @@ import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } fr
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconUsersMap, loadDeaconsList } from '@/features/servants/deacons';
 import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttendance, renderDeaconAttDatesList, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
+import { loadPendingDeacons } from '@/features/servants/approvals';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
-import { sectionTag, genderOfSection } from '@/core/section';
+import { sectionTag, genderOfSection, ALL_GRADES } from '@/core/section';
 import { logActivity } from '@/core/presence';
 import { EGYPT_UNIVERSITIES } from '@/core/universities';
 
@@ -51,6 +52,9 @@ window.openServantsDirectory = async () => {
     console.error('openServantsDirectory error:', e.code || e.message || e);
   }
   updateServantsDashStats();
+  loadPendingDeacons().then(updateServantsDashStats).catch(e => console.warn('join requests count:', e)); // all classes, not just the active one
+  state.servantsGradeFilter = '';
+  mountServantsClassFilter();
   // كل مرة تتفتح الخانة: تابع الحضور → حضور مدارس الأحد (مهما كان اللي اتفتح قبل كده)
   window.setServantsTab('att', document.getElementById('sd-tab-btn-att'));
   window.setDeaconAttType('sunday', document.getElementById('sd-type-btn-sunday'));
@@ -89,7 +93,7 @@ window.renderServantsDirectory = () => {
   const term = (searchEl.value || '').trim();
   // أسماء فريدة من الخدام المسموح لهم في النظام الحالي فقط — مسؤول المرحلة يشوف فصله فقط، والأدمن يشوف الكل
   const seen = new Set();
-  let all = getCurrentUserScopedDeaconRows().sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  let all = getCurrentUserScopedDeaconRows().filter(x => !state.servantsGradeFilter || (x.grade || '').trim() === state.servantsGradeFilter).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
   if (term) {
     const norm = s => (s || '').replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').toLowerCase();
@@ -97,37 +101,34 @@ window.renderServantsDirectory = () => {
   }
 
   document.getElementById('servants-directory-count').textContent = `${all.length} خادم`;
-  const listEl = document.getElementById('servants-directory-list');
-  if (!all.length) {
-    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🙏</div>مفيش خدام مطابقين</div>';
-    return;
-  }
-  listEl.innerHTML = all.map(x => {
-    const u = DEACON_ADMIN_MAP[x.name];
-    const safeName = x.name.replace(/'/g, "\\'");
-    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس (ALL_DEACONS_RAW ومصدر الحضور شاملين كل السنين أصلاً)
-    const sundayCount  = deaconAttendanceCount(x.name, 'sunday');
-    const meetingCount = deaconAttendanceCount(x.name, 'meeting');
-    return `
-      <div class="deacon-row" onclick="openDeaconProfile('${safeName}')" style="display:flex;align-items:center;gap:12px;cursor:pointer">
-        <div class="student-avatar" style="flex-shrink:0">${x.name.trim().charAt(0)}</div>
-        <div style="flex:1;min-width:0">
-          <div class="deacon-row-name">${x.name}</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${x.grade || '—'}${u ? '' : ' · لسه ماسجلش بياناته'}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${sundayCount ? 'var(--success)' : 'var(--text-dim)'}">${sundayCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">⛪ مدارس أحد</div>
-          </div>
-          <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${meetingCount ? 'var(--success)' : 'var(--text-dim)'}">${meetingCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">👥 اجتماع خدام</div>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+  const rows = all.map(x => ({
+    name: x.name,
+    grade: x.grade || '',
+    registered: !!DEACON_ADMIN_MAP[x.name],
+    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس
+    sunday: deaconAttendanceCount(x.name, 'sunday'),
+    meeting: deaconAttendanceCount(x.name, 'meeting')
+  }));
+  window.openReactScreen('servants-list', document.getElementById('servants-directory-list'), {
+    rows,
+    onOpen: (name) => window.openDeaconProfile(name)
+  });
 };
+
+// الفلتر بالفصل فوق تابي الخدام (الحضور والخدام): بيتعمل بالـReact، والاختيار محفوظ في state عشان التابين يشاركوه
+function mountServantsClassFilter() {
+  const el = document.getElementById('sd-class-filter');
+  if (!el) return;
+  window.openReactScreen('servants-filter', el, {
+    grades: ALL_GRADES,
+    value: state.servantsGradeFilter,
+    onChange: (grade) => {
+      state.servantsGradeFilter = grade;
+      mountServantsClassFilter();
+      if (currentServantsTab === 'att') renderDeaconAttPicker(); else renderServantsDirectory();
+    }
+  });
+}
 
 function formatDobDisplay(dob) {
   try {

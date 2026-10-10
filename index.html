@@ -275,15 +275,6 @@
     <!-- DEACONS TAB -->
     <div id="tab-deacons" style="display:none">
 
-      <!-- Pending join requests: kept at the very top of the tab so they are seen first -->
-      <div id="pending-deacons-section" style="display:none;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <p class="section-title" style="margin:0">⏳ طلبات تسجيل خدام</p>
-          <span id="pending-count" style="font-size:12px;color:var(--warning)"></span>
-        </div>
-        <div id="pending-list"></div>
-      </div>
-
       <!-- Admin: add deacon button -->
       <div id="add-deacon-btn-wrap" style="display:none;margin-bottom:16px">
         <div id="deacon-tab-grade-label" style="font-size:13px;color:var(--text-dim);margin-bottom:10px;text-align:center"></div>
@@ -555,12 +546,14 @@
             <div id="sd-stat-servants" style="font-size:24px;font-weight:900;color:var(--text)">0</div>
             <div style="font-size:12px;color:var(--text-dim);margin-top:2px">خادم</div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 10px;text-align:center">
+          <button type="button" onclick="openJoinRequests()" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 10px;text-align:center;cursor:pointer;color:inherit;font-family:inherit">
             <div id="sd-stat-pending" style="font-size:24px;font-weight:900;color:var(--warning)">0</div>
-            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">طلبات انضمام</div>
-          </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">طلبات انضمام ›</div>
+          </button>
         </div>
       </div>
+
+      <div id="sd-class-filter" style="margin-bottom:12px"></div>
 
       <div class="tabs" id="sd-main-tabs">
         <button class="tab active" id="sd-tab-btn-att" onclick="setServantsTab('att',this)">✅ الحضور</button>
@@ -795,20 +788,6 @@
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeExportModal()">إلغاء</button>
       <button class="btn-primary" onclick="doExport()" style="flex:1">تصدير</button>
-    </div>
-  </div>
-</div>
-
-<!-- DEACONS DASHBOARD: SETTINGS MODAL -->
-<div id="dash-modal" style="display:none;z-index:340" class="modal-overlay" onclick="closeDashModalOutside(event)">
-  <div class="modal-sheet">
-    <button class="modal-close" onclick="closeDashModal()">✕</button>
-    <div class="modal-title">📊 داشبورد الخدام</div>
-    <div class="modal-sub">اختار الأقسام اللي عايزها تظهر في الداشبورد</div>
-    <div id="dash-options" style="max-height:46vh;overflow-y:auto;margin-bottom:18px"></div>
-    <div class="modal-actions" style="display:flex;gap:10px">
-      <button class="btn-secondary" onclick="closeDashModal()" style="flex:1">إلغاء</button>
-      <button class="btn-primary" onclick="openDashboard()" style="flex:2">📊 اعرض الداشبورد</button>
     </div>
   </div>
 </div>

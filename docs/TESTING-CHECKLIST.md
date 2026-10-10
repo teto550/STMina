@@ -96,3 +96,22 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] The eye in the password field (login and "خادم جديد") shows and hides what you typed; the browser's own password-manager fill still works.
 - [ ] Error / confirmation boxes (login, registration, admin screens, rename) have a ✕ that closes them; the "saved" box in the roles screen also closes itself after a few seconds.
 - [ ] Admins now come ONLY from their role (`users.role = 'admin'`, given by the roles screen): sign in with each of your admin accounts and check they still get the admin menu. (An account that was admin only because its email matched the old `config/settings.adminEmail` is no longer an admin.)
+
+## Join requests popup (2026-10-10, React) - needs a pending account
+- [ ] Servants screen: the "طلبات انضمام ›" card shows the number and opens a popup with each request (name, class, email, phone, address, birth date, study, date).
+- [ ] ✓ قبول: the request disappears, the card number drops, the servant can sign in (and is linked to their person / roles as before).
+- [ ] ✕ رفض asks "أكيد؟" on the second tap, then the request disappears and that account is rejected.
+- [ ] A class lead sees only the requests of their own classes; the admin sees all classes in the servants screen (the count is loaded when the screen opens, no need to open a class first) and the active class elsewhere.
+- [ ] The old list at the top of the "الخدام" list tab is gone; the `?approve=` link from the admin email still approves.
+
+## Servants screen: class filter + React list (2026-10-10)
+- [ ] Above the "الحضور | الخدام" tabs there is a row of chips: الكل + the classes (girls section also has أولى and تانية).
+- [ ] Picking a class narrows the attendance list (both "مدارس الأحد" and "اجتماع الخدام") and the "الخدام" list; the choice is kept when you switch tabs; "الكل" clears it. The day's present counter still counts everyone.
+- [ ] The filter works together with the name search; opening the screen again starts on "الكل".
+- [ ] The "الخدام" tab (now React) shows the same rows and counts as before; tapping a row opens the servant's profile.
+
+## Dashboard button: class popup, then sections popup (2026-10-10)
+- [ ] Reloading the app shows NO popup.
+- [ ] "📊 الداشبورد" (servants screen and the kids tab): a person with several classes first sees "اختار الفصل"; picking a class closes it and opens the sections popup (the long list of checkboxes). Closing the class popup stops there.
+- [ ] A servant with a single class goes straight to the sections popup.
+- [ ] "اعرض الداشبورد" keeps the popup open with "جاري التحميل…" until the dashboard is ready; a failed load shows an error and stays open.

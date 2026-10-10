@@ -140,12 +140,10 @@ window.setDeacon = (d, btn) => {
 window.showDeaconDetailView = (d) => {
   const addBtnWrap = document.getElementById('add-deacon-btn-wrap');
   const pickerWrap = document.getElementById('deacon-picker-wrap');
-  const pendingSection = document.getElementById('pending-deacons-section');
   const detailHeader = document.getElementById('deacon-detail-header');
   const detailName = document.getElementById('deacon-detail-name');
   if (addBtnWrap) addBtnWrap.style.display = 'none';
   if (pickerWrap) pickerWrap.style.display = 'none';
-  if (pendingSection) pendingSection.style.display = 'none';
   if (detailHeader) detailHeader.style.display = 'flex';
   if (detailName) detailName.textContent = '🙏 ' + d;
 };

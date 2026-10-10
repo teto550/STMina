@@ -2,6 +2,7 @@
 // Shared mutable state (was module-level `let` variables in the single-file script).
 export const state = {
   currentUserRole: null, // 'admin' | 'deacon'
+  servantsGradeFilter: '', // class chosen in the servants screen filter ('' = all), shared by its attendance and list tabs
   pendingDeaconsCount: 0, // عدد طلبات تسجيل الخدام المعلّقة للسنة الدراسية الحالية (شارة تاب الخدام)
   currentUserName: '',
   currentUserEmail: '',

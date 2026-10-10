@@ -155,6 +155,10 @@ window.renderDeaconAttPicker = () => {
 
   const q = (document.getElementById('sd-att-search')?.value || '').trim();
   let list = allNames.slice().sort((a, b) => a.localeCompare(b, 'ar'));
+  if (state.servantsGradeFilter) {
+    const inGrade = new Set(getCurrentUserScopedDeaconRows().filter(r => (r.grade || '').trim() === state.servantsGradeFilter).map(r => r.name));
+    list = list.filter(n => inGrade.has(n));
+  }
   if (q) list = list.filter(n => nameMatchesSearch(n, q));
 
   if (!list.length) {

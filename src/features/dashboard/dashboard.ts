@@ -4,7 +4,8 @@ import { isDeaconOf, deaconNameOf } from '@/core/servants-index';
 import { DEACONS } from '@/features/servants/deacons';
 import { DEACON_ATTENDANCE } from '@/features/servants/deacon-attendance';
 import { studentPhonesLabel } from '@/features/students/students';
-import { genderizeText } from '@/core/section';
+import { genderizeText, GRADES } from '@/core/section';
+import { getUserManagedGrades } from '@/core/session';
 import { ensureStudents, ensureDeacons, ensureDeaconAttendance } from '@/core/data';
 
 // كل الأقسام المتاحة — المستخدم بيختار منها اللي عايزه
@@ -35,22 +36,30 @@ function saveDashPrefs(ids) {
   try { localStorage.setItem('dashSections', JSON.stringify(ids)); } catch (e) {}
 }
 
-window.openDashModal = () => {
-  const active = getDashPrefs();
-  document.getElementById('dash-options').innerHTML = DASH_SECTIONS.map(s => `
-    <label class="dash-opt">
-      <input type="checkbox" value="${s.id}" ${active.includes(s.id) ? 'checked' : ''}>
-      <span class="dash-opt-txt">
-        <span class="dash-opt-name">${s.name}</span>
-        <div class="dash-opt-desc">${s.desc}</div>
-      </span>
-    </label>`).join('');
-  document.getElementById('dash-modal').style.display = 'flex';
+// "📊 الداشبورد": first (for people who work in several classes) the popup that picks the class, then the popup that picks the
+// sections; both are React screens ('class-picker', 'dashboard-options')
+function askClass(grades) {
+  return new Promise(resolve => {
+    window.openReactScreen('class-picker', undefined, { grades, current: state.activeGrade, onPick: resolve });
+  });
+}
+
+window.openDashModal = async () => {
+  const grades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
+  if (grades.length > 1) {
+    const picked = await askClass(grades);
+    if (!picked) { window.closeReactOverlay(); return; }
+    if (picked !== state.activeGrade) { await window.switchActiveGrade(picked); }
+  }
+  window.openReactScreen('dashboard-options', undefined, {
+    sections: DASH_SECTIONS,
+    selected: getDashPrefs(),
+    onShow: async (ids) => {
+      saveDashPrefs(ids);
+      await showDashboard();
+    }
+  });
 };
-
-window.closeDashModal = () => { document.getElementById('dash-modal').style.display = 'none'; };
-
-window.closeDashModalOutside = (e) => { if (e.target.id === 'dash-modal') closeDashModal(); };
 
 // بيحسب كل إحصائيات الخدام مرة واحدة ويستخدمها كل الأقسام
 function computeDashStats() {
@@ -228,13 +237,8 @@ function buildDashboardHTML() {
   return out || `<div class="dash-empty">مختارتش أي قسم — دوس ⚙️ واختار الأقسام</div>`;
 }
 
-window.openDashboard = async () => {
-  // خزّن اختيارات المستخدم لو الشاشة دي اتفتحت من مودال الإعدادات
-  const boxes = document.querySelectorAll('#dash-options input[type=checkbox]');
-  if (boxes.length) {
-    saveDashPrefs(Array.from(boxes).filter(b => b.checked).map(b => b.value));
-  }
-  closeDashModal();
+// loads what the dashboard needs and shows it; rejects when the data cannot be read (the popup shows the error)
+async function showDashboard() {
   // the dashboard needs the students, the servants and the servants' attendance: load them now (cached for a few minutes)
   await Promise.all([ensureStudents(), ensureDeacons(), ensureDeaconAttendance()]);
   if (!DEACONS.length) { showToast('مفيش خدام مسجلين للسنة دي', 'info'); return; }
@@ -243,7 +247,7 @@ window.openDashboard = async () => {
   document.getElementById('dash-body').innerHTML = buildDashboardHTML();
   document.getElementById('dash-view').style.display = 'block';
   document.body.style.overflow = 'hidden';
-};
+}
 
 window.closeDashboard = () => {
   document.getElementById('dash-view').style.display = 'none';

@@ -1,6 +1,6 @@
 // The ONLY React-related code that is part of the normal app bundle. It is tiny and does not import React: it just adds
 // `window.openReactScreen(name)`, which loads the React chunk when a React screen is actually opened.
-import { screens } from './screens/registry';
+import { popupScreens, screens } from './screens/registry';
 
 declare global {
   interface Window {
@@ -22,7 +22,7 @@ window.openReactScreen = async (name, container, props) => {
     window.closeReactOverlay();
     overlay = document.createElement('div');
     overlay.id = 'react-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;overflow:auto;background:var(--bg);';
+    overlay.style.cssText = popupScreens.has(name) ? 'position:fixed;inset:0;z-index:10000;' : 'position:fixed;inset:0;z-index:10000;overflow:auto;background:var(--bg);';
     document.body.appendChild(overlay);
     host = overlay;
   }
