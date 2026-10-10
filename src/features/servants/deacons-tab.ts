@@ -184,6 +184,19 @@ window.isVisitedThisMonth = (s) => {
   return m === 0;
 };
 
+// هل تم افتقاد المخدوم تليفونيًا الأسبوع ده؟ (الأسبوع من السبت للجمعة)
+window.isVisitedThisWeek = (s) => {
+  if (!s.lastVisitPhone) return false;
+  const d = new Date(s.lastVisitPhone + 'T00:00:00');
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  const day = now.getDay(); // 0=أحد .. 6=سبت
+  const diffToSaturday = (day + 1) % 7; // بداية الأسبوع = السبت
+  const weekStart = new Date(now); weekStart.setHours(0,0,0,0); weekStart.setDate(now.getDate() - diffToSaturday);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
+  return d >= weekStart && d < weekEnd;
+};
+
 // ===== حذف خادم عبر مودال اختيار =====
 window.openDeleteDeaconModal = () => {
   if (!DEACONS.length) { showToast('مفيش خدام لحذفهم', 'error'); return; }

@@ -41,6 +41,13 @@ function nextFridayStr() {
 
 const PART_WEEKDAY_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
+function formatPartDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, day] = dateStr.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
+  return `${PART_WEEKDAY_AR[d.getDay()]}، ${day}/${m}`;
+}
+
 // شكل عنوان المجموعة المطلوب: "الجمعة 25-9"
 function formatPartDateHeader(dateStr) {
   if (!dateStr) return '';

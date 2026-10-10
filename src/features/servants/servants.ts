@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { state } from '@/core/state';
-import { buildActiveGradeBar, showServantsDirectorySection } from '@/features/shell/app-shell';
+import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconsList } from '@/features/servants/deacons';
 import { deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
@@ -101,6 +101,12 @@ export function updateServantsDashStats() {
   if (pendingEl)  pendingEl.textContent  = String(state.pendingDeaconsCount || 0);
 }
 window.updateServantsDashStats = updateServantsDashStats;
+
+window.closeServantsDirectory = () => {
+  state.servantsDirectoryOpen = false;
+  showMainAppTabs();
+  buildActiveGradeBar();
+};
 
 window.setServantsTab = (tab, btn) => {
   document.querySelectorAll('#sd-main-tabs .tab').forEach(b => b.classList.remove('active'));

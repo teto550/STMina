@@ -34,7 +34,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
-- [x] Unused code removed (2026-10-10, C41 in `docs/PORTING.md`): dead handlers/functions, unused imports, leftover servants Excel-import module, duplicate root `app-shell.ts`, unused images and the `lucide-react` dependency.
+- [x] Unused code removed (2026-10-10, C41 in `docs/PORTING.md`): only what nothing used and was never visible (duplicate root `app-shell.ts`, `lucide-react`, unused imports and trivial dead helpers); anything reusable was kept.
 - [x] Old admin / lead / phase-lead toggle buttons removed from the servants tab (roles are the only way to give access).
 - [x] Kids' passwords are admin only (display + rules; the import stays, admin only); rules deployed 2026-09-25.
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.

@@ -18,9 +18,19 @@ let credsDecisions = new Map();   // studentId -> صف الشيت اللي قب�
 
 let credsReviewBase = [];         // قايمة القرار (من غير أي قبول)
 
+const CREDS_GRADE_WORD = { 3: 'تالتة', 4: 'رابعة', 5: 'خامسة', 6: 'سادسة' };
+
 export function credsEsc(v) { return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function credsTokens(n) { return normalizeName(n).split(' ').filter(Boolean); }
+
+function credsIsPrefix(a, b) { return a.length <= b.length && a.every((t, i) => t === b[i]); }
+
+function credsSameGrade(sheetGrade, appGrade) {
+  const m = String(sheetGrade || '').match(/\d+/);
+  const w = m ? CREDS_GRADE_WORD[+m[0]] : null;
+  return !!w && String(appGrade || '').includes(w);
+}
 
 window.openCredsImportModal = () => {
   if (state.currentUserRole !== 'admin') return;

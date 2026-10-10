@@ -1,5 +1,5 @@
 // Classes, sections and the rules that turn roles into access (docs/ROLES-DESIGN.md). Pure functions, no Firestore, no DOM.
-import type { Access, Cell, Gender, Grade, Role, Section } from '@/types/access';
+import type { Access, Cell, Gender, Grade, Person, Role, Section } from '@/types/access';
 
 export const GRADES: readonly Grade[] = [1, 2, 3, 4, 5, 6];
 
@@ -58,6 +58,10 @@ export function computeAccess(roles: Role[]): Access {
   const sections = [...new Set(cells.map(sectionOfCell))].sort() as Section[];
   return { admin: roles.some((role) => role.admin), cells, sections };
 }
+
+/** The roles of a person, looked up in the full list of roles (unknown ids are ignored). */
+export const rolesOf = (person: Pick<Person, 'roleIds'>, allRoles: Role[]): Role[] =>
+  allRoles.filter((role) => person.roleIds.includes(role.id));
 
 /** The section a person starts in after login: by their gender (admins too). */
 export const startSectionOf = (gender: Gender): Section => sectionOfGender(gender);

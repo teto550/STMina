@@ -107,6 +107,13 @@ export async function doRemoveAttendance(studentId) {
   })();
 }
 
+window.removeAttendance = async (studentId) => {
+  const student = state.allStudents.find(s => s.id === studentId);
+  if (!confirm(`هتشيل حضور "${student?.name}" من النهارده؟`)) return;
+  await doRemoveAttendance(studentId);
+  showToast('تم حذف الحضور ✓', 'success');
+};
+
 export function renderTodayList() {
   const cont = document.getElementById('today-list');
   let list   = attFilteredStudents(state.currentAttGrade);
