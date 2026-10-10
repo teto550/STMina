@@ -34,10 +34,13 @@ window.toggleRegGradFields = function() {
 // فلتر تاب "الخدام": حضر/غاب في آخر 1-4 مرات من نوع معيّن (مدارس الأحد أو اجتماع الخدام)
 let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent' | 'excuse'
 let dirFilterType = 'sunday';  // 'sunday' | 'meeting'
+let dirFilterBirthday = false; // أعياد ميلاد الخدام في الشهر الحالي (من بيانات الخادم المسجلة)
 
 function resetDirFilter() {
   dirFilterStatus = 'all';
   dirFilterType = 'sunday';
+  dirFilterBirthday = false;
+  document.getElementById('sd-flt-bday')?.classList.remove('active');
   document.querySelectorAll('#sd-flt-status-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.status === 'all'));
   document.querySelectorAll('#sd-flt-type-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.type === 'sunday'));
   const countEl = document.getElementById('sd-flt-count');
@@ -54,6 +57,18 @@ window.setDirFilterStatus = (status, btn) => {
   if (extra) extra.style.display = status === 'all' ? 'none' : 'block';
   renderServantsDirectory();
 };
+
+window.toggleDirFilterBirthday = (btn) => {
+  dirFilterBirthday = !dirFilterBirthday;
+  if (btn) btn.classList.toggle('active', dirFilterBirthday);
+  renderServantsDirectory();
+};
+
+// يوم وشهر الميلاد من dob (YYYY-MM-DD) — بيرجع null لو مش مكتوب أو الصيغة غلط
+function dobMonthDay(dob) {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(dob || '');
+  return m ? { month: parseInt(m[1], 10), day: parseInt(m[2], 10) } : null;
+}
 
 window.setDirFilterType = (type, btn) => {
   dirFilterType = type === 'meeting' ? 'meeting' : 'sunday';
@@ -146,10 +161,21 @@ window.renderServantsDirectory = () => {
     }
   } else if (hintEl) hintEl.textContent = '';
 
+  // فلتر أعياد الميلاد: الخدام اللي ميلادهم في الشهر الحالي، مترتبين باليوم (اللي لسه ماسجلش بياناته مالوش تاريخ ميلاد)
+  const bdayMap = {};
+  if (dirFilterBirthday) {
+    const curMonth = new Date().getMonth() + 1;
+    all = all.filter(x => {
+      const md = dobMonthDay((DEACON_ADMIN_MAP[x.name] || {}).dob);
+      if (md && md.month === curMonth) { bdayMap[x.name] = md; return true; }
+      return false;
+    }).sort((a, b) => bdayMap[a.name].day - bdayMap[b.name].day);
+  }
+
   document.getElementById('servants-directory-count').textContent = `${all.length} خادم`;
   const listEl = document.getElementById('servants-directory-list');
   if (!all.length) {
-    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">${filtering ? '🔍' : '🙏'}</div>${filtering ? 'مفيش خدام بالشرط ده' : 'مفيش خدام مطابقين'}</div>`;
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">${filtering || dirFilterBirthday ? '🔍' : '🙏'}</div>${dirFilterBirthday ? 'مفيش خدام أعياد ميلادهم الشهر ده (أو لسه ماسجلوش تاريخ الميلاد)' : filtering ? 'مفيش خدام بالشرط ده' : 'مفيش خدام مطابقين'}</div>`;
     return;
   }
   const histIcon = { present: '✅', excuse: '📝', absent: '❌' };
@@ -164,7 +190,7 @@ window.renderServantsDirectory = () => {
         <div class="student-avatar" style="flex-shrink:0">${x.name.trim().charAt(0)}</div>
         <div style="flex:1;min-width:0">
           <div class="deacon-row-name">${x.name}</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${x.grade || '—'}${u ? '' : ' · لسه ماسجلش بياناته'}</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${x.grade || '—'}${u ? '' : ' · لسه ماسجلش بياناته'}${bdayMap[x.name] ? ` · 🎂 ${bdayMap[x.name].day}/${bdayMap[x.name].month}` : ''}</div>
           ${filtering ? `<div style="font-size:12px;margin-top:3px;letter-spacing:2px">${sessions.map(d => histIcon[deaconStatusOn(x.name, dirFilterType, d)]).join(' ')}</div>` : ''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">

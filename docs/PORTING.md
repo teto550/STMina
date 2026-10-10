@@ -335,3 +335,7 @@ Removed (verified unreferenced by `index.html`, other modules and tests; build, 
 
 ### C43 - Servants directory: "📝 اعتذر" filter next to حضر / غاب
 `index.html`: new tab `data-status="excuse"` in `#sd-flt-status-tabs` (label of the card is now "فلتر الحضور والغياب والاعتذار"). `features/servants/servants.ts`: `renderServantsDirectory` maps the chosen status to `present | excuse | absent` (`want`), so the servants kept are the ones excused on EVERY one of the last n sessions (same rule and same hint/✅📝❌ icons as C39; `deaconStatusOn` already returned `excuse`). No new reads, nothing project-specific.
+
+
+### C44 - Servants directory: "🎂 أعياد ميلاد الشهر ده" filter
+`index.html`: new toggle button `#sd-flt-bday` under the status tabs of the servants directory (card label now "فلتر الحضور والغياب والاعتذار وأعياد الميلاد"). `features/servants/servants.ts`: new `dirFilterBirthday` + `window.toggleDirFilterBirthday` (reset by `resetDirFilter`), `dobMonthDay(dob)`; `renderServantsDirectory` keeps only servants whose `dob` (from `DEACON_ADMIN_MAP`, i.e. servants who registered) falls in the current month, sorted by day, shows "🎂 day/month" in the row, and combines (AND) with the attendance/excuse filter. Servants who have not registered or have no dob never match. No new reads, nothing project-specific.

@@ -701,12 +701,15 @@
       <!-- ===== TAB 2: الخدام ===== -->
       <div id="sd-tab-list" style="display:none">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
-          <label class="field-label">🔎 فلتر الحضور والغياب والاعتذار</label>
+          <label class="field-label">🔎 فلتر الحضور والغياب والاعتذار وأعياد الميلاد</label>
           <div class="tabs" id="sd-flt-status-tabs" style="margin-bottom:0">
             <button class="tab active" data-status="all" onclick="setDirFilterStatus('all',this)">الكل</button>
             <button class="tab" data-status="present" onclick="setDirFilterStatus('present',this)">✅ حضر</button>
             <button class="tab" data-status="absent" onclick="setDirFilterStatus('absent',this)">❌ غاب</button>
             <button class="tab" data-status="excuse" onclick="setDirFilterStatus('excuse',this)">📝 اعتذر</button>
+          </div>
+          <div class="tabs" style="margin:10px 0 0 0">
+            <button class="tab" id="sd-flt-bday" onclick="toggleDirFilterBirthday(this)">🎂 أعياد ميلاد الشهر ده</button>
           </div>
           <div id="sd-flt-extra" style="display:none;margin-top:12px">
             <div class="tabs" id="sd-flt-type-tabs" style="margin-bottom:12px">
