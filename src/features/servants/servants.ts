@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
-import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconUsersMap, loadDeaconsList } from '@/features/servants/deacons';
-import { deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, renderDeaconAttDatesList, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
+import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconsList } from '@/features/servants/deacons';
+import { deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
@@ -30,7 +30,6 @@ window.toggleRegGradFields = function() {
 };
 
 // ===== خانة الخدام: تابين — الحضور + ملفات الخدام (من كل السنين الدراسية) =====
-let currentServantsTab = 'att'; // 'att' | 'list'
 
 // فلتر تاب "الخدام": حضر/غاب في آخر 1-4 مرات من نوع معيّن (مدارس الأحد أو اجتماع الخدام)
 let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent'
@@ -110,7 +109,6 @@ window.closeServantsDirectory = () => {
 };
 
 window.setServantsTab = (tab, btn) => {
-  currentServantsTab = tab;
   document.querySelectorAll('#sd-main-tabs .tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('sd-tab-att').style.display  = tab === 'att'  ? 'block' : 'none';
@@ -125,7 +123,6 @@ window.renderServantsDirectory = () => {
   if (!searchEl) return;
   const term = (searchEl.value || '').trim();
   // أسماء فريدة من الخدام المسموح لهم في النظام الحالي فقط — مسؤول المرحلة يشوف فصله فقط، والأدمن يشوف الكل
-  const seen = new Set();
   let all = getCurrentUserScopedDeaconRows().sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
   if (term) {

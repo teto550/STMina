@@ -2,7 +2,7 @@
 import { query, collection, orderBy, where, serverTimestamp, addDoc, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { deaconIdOfName, deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
-import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
+import { getDocsTtl } from '@/core/firestore-helpers';
 import { ensureAttendance } from '@/core/data';
 import { db } from '@/core/firebase';
 import { SECTION, inCurrentSection, sectionTag } from '@/core/section';

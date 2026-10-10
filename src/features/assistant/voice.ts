@@ -71,10 +71,6 @@ export function bestVoiceMatch(transcript, candidates) {
   return bestScore >= 0.6 ? best : null;
 }
 
-function findStudentByVoice(transcript, candidates) {
-  return bestVoiceMatch(transcript, candidates);
-}
-
 // ===== GLOBAL VOICE ASSISTANT (مساعد صوتي عام) =====
 // أوامر مدعومة (بالمصري، تقولها كلها في جملة واحدة):
 //  - "سجل حضور ليوسف باسم"                → تسجيل حضور مخدوم انهارده
