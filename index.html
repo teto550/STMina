@@ -700,6 +700,28 @@
 
       <!-- ===== TAB 2: الخدام ===== -->
       <div id="sd-tab-list" style="display:none">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+          <label class="field-label">🔎 فلتر الحضور والغياب</label>
+          <div class="tabs" id="sd-flt-status-tabs" style="margin-bottom:0">
+            <button class="tab active" data-status="all" onclick="setDirFilterStatus('all',this)">الكل</button>
+            <button class="tab" data-status="present" onclick="setDirFilterStatus('present',this)">✅ حضر</button>
+            <button class="tab" data-status="absent" onclick="setDirFilterStatus('absent',this)">❌ غاب</button>
+          </div>
+          <div id="sd-flt-extra" style="display:none;margin-top:12px">
+            <div class="tabs" id="sd-flt-type-tabs" style="margin-bottom:12px">
+              <button class="tab active" data-type="sunday" onclick="setDirFilterType('sunday',this)">⛪ مدارس الأحد</button>
+              <button class="tab" data-type="meeting" onclick="setDirFilterType('meeting',this)">👥 اجتماع الخدام</button>
+            </div>
+            <label class="field-label">⏱ في آخر</label>
+            <select id="sd-flt-count" class="field-select" style="margin-bottom:0" onchange="renderServantsDirectory()">
+              <option value="1">مرة واحدة</option>
+              <option value="2">مرتين</option>
+              <option value="3">3 مرات</option>
+              <option value="4">4 مرات</option>
+            </select>
+            <div id="sd-flt-hint" style="font-size:12px;color:var(--text-dim);margin-top:8px"></div>
+          </div>
+        </div>
         <input type="text" id="servants-directory-search" class="search-input" placeholder="🔍 دوّر على اسم خادم…" oninput="renderServantsDirectory()" autocomplete="off" style="margin-bottom:12px">
         <div id="servants-directory-count" style="font-size:12px;color:var(--text-dim);margin-bottom:10px"></div>
         <div id="servants-directory-list"></div>

@@ -55,6 +55,27 @@ export function deaconAttendanceCount(name, type) {
     sum + Object.keys(DEACON_ATTENDANCE[t]).filter(d => DEACON_ATTENDANCE[t][d][name]).length, 0);
 }
 
+// آخر n أيام متسجل فيها حضور أو اعتذار لنوع معيّن، الأحدث أولاً (نفس تعريف "أيام الحضور" في القائمة) — بتغذّي فلتر آخر مرات حضور/غياب الخدام
+export function recentDeaconSessions(type, n) {
+  const t = normAttType(type);
+  const map = DEACON_ATTENDANCE[t];
+  const eMap = DEACON_EXCUSES[t];
+  const names = new Set(allDeaconNames());
+  const has = (m, key) => Object.keys(m[key] || {}).some(x => names.has(x));
+  return [...new Set([...Object.keys(map), ...Object.keys(eMap)])]
+    .filter(key => has(map, key) || has(eMap, key))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, n);
+}
+
+// حالة خادم في يوم معيّن: 'present' | 'excuse' | 'absent' (غياب = مش حاضر ومش معتذر، زي تاب "غياب" في تفاصيل اليوم)
+export function deaconStatusOn(name, type, dateKey) {
+  const t = normAttType(type);
+  if (DEACON_ATTENDANCE[t][dateKey] && DEACON_ATTENDANCE[t][dateKey][name]) return 'present';
+  if (DEACON_EXCUSES[t][dateKey] && DEACON_EXCUSES[t][dateKey][name]) return 'excuse';
+  return 'absent';
+}
+
 export async function loadDeaconAttendance() {
   try {
     const snap = await getDocsTtl(collection(db, 'deaconAttendance'), 'deaconAttendance:' + sectionTag());
