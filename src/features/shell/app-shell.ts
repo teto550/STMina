@@ -58,6 +58,9 @@ export async function enterApp(user, snapData) {
       history.replaceState({}, '', location.pathname);
     }
 
+    // draws the React avatars (kids' and servants' pictures) into the placeholders of the lists
+    window.openReactScreen('avatar-host', document.getElementById('avatar-host'));
+
     initApp();
 }
 

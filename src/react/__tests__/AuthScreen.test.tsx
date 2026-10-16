@@ -23,6 +23,7 @@ vi.mock('@/api/auth', () => ({
   signIn: h.signIn, registerServant: h.registerServant, signOutUser: h.signOutUser,
 }));
 vi.mock('@/api/account', () => ({ loadAccountDecision: h.loadAccountDecision }));
+vi.mock('@/api/preferences', () => ({ loadPreferences: vi.fn() }));
 vi.mock('@/api/roster', () => ({ fetchRoster: h.fetchRoster }));
 vi.mock('@/features/shell/app-shell', () => ({ enterApp: h.enterApp }));
 vi.mock('@/features/auth/profile-complete', () => ({ openCompleteProfileScreen: h.openCompleteProfileScreen }));

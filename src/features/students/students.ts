@@ -36,7 +36,7 @@ window.toggleAddStudentForm = () => {
   fields.style.display = isOpen ? 'none' : 'block';
   btn.textContent = isOpen ? '➕ إضافة مخدوم' : '✕ إغلاق';
   updateNewGenderVisibility();
-  if (!isOpen) clearNewPhoto(); // فورم بيتفتح جديد، امسح أي صورة كانت متحطة قبل كده
+  if (!isOpen) window.clearNewPhoto(); // فورم بيتفتح جديد، امسح أي صورة كانت متحطة قبل كده
 };
 
 // grades 1-2 in the girls' section hold boys and girls together: then (and only then) the servant picks the kid's gender
@@ -75,7 +75,7 @@ window.addStudent = async () => {
   // clear only name and extra fields, keep grade
   ['new-name','new-dob','new-address','new-phone-dad','new-phone-mom','new-phone-student','new-confessor','new-deacon','new-att-count']
     .forEach(id => document.getElementById(id).value = '');
-  clearNewPhoto();
+  window.clearNewPhoto();
   showToast('تمت الإضافة ✓', 'success');
   logActivity('أضاف مخدوم جديد', name);
   await loadStudents();

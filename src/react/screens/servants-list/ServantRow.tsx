@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { cn } from '@/react/lib/utils';
+import { Avatar } from '@/react/components/ui/avatar';
 
 export type ServantRowData = {
   name: string;
@@ -8,6 +9,8 @@ export type ServantRowData = {
   registered: boolean;
   sunday: number;
   meeting: number;
+  /** the servant's photo (when they have one) */
+  photo?: string;
 };
 
 type ServantRowProps = {
@@ -28,7 +31,7 @@ export const ServantRow: FC<ServantRowProps> = ({ row, onOpen }) => {
   return (
     <li>
       <button type="button" onClick={() => onOpen(row.name)} className="tw:flex tw:w-full tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3 tw:text-start">
-        <span aria-hidden="true" className="tw:flex tw:size-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-field tw:bg-surface-2 tw:font-bold">{row.name.trim().charAt(0)}</span>
+        <Avatar name={row.name} src={row.photo} size={40} />
         <span className="tw:min-w-0 tw:flex-1">
           <span className="tw:block tw:truncate tw:text-sm tw:font-bold">{row.name}</span>
           <span className="tw:mt-0.5 tw:block tw:text-xs tw:text-dim">{row.grade || '—'}{row.registered ? '' : ' · لسه ماسجلش بياناته'}</span>

@@ -14,6 +14,9 @@ export const screens: Record<string, Loader> = {
   'join-requests': () => import('./join-requests'),
   'class-picker': () => import('./class-picker'),
   'dashboard-options': () => import('./dashboard-options'),
+  'photo-field': () => import('./photo-field'),
+  settings: () => import('./settings'),
+  'avatar-host': () => import('./avatar-host'),
   'servants-filter': () => import('./servants-filter'),
   'servants-list': () => import('./servants-list'),
 };

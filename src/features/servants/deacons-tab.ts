@@ -60,7 +60,6 @@ window.buildDeaconChips = async function() {
       // Accounts that still carry the old flags keep working and show their badges here.
       let adminBtn = '';
       if (!u) adminBtn = `<span class="deacon-no-account">لسه ماسجلش حساب</span>`;
-      else if (isAdmin) adminBtn = `<button class="deacon-admin-btn not-admin" onclick="event.stopPropagation();openReactScreen('admin-roles')">👥 الأدوار</button>`;
       else if (isDeaconLead || isDeaconPhaseLead) adminBtn = `<span class="deacon-no-account">${isDeaconLead ? '⭐ مسؤول السنة' : ''}${isDeaconPhaseLead ? ' 🟣 مسؤول المرحلة' : ''}</span>`;
       return `
         <div class="deacon-row" data-deacon="${d}" onclick="setDeacon('${d}',this)">

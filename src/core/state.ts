@@ -25,7 +25,6 @@ export const state = {
   selectedDates: [],
   newPhotoData: '', // base64 data-url للصورة أثناء إضافة مخدوم جديد
   editPhotoData: '', // base64 data-url للصورة أثناء تعديل مخدوم
-  quickPhotoTargetId: '', // آي دي المخدوم اللي بنرفعله صورة بسرعة من قوائم الحضور
   ALL_DEACONS_RAW: [], // [{ id, name, grade }] — كل الخدام في كل السنين (مصدر واحد للحقيقة)
   currentDeacon: null,
   currentDeaconFilter: 'all', // 'all' | 'attendance' | 'absence' | 'birthday'

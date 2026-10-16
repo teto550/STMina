@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { avatarPlaceholder } from '@/features/students/photos';
 import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
@@ -105,6 +106,7 @@ window.renderServantsDirectory = () => {
     name: x.name,
     grade: x.grade || '',
     registered: !!DEACON_ADMIN_MAP[x.name],
+    photo: (DEACON_ADMIN_MAP[x.name] && DEACON_ADMIN_MAP[x.name].photo) || '',
     // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس
     sunday: deaconAttendanceCount(x.name, 'sunday'),
     meeting: deaconAttendanceCount(x.name, 'meeting')
@@ -141,7 +143,6 @@ window.openDeaconProfile = (name) => {
   const raw = state.ALL_DEACONS_RAW.find(x => x.name === name);
   const u = DEACON_ADMIN_MAP[name];
   document.getElementById('dprof-name').textContent = name;
-  document.getElementById('dprof-avatar').textContent = name.trim().charAt(0);
   document.getElementById('dprof-grade').textContent = (raw && raw.grade) ? raw.grade : '';
 
   const canEdit = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserName === name;
@@ -183,8 +184,31 @@ window.openDeaconProfile = (name) => {
       </div>
     </div>`).join('');
 
+  mountDeaconAvatar(name);
   document.getElementById('deacon-profile-modal').style.display = 'block';
 };
+
+// the picture in the profile header is the same React <Avatar> as everywhere (via the 'avatar-host'): tap = see the photo; the servant
+// themselves, or an admin, can also change or delete it (the photo manager)
+function mountDeaconAvatar(name) {
+  const u = DEACON_ADMIN_MAP[name];
+  const mine = !!(u && auth.currentUser && u.uid === auth.currentUser.uid);
+  const editable = !!u && (mine || state.currentUserRole === 'admin');
+  document.getElementById('dprof-avatar').innerHTML = avatarPlaceholder(name, (u && u.photo) || '', 56, {
+    accent: true,
+    photoTarget: editable ? `servant:${u.uid}` : ''
+  });
+}
+
+// a servant's photo was saved or deleted (by the photo manager): keep the data in memory in step
+document.addEventListener('photo-changed', (e) => {
+  const { kind, id, photo } = e.detail || {};
+  if (kind !== 'servant') return;
+  const entry = Object.entries(DEACON_ADMIN_MAP).find(([, u]) => u.uid === id);
+  if (!entry) return;
+  entry[1].photo = photo;
+  if (window.renderServantsDirectory && state.servantsDirectoryOpen) window.renderServantsDirectory();
+});
 
 window.closeDeaconProfile = () => {
   document.getElementById('deacon-profile-modal').style.display = 'none';
@@ -204,7 +228,7 @@ window.openMyProfile = async () => {
           uid: auth.currentUser.uid, role: u.role || 'deacon', email: u.email || '', grade: u.grade || '', isLead: !!u.isLead,
           phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []), phone: u.phone || '',
           address: u.address || '', dob: u.dob || '',
-          graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+          graduated: !!u.graduated, college: u.college || '', university: u.university || '', photo: u.photo || ''
         };
       }
     } catch(e) { console.error('openMyProfile error:', e.code || e.message || e); }

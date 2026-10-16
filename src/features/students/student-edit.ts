@@ -3,22 +3,14 @@ import { state } from '@/core/state';
 import { sectionTag } from '@/core/section';
 import { deaconIdOfName, deaconNameOf } from '@/core/servants-index';
 import { db } from '@/core/firebase';
+import { mountPhotoField } from '@/features/students/photos';
 
 // ===== EDIT STUDENT =====
 window.openEdit = (id) => {
   const s = state.allStudents.find(x => x.id === id);
   if (!s) return;
   document.getElementById('edit-id').value             = id;
-  state.editPhotoData = s.photo || '';
-  const editPreview = document.getElementById('edit-photo-preview');
-  const editRemoveBtn = document.getElementById('edit-photo-remove-btn');
-  if (s.photo) {
-    editPreview.innerHTML = `<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`;
-    editRemoveBtn.style.display = 'block';
-  } else {
-    editPreview.innerHTML = '👤';
-    editRemoveBtn.style.display = 'none';
-  }
+  mountPhotoField('edit', s.photo);
   document.getElementById('edit-name').value           = s.name || '';
   document.getElementById('edit-grade').value          = s.grade || 'سنة تالتة ابتدائي';
   document.getElementById('edit-dob').value            = s.dob || '';

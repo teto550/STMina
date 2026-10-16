@@ -31,6 +31,11 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Run the gender script (`tools/firestore/set-gender.cjs`) in the OTHER Firebase project (done here on 2026-09-24: 49 servants + 32 accounts = male).
 
 - [ ] Delete the one-off data scripts once the OTHER project has been migrated too: `tools/firestore/set-gender.cjs`, `remove-word.cjs`, `fix-corrupted-names.cjs`, `backfill-access.cjs` (they are done and no longer needed in this project; kept only for the other one). Keep `_client.cjs` and `analyze.cjs`.
+- [ ] **Photos: maybe move from Firestore (base64 in `students.photo` / `users.photo`) to Firebase Storage.** Decided 2026-10-16 to keep Firestore for now (the wider wish list for the Blaze plan is in `docs/BLAZE-PLAN.md`).
+  Move when lists get slow or heavy once most kids have photos (about 6-7 MB per class load if all 145 have one), or when the project is on the Blaze plan anyway.
+  How, when needed: (1) a script in `tools/firestore/` uploads each photo to `photos/students/{id}.jpg` / `photos/servants/{uid}.jpg` and replaces the field by the link (idempotent: skip values that already start with `http`; one read per document that has a photo, backup first);
+  (2) `savePhoto()` in `src/api/photos.ts` uploads to Storage and stores the link, delete removes the file (the photo manager, the avatars and the lists do not change: `<Avatar src>` already takes a data URL or a link);
+  (3) Storage rules: signed-in approved users read; a servant (or an admin) writes their own photo, an admin or the kid's servants write a kid's. Optional meanwhile: shrink the saved size from 480 to about 320 px (one constant in `src/core/image.ts`).
 
 ## C. Decisions pending / postponed (roles design)
 - [ ] **Actions across classes** (promotion to the next grade, bulk imports, attendance clean-up): postponed on purpose. The new school year has just

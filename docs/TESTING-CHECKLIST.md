@@ -115,3 +115,20 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] "📊 الداشبورد" (servants screen and the kids tab): a person with several classes first sees "اختار الفصل"; picking a class closes it and opens the sections popup (the long list of checkboxes). Closing the class popup stops there.
 - [ ] A servant with a single class goes straight to the sections popup.
 - [ ] "اعرض الداشبورد" keeps the popup open with "جاري التحميل…" until the dashboard is ready; a failed load shows an error and stays open.
+
+## Photo: camera or gallery popup + black-image fix (2026-10-16) - test on a real phone
+- [ ] New kid form, edit kid form and tapping the letter avatar of a kid without a photo: each asks "إضافة صورة" -> "من الكاميرا" / "من المعرض" (closing the popup does nothing), then opens the camera or the gallery.
+- [ ] Take several photos with the camera (iPhone and Android, portrait and landscape): none comes out black or half black, and the rotation is right.
+- [ ] A transparent PNG / screenshot from the gallery gets a white background (not black).
+- [ ] If a photo really cannot be read the toast says so ("الصورة طلعت سودا أو ناقصة...") instead of saving a black picture.
+
+## Photos: one component for everything (2026-10-16) - test on a real phone
+Everything about a photo is ONE React component (`src/react/components/photo/photo-manager.tsx`), used by the avatars of kids and servants (lists and profiles) and by the photo of the add-kid / edit-kid forms.
+- [ ] Tap an avatar WITHOUT a photo: the camera / gallery popup. Pick one: the photo is saved and the popup closes (no extra taps).
+- [ ] Tap an avatar WITH a photo: the photo opens full screen, with three icons on top (camera, gallery, delete) and X to close. Pinch to zoom, drag to move, double-tap to zoom in / out.
+- [ ] Camera / gallery icon on top replaces the photo; the delete icon asks once ("تحذف الصورة؟") then deletes. Lists and profile update at once.
+- [ ] Deleting or changing a photo costs ONE write and no extra reads (check `__reads` before / after).
+- [ ] Servants: my own photo (👤 profile) and, as admin, any registered servant's; a servant I may not edit opens the photo view-only (no icons).
+- [ ] Add-kid and edit-kid forms: tap the picture to add / view / change / delete; the photo is saved with the rest of the form.
+- [ ] ⚙️ -> "الإعدادات" (a full screen) -> "✂️ قص الصورة بعد اختيارها" (off by default; saved on my account, so it follows me to another phone). When ON: after picking, the crop screen shows with a centred square already selected: "تم" keeps it (one tap), corners resize, "حر" frees the shape, "إلغاء" goes back. When OFF: no extra step.
+- [ ] Camera photos never come out black or half black (earlier entry).

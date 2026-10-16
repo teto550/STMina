@@ -1,5 +1,6 @@
 import { useEffect, type FC } from 'react';
 import { Case, Switch } from 'react-if';
+import { loadPreferences } from '@/api/preferences';
 import { enterApp } from '@/features/shell/app-shell';
 import { openCompleteProfileScreen } from '@/features/auth/profile-complete';
 import { applySectionTheme } from '@/core/section';
@@ -89,6 +90,7 @@ const AuthScreen: FC = () => {
         /* private mode */
       }
       Object.assign(state, decision.session);
+      loadPreferences(auth.user.uid, decision.profile?.preferences);
       if (decision.kind === 'enter') {
         void enterApp(auth.user, decision.profile);
       } else {

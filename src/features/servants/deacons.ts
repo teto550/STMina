@@ -50,7 +50,7 @@ export async function loadDeaconUsersMap() {
         isPhaseLead: !!u.isPhaseLead || phaseGrades.length > 0, phaseGrades,
         phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []), phone: u.phone || '',
         address: u.address || '', dob: u.dob || '',
-        graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+        graduated: !!u.graduated, college: u.college || '', university: u.university || '', photo: u.photo || ''
       };
     });
     DEACON_ADMIN_MAP = map;
