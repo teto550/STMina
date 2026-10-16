@@ -69,7 +69,9 @@ window.saveCompleteProfile = async function() {
     btn.disabled = false; btn.textContent = '✅ حفظ ومتابعة';
     await enterApp(user, snapData);
   } catch(e) {
-    err.textContent = 'حدث خطأ، حاول تاني';
+    // show WHY (the code), so a report from a phone says what happened: e.g. permission-denied = the Firestore rules refused the save
+    console.error('saveCompleteProfile error:', e);
+    err.textContent = 'حدث خطأ، حاول تاني' + (e && e.code ? ` (${e.code})` : '');
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '✅ حفظ ومتابعة';
   }

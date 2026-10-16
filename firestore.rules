@@ -16,7 +16,7 @@ service cloud.firestore {
       return isApproved() && myDoc().role == 'admin';
     }
     function isLead() {
-      return isApproved() && myDoc().role == 'deacon' && myDoc().isLead == true;
+      return isApproved() && myDoc().role == 'deacon' && myDoc().get('isLead', false) == true;
     }
     // 🆕 مسؤول مرحلة (نفس منطق التطبيق: isPhaseLead أو عنده phaseGrades)
     function isPhaseLead() {
@@ -57,7 +57,9 @@ service cloud.firestore {
         || (isSignedIn() && request.auth.uid == userId
             && request.resource.data.role   == resource.data.role
             && request.resource.data.status == resource.data.status
-            && request.resource.data.isLead == resource.data.isLead
+            // `isLead` is not on a new account (the create rule forbids it), and reading a missing field is an ERROR in rules, which
+            // denied EVERY self-edit of a servant who was never a lead (2026-10-16: the "complete your data" screen failed). `.get` with a default fixes that.
+            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false)
             && request.resource.data.get('isPhaseLead', false) == resource.data.get('isPhaseLead', false)
             && request.resource.data.get('phaseGrades', null)  == resource.data.get('phaseGrades', null)
             // roles design: the person link and the access snapshot are set by an admin only
@@ -65,7 +67,7 @@ service cloud.firestore {
             && request.resource.data.get('access', null)   == resource.data.get('access', null))
         || (isLead() && resource.data.grade == myDoc().grade
             && request.resource.data.role == resource.data.role
-            && request.resource.data.isLead == resource.data.isLead);
+            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false));
 
       allow delete: if isAdmin();
     }

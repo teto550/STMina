@@ -141,3 +141,12 @@ Everything about a photo is ONE React component (`src/react/components/photo/pho
 - [ ] Deploy a build, open the app on a phone (installed shortcut), deploy ANOTHER build, then bring the app back to the foreground (or wait up to 30 minutes): a bar "🆕 فيه تحديث جديد للتطبيق" appears at the bottom; "تحديث الآن" loads the new build; "✕" hides it for that build. It never reloads by itself.
 - [ ] ⚙️ -> الإعدادات -> "التطبيق": shows the running build's date; "تحقق من التحديث" says "إنت على آخر نسخة" or offers "تحديث الآن"; offline it says it cannot reach the server.
 - [ ] `version.json` is next to index.html in the deployed site and is never served from the cache (Firebase Hosting header `no-cache`; the service worker skips it).
+
+## Firestore rules: a servant editing their own account (2026-10-16)
+Found and fixed: a new account has no `isLead` field, and the old self-edit rule read it, which is an ERROR in rules, so EVERY self-edit of a normal servant was
+denied (the "complete your data" page failed with "حدث خطأ"; the settings preferences and the servant photo would have failed too). Exact error from the emulator:
+`PERMISSION_DENIED: evaluation error ... Property isLead is undefined on object`. The rules now use `.get('isLead', false)`; deployed 2026-10-16.
+- [ ] `npm run test:rules` (local emulators, project `demo-stmina`, never the real project) passes 9/9: sign-up, "complete your data", preference, own photo, and the five
+      escalations that must stay denied (isLead, role, status, access, isPhaseLead). The project's firebase-tools needs Java 21; on a Mac with Java 17 run the same with
+      the global one: `firebase emulators:exec --only auth,firestore --project demo-stmina "EXPECT=new node tools/rules-tests/users-self-edit.mjs"` (global v13).
+- [ ] With a real new account on the test channel: register, get approved, sign in: the "complete your data" page saves and lets you in (the error now also shows its code).
