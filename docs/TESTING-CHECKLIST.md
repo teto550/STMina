@@ -110,10 +110,9 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] The filter works together with the name search; opening the screen again starts on "الكل".
 - [ ] The "الخدام" tab (now React) shows the same rows and counts as before; tapping a row opens the servant's profile.
 
-## Dashboard button: class popup, then sections popup (2026-10-10)
+## Dashboard button: sections popup (2026-10-16, after merging main)
 - [ ] Reloading the app shows NO popup.
-- [ ] "📊 الداشبورد" (servants screen and the kids tab): a person with several classes first sees "اختار الفصل"; picking a class closes it and opens the sections popup (the long list of checkboxes). Closing the class popup stops there.
-- [ ] A servant with a single class goes straight to the sections popup.
+- [ ] "📊 الداشبورد" opens the sections popup (the long list of checkboxes) straight away: the dashboard now covers every class (main's change), so there is no class to pick first (the `class-picker` screen still exists, unused).
 - [ ] "اعرض الداشبورد" keeps the popup open with "جاري التحميل…" until the dashboard is ready; a failed load shows an error and stays open.
 
 ## Photo: camera or gallery popup + black-image fix (2026-10-16) - test on a real phone
