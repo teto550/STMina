@@ -15,15 +15,23 @@ export interface JoinRequestScope {
   section: Section;
   /** the classes the reader may decide on; empty = all of them */
   grades: string[];
+  /**
+   * The reader manages the servants of this section through a role (not an admin or an old-style lead): the Firestore rules only let
+   * them read the pending requests of that section, so the query itself must be limited to it.
+   */
+  onlySection?: boolean;
+  /** also list requests that chose "no class" (an admin, or someone who manages servants): for admins and servants managers */
+  includeClassless?: boolean;
 }
 
 /** The pending requests of one section, narrowed to the classes the reader manages. Rejects when Firestore cannot be read. */
-export async function fetchJoinRequests({ section, grades }: JoinRequestScope): Promise<JoinRequest[]> {
-  const snap = await getDocs(query(collection(db, 'users'), where('status', '==', 'pending')));
+export async function fetchJoinRequests({ section, grades, onlySection = false, includeClassless = false }: JoinRequestScope): Promise<JoinRequest[]> {
+  const pending = where('status', '==', 'pending');
+  const snap = await getDocs(onlySection ? query(collection(db, 'users'), pending, where('section', '==', section)) : query(collection(db, 'users'), pending));
   return snap.docs
     .map((d) => ({ id: d.id, ...(d.data() as UserDoc) }) as JoinRequest)
     .filter((u) => (u.section || 'boys') === section)
-    .filter((u) => grades.length === 0 || grades.includes(u.grade ?? ''));
+    .filter((u) => (u.grade ? grades.length === 0 || grades.includes(u.grade) : includeClassless));
 }
 
 /**

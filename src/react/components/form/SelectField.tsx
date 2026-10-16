@@ -2,6 +2,7 @@ import type { FC, SelectHTMLAttributes } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Field } from '@/react/components/ui/field';
 import { inputClass } from '@/react/components/ui/input';
+import { Select } from '@/react/components/ui/select';
 
 export type SelectOption = {
   value: string;
@@ -24,10 +25,10 @@ export const SelectField: FC<SelectFieldProps> = ({ name, label, options, placeh
   const { register, formState: { errors } } = useFormContext();
   return (
     <Field label={label} error={errors[name]?.message as string | undefined}>
-      <select className={inputClass} {...selectProps} {...register(name, { onChange })}>
+      <Select {...selectProps} {...register(name, { onChange })}>
         {placeholder !== undefined && <option value="">{placeholder}</option>}
         {options.map((o) => <option key={o.value} value={o.value}>{o.label ?? o.value}</option>)}
-      </select>
+      </Select>
     </Field>
   );
 };

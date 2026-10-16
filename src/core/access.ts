@@ -21,7 +21,7 @@ export interface AccountData {
   grade?: string | null;
   phaseGrades?: string[] | null;
   isPhaseLead?: boolean;
-  access?: { admin?: boolean; cells?: string[]; sections?: string[] } | null;
+  access?: { admin?: boolean; cells?: string[]; sections?: string[]; servants?: string[] } | null;
 }
 
 const asGender = (value: unknown): Gender => (value === 'female' ? 'female' : 'male');
@@ -36,7 +36,8 @@ export function storedAccess(data: AccountData | null | undefined): Access | nul
   if (!snapshot || !Array.isArray(snapshot.cells)) {
     return null;
   }
-  const role: Role = { id: 'snapshot', name: 'snapshot', admin: snapshot.admin === true, cells: snapshot.cells.filter(isCell) };
+  const servants = (Array.isArray(snapshot.servants) ? snapshot.servants : []).filter((g): g is Gender => g === 'male' || g === 'female');
+  const role: Role = { id: 'snapshot', name: 'snapshot', admin: snapshot.admin === true, cells: snapshot.cells.filter(isCell), servants };
   return computeAccess([role]);
 }
 
@@ -58,7 +59,7 @@ export function legacyAccess(data: AccountData | null | undefined): Access {
     }
   });
   const cells = [...grades].flatMap((grade) => (isMixedGrade(grade) ? mixedGradeCells(grade) : [cellOf(gender, grade)]));
-  return computeAccess([{ id: 'legacy', name: 'legacy', admin: data?.role === 'admin', cells }]);
+  return computeAccess([{ id: 'legacy', name: 'legacy', admin: data?.role === 'admin', cells, servants: [] }]);
 }
 
 export type AccessSource = 'roles' | 'legacy';

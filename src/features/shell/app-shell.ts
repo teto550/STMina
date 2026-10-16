@@ -11,6 +11,7 @@ import { setupPartNotifications } from '@/features/servants/parts';
 import { auth } from '@/core/firebase';
 import { applyActiveGradeDeacons } from '@/features/servants/deacons';
 import { reloadOpenTab } from '@/features/shell/tabs';
+import { canUseServantsTab, isClasslessManager } from '@/core/servants-access';
 
 // بعد التأكد إن الحساب معتمد وبياناته كاملة: يدخل التطبيق فعليًا
 export async function enterApp(user, snapData) {
@@ -24,6 +25,8 @@ export async function enterApp(user, snapData) {
       const allowedGrades = getUserManagedGrades();
       const preferred = state.currentUserGrade || (allowedGrades[0] || GRADES[0]);
       state.activeGrade = allowedGrades.includes(preferred) ? preferred : (allowedGrades[0] || GRADES[0]);
+      // a manager of servants with no class has no class to open: the app shows them the الخدام tab only
+      if (isClasslessManager()) state.activeGrade = null;
     }
 
     saveProfileCache(user.uid, { access: snapData && snapData.access, gender: snapData && snapData.gender, section: (snapData && snapData.section) || 'boys', role: state.currentUserRole, name: state.currentUserName, status: 'approved', grade: state.currentUserGrade, isLead: state.currentUserIsLead, isPhaseLead: state.currentUserIsPhaseLead, phaseGrades: state.currentUserPhaseGrades });
@@ -42,6 +45,16 @@ export async function enterApp(user, snapData) {
     if (adminWrap) adminWrap.style.display = state.currentUserRole === 'admin' ? 'block' : 'none'; // roles/users screen: admins only
     setupGenderObserver();
     applySectionTheme(true);
+
+    // nothing is given to this person yet (no role / no class): no tabs and no data, only "no access yet". They can still open their
+    // profile and the settings from the ⚙️ menu, and sign out. Same page, so an admin giving them a role shows after a refresh.
+    if (state.noAccess) {
+      showNoAccessScreen();
+      touchLastActive(user.uid);
+      if (!window.__loginLogged) { window.__loginLogged = true; logActivity('دخل التطبيق'); }
+      window.openReactScreen('avatar-host', document.getElementById('avatar-host'));
+      return;
+    }
 
     // Show/hide tabs based on role
     applyRoleUI();
@@ -71,7 +84,7 @@ function applyRoleUI() {
   // المخدومين tab: visible to all
   document.getElementById('tab-btn-students').style.display = '';
   // pending deacons: admin (كل السنين) أو مسؤول سنة/مرحلة (طلبات الفصول المسموح لها بس)
-  if (isGradeManager) loadPendingDeacons();
+  if (isGradeManager || canUseServantsTab()) loadPendingDeacons();
   // 🔔 إشعارات الموبايل: زرار تفعيل الإشعارات ظاهر لكل خادم معتمد (مش بس المسؤولين) عشان يقدر ياخد Push لما يتوزع عليه فقرة
   setupPushBell(true);
   // 🔔 إشعارات توزيع الفقرات: لأي خادم اتوزعت عليه فقرة (كل المستخدمين المعتمدين)
@@ -108,7 +121,7 @@ export function buildActiveGradeBar() {
   const bar = document.getElementById('active-grade-bar');
   if (!bar) return;
   // a person with role-based access and several classes also switches between them
-  const isManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead || (state.accessSource === 'roles' && getUserManagedGrades().length > 1);
+  const isManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead || canUseServantsTab() || (state.accessSource === 'roles' && getUserManagedGrades().length > 1);
   if (!isManager) { bar.style.display = 'none'; return; }
   const allowedGrades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
   bar.style.display = 'flex';
@@ -119,12 +132,25 @@ export function buildActiveGradeBar() {
     return `<button class="grade-chip ${isActive ? 'active' : ''}" onclick="switchActiveGrade('${g}')">${g}${roleTag}</button>`;
   }).join('');
   // شريحة ثابتة بتفتح دليل كل الخدام في البرنامج كله (كل السنين مع بعض) — للأدمن/المسؤولين فقط
-  if (state.currentUserRole === 'admin') html += `<button class="grade-chip ${state.servantsDirectoryOpen ? 'active' : ''}" style="border-color:rgba(46,204,113,0.4);color:var(--success)" onclick="openServantsDirectory()">🙏 الخدام</button>`;
+  if (canUseServantsTab()) html += `<button class="grade-chip ${state.servantsDirectoryOpen ? 'active' : ''}" style="border-color:rgba(46,204,113,0.4);color:var(--success)" onclick="openServantsDirectory()">🙏 الخدام</button>`;
   bar.innerHTML = html;
+}
+
+// "no access yet": hides every tab and class screen and shows the React panel 'no-access' instead
+export function showNoAccessScreen() {
+  state.activeGrade = null;
+  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const panel = document.getElementById('no-access-screen');
+  panel.style.display = 'block';
+  window.openReactScreen('no-access', panel);
 }
 
 // بيرجّع الواجهة من خانة "الخدام" لتابات الفصل العادية (الحضور/المخدومين/الخدام/إحصائيات/متابعة)
 export function showMainAppTabs() {
+  if (isClasslessManager()) return; // nothing but the الخدام tab for them
   document.getElementById('servants-directory-modal').style.display = 'none';
   document.getElementById('main-tabs').style.display = '';
   const btn = document.getElementById('tab-btn-' + state.lastActiveMainTab) || document.getElementById('tab-btn-attendance');
@@ -178,6 +204,11 @@ async function initApp() {
   updateDeaconsTabLabel();
   // Nothing is read from Firestore here: the user lands on the home screen and every screen loads its own data when it
   // is opened (see core/data.ts and shell/tabs.ts).
+  // someone with no class (only manages servants) lands on the الخدام tab; there is no home / class screen for them
+  if (isClasslessManager()) {
+    window.openServantsDirectory();
+    return;
+  }
   window.switchTab('home', document.getElementById('tab-btn-home'));
 }
 

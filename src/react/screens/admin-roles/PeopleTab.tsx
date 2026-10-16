@@ -6,10 +6,12 @@ import { Button } from '@/react/components/ui/button';
 import { addAdminSchema, type AddAdminValues } from '@/schemas/admin';
 import { commit, loadNameLinks, newId } from './data';
 import { cleanName, planAddAdmin, planMembership, planRename, rolesOfPerson } from './logic';
+import { AddPersonSheet } from './AddPersonSheet';
 import { PersonList } from './PersonList';
 import type { AdminData, AdminPerson, NameLinks } from './types';
 import { Sheet } from '@/react/components/ui/sheet';
 import { inputClass } from '@/react/components/ui/input';
+import { Select } from '@/react/components/ui/select';
 
 type AdminForm = AddAdminValues;
 
@@ -31,7 +33,7 @@ function AddAdminSheet({ data, onClose, onDone }: { data: AdminData; onClose: ()
           {errors.name && <span className="tw:text-xs tw:text-bad">{errors.name.message}</span>}
         </label>
         <label className="tw:flex tw:flex-col tw:gap-1 tw:text-sm tw:font-bold">النوع
-          <select className={inputClass} {...register('gender')}><option value="male">خادم</option><option value="female">خادمة</option></select>
+          <Select {...register('gender')}><option value="male">خادم</option><option value="female">خادمة</option></Select>
         </label>
         <label className="tw:flex tw:flex-col tw:gap-1 tw:text-sm tw:font-bold">الإيميل
           <input className={inputClass} type="email" dir="ltr" {...register('email')} />
@@ -97,6 +99,7 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
   const [roleFilter, setRoleFilter] = useState('all');
   const [chooser, setChooser] = useState<'add' | 'remove' | null>(null);
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [addingPerson, setAddingPerson] = useState(false);
   const [renaming, setRenaming] = useState<AdminPerson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -122,7 +125,10 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
     <div className="tw:flex tw:flex-col tw:gap-3 tw:p-4 tw:pb-28">
       <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">
         <Button variant="secondary" size="sm" onClick={() => setSelected(selected.size ? new Set() : new Set(allIds))}>{selected.size ? 'إلغاء التحديد' : 'تحديد الكل'}</Button>
-        <Button size="sm" onClick={() => setAddingAdmin(true)}>+ أدمن</Button>
+        <span className="tw:flex tw:gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setAddingPerson(true)}>+ شخص جديد</Button>
+          <Button size="sm" onClick={() => setAddingAdmin(true)}>+ أدمن</Button>
+        </span>
       </div>
       <PersonList data={data} selected={selected} extraFilter={{ roleId: roleFilter, setRoleId: setRoleFilter }} onEdit={setRenaming}
         onToggle={(id, on) => setSelected((s) => {
@@ -147,6 +153,7 @@ export function PeopleTab({ data, onChanged }: { data: AdminData; onChanged: (me
       )}
       {chooser && <RoleChooser title={chooser === 'add' ? 'إضافة المحدّدين لدور' : 'إزالة المحدّدين من دور'} roles={chooser === 'add' ? data.roles : heldRoles} onClose={() => setChooser(null)} onPick={(id) => void apply(chooser, id)} />}
       {renaming && <RenameSheet person={renaming} data={data} onClose={() => setRenaming(null)} onDone={(m) => { setRenaming(null); onChanged(m); }} />}
+      {addingPerson && <AddPersonSheet data={data} onClose={() => setAddingPerson(false)} onDone={(m) => { setAddingPerson(false); onChanged(m); }} />}
       {addingAdmin && <AddAdminSheet data={data} onClose={() => setAddingAdmin(false)} onDone={(m) => { setAddingAdmin(false); onChanged(m); }} />}
     </div>
   );

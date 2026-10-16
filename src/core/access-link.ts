@@ -3,7 +3,7 @@
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/core/firebase';
 import { computeAccess } from '@/core/access-config';
-import type { Access, Cell } from '@/types/access';
+import type { Access, Cell, Gender } from '@/types/access';
 
 export interface LinkUser { email?: string; name?: string; deaconId?: string; section?: string }
 export interface LinkPerson { id: string; name: string; email?: string; section?: string; roleIds?: string[] }
@@ -36,13 +36,13 @@ export function pickPerson(user: LinkUser, people: LinkPerson[]): LinkPerson | n
 }
 
 /** What to write on the account when it is approved: the person link and, when the person has roles, the access snapshot (and the admin flag). */
-export function approvalPatch(person: LinkPerson | null, roles: { admin: boolean; cells: Cell[] }[]): Record<string, unknown> {
+export function approvalPatch(person: LinkPerson | null, roles: { admin: boolean; cells: Cell[]; servants?: Gender[] }[]): Record<string, unknown> {
   if (!person) {
     return {};
   }
   const patch: Record<string, unknown> = { deaconId: person.id };
   if (roles.length) {
-    const access: Access = computeAccess(roles.map((r, i) => ({ id: String(i), name: '', admin: r.admin, cells: r.cells })));
+    const access: Access = computeAccess(roles.map((r, i) => ({ id: String(i), name: '', admin: r.admin, cells: r.cells, servants: r.servants ?? [] })));
     patch.access = access;
     if (access.admin) {
       patch.role = 'admin';
@@ -75,6 +75,6 @@ export async function findApprovalPatch(user: LinkUser): Promise<Record<string, 
     return {};
   }
   const roles = (await Promise.all((person.roleIds ?? []).map((id) => getDoc(doc(db, 'roles', id)))))
-    .filter((s) => s.exists()).map((s) => ({ admin: s.data()?.admin === true, cells: (s.data()?.cells ?? []) as Cell[] }));
+    .filter((s) => s.exists()).map((s) => ({ admin: s.data()?.admin === true, cells: (s.data()?.cells ?? []) as Cell[], servants: ((s.data()?.servants ?? []) as string[]).filter((g): g is Gender => g === 'male' || g === 'female') }));
   return approvalPatch(person, roles);
 }

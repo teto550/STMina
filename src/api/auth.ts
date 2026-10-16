@@ -40,7 +40,7 @@ export async function registerServant(input: RegisterInput, section: Section): P
     university: input.graduated ? '' : input.university,
   });
   await Promise.allSettled([
-    sendAdminEmail({ name: input.name, email: input.email, grade: input.grade, uid: cred.user.uid }),
+    sendAdminEmail({ name: input.name, email: input.email, grade: input.grade || 'إدارة (من غير فصل)', uid: cred.user.uid }),
     notifyManagersPush(cred.user),
   ]);
   await signOut(auth);

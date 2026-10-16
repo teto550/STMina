@@ -136,12 +136,10 @@ describe('an account that may enter', () => {
 describe('an account that cannot come in', () => {
   const reasons: [BlockedReason, string][] = [
     ['pending', 'في انتظار الموافقة'],
-    ['no-access', 'لسه مفيش صلاحيات'],
     ['rejected', 'تم رفض حسابك'],
     ['unregistered', 'الحساب ده مش مسجل'],
     ['unverifiable', 'مش قادرين نتأكد من حسابك'],
     ['wrong-section', 'حسابك تابع لقسم تاني'],
-    ['no-class', 'لسه مفيش فصل'],
   ];
   it.each(reasons)('"%s": the reason is shown, with a way to sign out; nobody is signed out for them and the app does not start', async (reason, title) => {
     h.loadAccountDecision.mockResolvedValue({ kind: 'blocked', reason });
@@ -163,13 +161,6 @@ describe('an account that cannot come in', () => {
     expect(h.signOutUser).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('button', { name: 'دخول' })).toBeInTheDocument();
     expect(screen.getByLabelText('كلمة المرور')).toHaveValue('');
-  });
-
-  it('"no access yet" explains that an admin has to give them a class', async () => {
-    h.loadAccountDecision.mockResolvedValue({ kind: 'blocked', reason: 'no-access' });
-    setup();
-    await emitAuth(person);
-    expect(await screen.findByText(/لسه محدش حدد لك فصل/)).toBeInTheDocument();
   });
 });
 

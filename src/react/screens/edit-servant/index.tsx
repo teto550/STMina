@@ -7,6 +7,7 @@ import { renameServant, type RenameResult } from '@/core/servant-rename';
 import { EGYPT_UNIVERSITIES } from '@/core/universities';
 import { cleanName } from '@/react/screens/admin-roles/logic';
 import { inputClass } from '@/react/components/ui/input';
+import { Select } from '@/react/components/ui/select';
 import { PhoneListField } from '@/react/components/phone-list-field';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
@@ -98,16 +99,16 @@ export default function EditServant({ close, servant, canRename, onSaved }: Edit
 
         {hasAccount && <section className="tw:flex tw:flex-col tw:gap-4 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5">
           <Field label="الحالة الدراسية">
-            <select className={inputClass} {...register('status')}><option value="student">لسه بيدرس</option><option value="graduated">متخرج</option></select>
+            <Select {...register('status')}><option value="student">لسه بيدرس</option><option value="graduated">متخرج</option></Select>
           </Field>
           {student && (
             <>
               <Field label="الكلية"><input className={inputClass} {...register('college')} /></Field>
               <Field label="الجامعة">
-                <select className={inputClass} {...register('university')}>
+                <Select {...register('university')}>
                   <option value="">اختر الجامعة</option>
                   {EGYPT_UNIVERSITIES.map((u) => <option key={u} value={u}>{u}</option>)}
-                </select>
+                </Select>
               </Field>
             </>
           )}

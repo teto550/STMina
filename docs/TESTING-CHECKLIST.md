@@ -150,3 +150,22 @@ denied (the "complete your data" page failed with "حدث خطأ"; the settings 
       escalations that must stay denied (isLead, role, status, access, isPhaseLead). The project's firebase-tools needs Java 21; on a Mac with Java 17 run the same with
       the global one: `firebase emulators:exec --only auth,firestore --project demo-stmina "EXPECT=new node tools/rules-tests/users-self-edit.mjs"` (global v13).
 - [ ] With a real new account on the test channel: register, get approved, sign in: the "complete your data" page saves and lets you in (the error now also shows its code).
+
+## Servants block: خدام / خادمات in a role (2026-10-17) - needs the rules deployed (firebase deploy --only firestore:rules)
+- [ ] Roles screen -> a role -> under "الفصول" there is "الخدام" with two toggles (خدام, خادمات); hidden for an admin role; the role cards and the desktop matrix show them.
+- [ ] Save a role with خدام and a member: that member's account gets `access.servants: ['male']` (they need to sign in again, or wait for the 24 h cache).
+- [ ] That member on the BOYS account: the "🙏 الخدام" chip appears (even with a single class), the screen shows ALL boys-section servants, servants attendance works, the dashboard covers everyone, the "طلبات انضمام" card shows the boys' pending requests and approve / reject works.
+- [ ] The same member on the GIRLS account (if they have a class there): no "الخدام" chip, no access. A role with خادمات does the reverse.
+- [ ] Not allowed for them: the roles screen, editing / renaming another servant, adding or deleting servants.
+- [ ] `npm run test:rules` passes (9 + 16 checks) after deploying; run `firebase emulators:exec ...` with the global firebase on a Mac with Java 17 (see the earlier entry).
+
+## People without a class, sign-up for them, "+ شخص جديد" (2026-10-17)
+- [ ] Roles screen -> People -> "+ شخص جديد": a name only (no role) adds a general servant; with a class role, the person shows in that class's servants list; with a role that only has خدام, they get no class. Roles that do not fit the gender are disabled with the reason; admin roles are not listed.
+- [ ] A person with ONLY a servants role (no class) who signs in: lands on the الخدام tab (no class tabs, no class chips), sees all servants of the section, can mark servants attendance and decide join requests. Signing in on the other section's device sends them to their own.
+- [ ] Sign-up: the class list ends with "إدارة (أدمن / مسؤول خدام) — من غير فصل"; picking it lists only people without a class; the request shows to admins as "إدارة — من غير فصل".
+- [ ] An admin with no class still enters as before.
+
+## A person with no role yet (2026-10-17)
+- [ ] "+ شخص جديد" with no role, then that person registers (name picked from "إدارة ... من غير فصل" or their class) and is approved: signing in shows "لسه مفيش صلاحيات" instead of the tabs / dashboard; ⚙️ shows only الإعدادات, ملفي, notifications and sign out (no admin items).
+- [ ] Their profile (ملفي) and الإعدادات open and save; "تحديث" reloads.
+- [ ] An admin then adds them to a role (Roles screen -> People -> add to a role): after "تحديث" / reopening they get the tabs of that role. Removing their last role puts them back on "لسه مفيش صلاحيات".

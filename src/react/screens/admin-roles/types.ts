@@ -26,6 +26,8 @@ export interface AdminRole {
   name: string;
   admin: boolean;
   cells: Cell[];
+  /** the servants this role manages: 'male' = خدام (boys' section), 'female' = خادمات (girls' section) */
+  servants: Gender[];
 }
 
 export interface AdminData {

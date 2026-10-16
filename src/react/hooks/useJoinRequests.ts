@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { approveJoinRequest, fetchJoinRequests, rejectJoinRequest, type JoinRequestScope } from '@/api/join-requests';
 
 export const joinRequestKeys = {
-  list: (scope: JoinRequestScope) => ['join-requests', scope.section, scope.grades.join(',')] as const,
+  list: (scope: JoinRequestScope) => ['join-requests', scope.section, scope.grades.join(','), !!scope.onlySection, !!scope.includeClassless] as const,
 };
 
 /** Always fetched fresh when the popup opens, so a request that arrived a minute ago shows up. `refetch()` is the retry button. */

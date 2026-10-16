@@ -17,11 +17,11 @@ import JoinRequests from '@/react/screens/join-requests';
 const mina = { id: 'u1', name: 'مينا باسم', email: 'mina@x.com', grade: 'الصف الرابع', phones: ['0100'], address: 'القاهرة', graduated: false, college: 'هندسة', university: 'القاهرة' };
 const mark = { id: 'u2', name: 'مارك', email: 'mark@x.com', grade: 'الصف الرابع' };
 
-const open = (onCount = vi.fn()) => {
+const open = (onCount = vi.fn(), extra: { onlySection?: boolean; includeClassless?: boolean } = {}) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <JoinRequests section="boys" grades={['الصف الرابع']} isAdmin onCount={onCount} close={() => undefined} />
+      <JoinRequests section="boys" grades={['الصف الرابع']} isAdmin onCount={onCount} close={() => undefined} {...extra} />
     </QueryClientProvider>,
   );
   return onCount;
@@ -41,7 +41,7 @@ describe('JoinRequests', () => {
     expect(await screen.findByText('مينا باسم')).toBeInTheDocument();
     expect(screen.getByText('mina@x.com')).toBeInTheDocument();
     expect(screen.getByText('القاهرة')).toBeInTheDocument();
-    expect(fetchJoinRequests).toHaveBeenCalledWith({ section: 'boys', grades: ['الصف الرابع'] });
+    expect(fetchJoinRequests).toHaveBeenCalledWith({ section: 'boys', grades: ['الصف الرابع'], onlySection: false, includeClassless: false });
     await waitFor(() => expect(onCount).toHaveBeenCalledWith(2));
   });
 
@@ -66,6 +66,13 @@ describe('JoinRequests', () => {
     await user.click(screen.getByRole('button', { name: /أكيد/ }));
     await waitFor(() => expect(rejectJoinRequest).toHaveBeenCalledWith('u1'));
     expect(await screen.findByText(/مفيش طلبات/)).toBeInTheDocument();
+  });
+
+  it('a request that chose "no class" shows as an administration request, and the scope is passed on', async () => {
+    fetchJoinRequests.mockResolvedValue([{ id: 'u9', name: 'مسؤول الخدام', email: 'm@x.com', grade: '' }]);
+    open(vi.fn(), { onlySection: true, includeClassless: true });
+    expect(await screen.findByText('إدارة — من غير فصل')).toBeInTheDocument();
+    expect(fetchJoinRequests).toHaveBeenCalledWith({ section: 'boys', grades: ['الصف الرابع'], onlySection: true, includeClassless: true });
   });
 
   it('shows the empty state', async () => {

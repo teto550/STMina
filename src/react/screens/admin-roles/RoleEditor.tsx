@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react';
 import { GRADES, cellOf, isMixedGrade, mixedGradeCells } from '@/core/access-config';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
-import type { Cell, Grade } from '@/types/access';
+import type { Cell, Gender, Grade } from '@/types/access';
 import { commit, newId } from './data';
 import { membersOf, planRoleDelete, planRoleSave } from './logic';
 import { PersonList } from './PersonList';
 import type { AdminData, AdminRole } from './types';
-import { CellToggle } from './cell-ui';
+import { CellToggle, servantsLabel } from './cell-ui';
 import { Chip } from '@/react/components/ui/chip';
 import { Sheet } from '@/react/components/ui/sheet';
 import { SwitchCard } from '@/react/components/ui/switch-card';
@@ -21,17 +21,19 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
   const [name, setName] = useState(role?.name ?? '');
   const [admin, setAdmin] = useState(role?.admin ?? false);
   const [cells, setCells] = useState<Set<Cell>>(() => new Set(role?.cells ?? []));
+  const [servants, setServants] = useState<Set<Gender>>(() => new Set(role?.servants ?? []));
   const [members, setMembers] = useState<Set<string>>(() => new Set(role ? membersOf(role.id, data.people).map((p) => p.id) : []));
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const draft: AdminRole = { id, name, admin, cells: [...cells] };
-  const plan = useMemo(() => planRoleSave({ id, name, admin, cells: [...cells] }, [...members], data), [id, name, admin, cells, members, data]);
+  const draft: AdminRole = { id, name, admin, cells: [...cells], servants: [...servants] };
+  const plan = useMemo(() => planRoleSave({ id, name, admin, cells: [...cells], servants: [...servants] }, [...members], data), [id, name, admin, cells, servants, members, data]);
   const peopleById = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
 
   const toggle = (list: Cell[], on: boolean) => setCells((prev) => { const next = new Set(prev); list.forEach((c) => (on ? next.add(c) : next.delete(c))); return next; });
   const has = (list: Cell[]) => list.every((c) => cells.has(c));
+  const toggleServants = (gender: Gender, on: boolean) => setServants((prev) => { const next = new Set(prev); if (on) { next.add(gender); } else { next.delete(gender); } return next; });
 
   async function save() {
     setErrors(plan.errors);
@@ -86,6 +88,18 @@ export function RoleEditor({ role, data, onDone, onCancel }: { role: AdminRole |
             ))}
           </div>
           <p className="tw:mt-2 tw:text-xs tw:text-dim">أولى وتانية: بنات وأولاد في نفس الفصل، وخادمات بس.</p>
+        </section>
+      )}
+
+      {!admin && (
+        <section className="tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-5" aria-label="الخدام">
+          <h3 className="tw:text-sm tw:font-bold">الخدام</h3>
+          <p className="tw:mt-1 tw:mb-4 tw:text-xs tw:text-dim">بتفتح تاب الخدام (حضور الخدام وقايمتهم وطلبات الانضمام) في القسم المناسب: خدام في حساب الأولاد، وخادمات في حساب البنات. الشخص لازم يكون عنده فصل (من الدور ده أو من دور تاني).</p>
+          <div className="tw:grid tw:grid-cols-2 tw:gap-2">
+            {(['male', 'female'] as Gender[]).map((g) => (
+              <CellToggle key={g} label={servantsLabel(g)} checked={servants.has(g)} onChange={(v) => toggleServants(g, v)} tone={g === 'female' ? 'girls' : 'boys'}>{servantsLabel(g)}</CellToggle>
+            ))}
+          </div>
         </section>
       )}
 

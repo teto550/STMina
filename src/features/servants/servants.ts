@@ -7,6 +7,7 @@ import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconsList } from '@/features/servants/deacons';
 import { sortRegisteredFirst, deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
 import { loadPendingDeacons } from '@/features/servants/approvals';
+import { canUseServantsTab } from '@/core/servants-access';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
@@ -77,7 +78,7 @@ window.setDirFilterType = (type, btn) => {
 };
 
 window.openServantsDirectory = async () => {
-  if (state.currentUserRole !== 'admin') { showToast('دليل الخدام للأدمن بس', 'error'); return; }
+  if (!canUseServantsTab()) { showToast('تاب الخدام مش متاح لك', 'error'); return; }
   state.servantsDirectoryOpen = true;
   resetDeaconAttDay(); // التحضير بيبدأ على اليوم اللي اتفتحت فيه الخانة
   showServantsDirectorySection();

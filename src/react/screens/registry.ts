@@ -18,6 +18,7 @@ export const screens: Record<string, Loader> = {
   settings: () => import('./settings'),
   'avatar-host': () => import('./avatar-host'),
   'update-banner': () => import('./update-banner'),
+  'no-access': () => import('./no-access'),
   'servants-filter': () => import('./servants-filter'),
   'servants-list': () => import('./servants-list'),
 };

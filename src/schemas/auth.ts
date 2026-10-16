@@ -11,6 +11,9 @@ export type LoginValues = z.infer<typeof loginSchema>;
 
 export const MIN_PASSWORD_LENGTH = 6;
 
+/** The value of the "no class" choice of the sign-up form: for an admin, or someone who manages servants, who does not serve in a class. */
+export const NO_CLASS = 'none';
+
 export const registerSchema = z.object({
   grade: z.string().min(1, 'اختار السنة الدراسية اللي هتخدم فيها'),
   name: z.string().min(1, 'اختار اسمك من القايمة'),

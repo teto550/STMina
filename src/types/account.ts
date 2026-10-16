@@ -14,7 +14,7 @@ export interface UserDoc {
   phaseGrades?: string[] | string | null;
   gender?: string;
   section?: string;
-  access?: { admin?: boolean; cells?: string[]; sections?: string[] } | null;
+  access?: { admin?: boolean; cells?: string[]; sections?: string[]; servants?: string[] } | null;
   phones?: string[];
   phone?: string;
   address?: string;
@@ -39,6 +39,8 @@ export interface SessionPatch {
   currentUserPhaseGrades: string[];
   access: Access;
   accessSource: 'roles' | 'legacy';
+  /** nothing is given to this person yet (no role / no class): the app shows "no access yet" instead of the tabs */
+  noAccess: boolean;
 }
 
 /** Why a signed-in account cannot use the app (yet). The screen shows a message for each. */
@@ -47,9 +49,7 @@ export type BlockedReason =
   | 'rejected' // an admin refused it
   | 'unregistered' // no record: made outside the app's own sign-up form
   | 'unverifiable' // no record found, but we are offline, so we cannot tell
-  | 'no-access' // approved, but no admin has given it a class yet
-  | 'wrong-section' // belongs to the other section and this device cannot be switched
-  | 'no-class'; // a servant without a class
+  | 'wrong-section'; // belongs to the other section and this device cannot be switched
 
 /**
  * The outcome of checking a signed-in account:

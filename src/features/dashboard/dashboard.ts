@@ -5,6 +5,7 @@ import { collection, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/core/firebase';
 import { getDocsTtl } from '@/core/firestore-helpers';
 import { getUserManagedGrades } from '@/core/session';
+import { canUseServantsTab } from '@/core/servants-access';
 import { DEACON_ATTENDANCE, DEACON_EXCUSES, getCurrentUserScopedDeaconRows } from '@/features/servants/deacon-attendance';
 import { sessionDates, tally } from '@/features/servants/attendance-stats';
 import { studentPhonesLabel } from '@/features/students/students';
@@ -229,9 +230,9 @@ function buildDashboardHTML() {
   return out || `<div class="dash-empty">مختارتش أي قسم — دوس ⚙️ واختار الأقسام</div>`;
 }
 
-// الأدمن: كل مخدومين القسم (كل الفصول). غير كده: فصوله بس.
+// الأدمن (ومسؤول الخدام في القسم ده): كل مخدومين القسم (كل الفصول). غير كده: فصوله بس.
 async function loadDashStudents() {
-  const managed = state.currentUserRole === 'admin' ? null : getUserManagedGrades();
+  const managed = (state.currentUserRole === 'admin' || canUseServantsTab()) ? null : getUserManagedGrades();
   if (managed && !managed.length) return [];
   const col = collection(db, 'students');
   const q = managed ? query(col, where('grade', 'in', managed.slice(0, 30))) : query(col, orderBy('name'));

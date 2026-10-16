@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { parseCell } from '@/core/access-config';
 import { Chip } from '@/react/components/ui/chip';
 import { cn } from '@/react/lib/utils';
-import type { Cell } from '@/types/access';
+import type { Cell, Gender } from '@/types/access';
 
 const GRADE_NAMES = ['', 'أولى', 'تانية', 'تالتة', 'رابعة', 'خامسة', 'سادسة'];
 
@@ -14,6 +14,26 @@ export function cellLabel(cell: Cell): string {
 
 export function CellChips({ cells }: { cells: Cell[] }) {
   return <>{cells.map((c) => <Chip key={c} tone={parseCell(c).gender === 'female' ? 'girls' : 'boys'}>{cellLabel(c)}</Chip>)}</>;
+}
+
+/** What a role gives, in one line: "تالتة أولاد، رابعة أولاد، خدام" (for hints and lists). */
+export const roleSummary = (role: { admin: boolean; cells: Cell[]; servants: Gender[] }): string =>
+  role.admin ? 'أدمن' : [...role.cells.map(cellLabel), ...role.servants.map(servantsLabel)].join('، ') || 'من غير صلاحيات';
+
+/** "خدام" / "خادمات": the servants a role manages. */
+export const servantsLabel = (gender: Gender): string => (gender === 'female' ? 'خادمات' : 'خدام');
+
+/** The classes and the servants of a role as chips (an admin role is one "أدمن" chip). */
+export function RoleChips({ role }: { role: { admin: boolean; cells: Cell[]; servants: Gender[] } }) {
+  if (role.admin) {
+    return <Chip tone="admin">أدمن</Chip>;
+  }
+  return (
+    <>
+      <CellChips cells={role.cells} />
+      {role.servants.map((g) => <Chip key={g} tone={g === 'female' ? 'girls' : 'boys'}>👥 {servantsLabel(g)}</Chip>)}
+    </>
+  );
 }
 
 /** A big pill that toggles one class (a real checkbox underneath, so it works with keyboard and screen readers). */

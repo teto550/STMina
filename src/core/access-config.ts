@@ -59,8 +59,10 @@ export function invalidCellsFor(gender: Gender, roles: Role[]): Cell[] {
 /** Access of a person = the union of their roles. */
 export function computeAccess(roles: Role[]): Access {
   const cells = [...new Set(roles.flatMap((role) => role.cells))].sort() as Cell[];
-  const sections = [...new Set(cells.map(sectionOfCell))].sort() as Section[];
-  return { admin: roles.some((role) => role.admin), cells, sections };
+  const servants = [...new Set(roles.flatMap((role) => role.servants ?? []))].sort() as Gender[];
+  // the sections a person can open: those of their classes, and those of the servants they manage (خدام = boys', خادمات = girls')
+  const sections = [...new Set([...cells.map(sectionOfCell), ...servants.map(sectionOfGender)])].sort() as Section[];
+  return { admin: roles.some((role) => role.admin), cells, sections, servants };
 }
 
 /** The roles of a person, looked up in the full list of roles (unknown ids are ignored). */
@@ -76,8 +78,20 @@ export const canSwitchSection = (access: Access): boolean => access.admin || acc
 /** May this person open the given section? Admins any; others only sections where they have a class. */
 export const canOpenSection = (access: Access, section: Section): boolean => access.admin || access.sections.includes(section);
 
-/** A person with no role at all sees the "no access yet" screen. */
-export const hasNoAccess = (access: Access): boolean => !access.admin && access.cells.length === 0;
+/**
+ * May this person use the الخدام tab (servants attendance, list, profiles, join requests) in the given section? Admins always; others
+ * when a role gives them the servants of that section: 'male' (خدام) for the boys' section, 'female' (خادمات) for the girls'.
+ */
+export const canManageServants = (access: Access, section: Section): boolean => access.admin || access.servants.includes(genderOfSection(section));
+
+/**
+ * A person with nothing at all sees the "no access yet" screen. A class is NOT required: an admin, or someone who only manages servants
+ * (خدام / خادمات), works without one.
+ */
+export const hasNoAccess = (access: Access): boolean => !access.admin && access.cells.length === 0 && access.servants.length === 0;
+
+/** The person works without a class (nothing in a class, but may manage servants): the app opens straight on the الخدام tab. */
+export const isClassless = (access: Access): boolean => !access.admin && access.cells.length === 0 && access.servants.length > 0;
 
 /** The classes (grade names, in school order) a person may open in one section: their cells that belong to that section. */
 export function gradeNamesOfAccess(access: Access, section: Section): string[] {

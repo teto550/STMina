@@ -83,6 +83,7 @@ export function evaluateAccount({ user, profile, deviceSection, redirectedTo, on
     currentUserPhaseGrades: phaseGrades,
     access,
     accessSource: source,
+    noAccess: false,
   };
 
   if (!isAdmin && source === 'roles') {
@@ -91,8 +92,9 @@ export function evaluateAccount({ user, profile, deviceSection, redirectedTo, on
     session.currentUserIsLead = false;
     session.currentUserIsPhaseLead = false;
     session.currentUserPhaseGrades = [];
+    // no role gives them anything yet: they come in, but see only "no access yet" (profile and settings still work), see below
     if (hasNoAccess(access)) {
-      return { kind: 'blocked', reason: 'no-access' };
+      session.noAccess = true;
     }
   }
 
@@ -105,9 +107,11 @@ export function evaluateAccount({ user, profile, deviceSection, redirectedTo, on
     if (check.action === 'deny') {
       return { kind: 'blocked', reason: 'wrong-section' };
     }
-    // a servant without a class must not be handed one by default
-    if (!session.currentUserGrade && session.currentUserPhaseGrades.length === 0) {
-      return { kind: 'blocked', reason: 'no-class' };
+    // a servant without a class must not be handed one by default (unless their roles make them a manager of servants: no class needed):
+    // they come in and see "no access yet" until an admin gives them a role
+    const managesServants = source === 'roles' && access.servants.length > 0;
+    if (!session.currentUserGrade && session.currentUserPhaseGrades.length === 0 && !managesServants) {
+      session.noAccess = true;
     }
   }
 

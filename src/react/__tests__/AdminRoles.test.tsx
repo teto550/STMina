@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 import type { AdminData } from '@/react/screens/admin-roles/types';
 
 const data: AdminData = {
-  roles: [{ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] }, { id: 'adm', name: 'أدمن', admin: true, cells: [] }],
+  roles: [{ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: [] }, { id: 'adm', name: 'أدمن', admin: true, cells: [], servants: [] }],
   people: [
     { id: 'p1', name: 'مينا', gender: 'male', roleIds: ['b3'] },
     { id: 'p2', name: 'ماريا', gender: 'female', roleIds: [] },
@@ -83,6 +83,84 @@ describe('AdminRoles screen', () => {
     await user.click(screen.getByRole('button', { name: '+ إضافة أشخاص' }));
     expect(screen.getByRole('checkbox', { name: /ماريا/ })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /بيتر/ })).toBeEnabled();
+  });
+
+  it('role editor: the خدام / خادمات block under the classes, saved on the role and on the members\' access', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: /تالتة أولاد/ }));
+    const block = screen.getByRole('region', { name: 'الخدام' });
+    expect(within(block).getByRole('checkbox', { name: 'خدام' })).not.toBeChecked();
+    expect(within(block).getByRole('checkbox', { name: 'خادمات' })).not.toBeChecked();
+    await user.click(within(block).getByRole('checkbox', { name: 'خدام' }));
+    // بيتر has a login: adding him makes his access snapshot part of the same batch
+    await user.click(screen.getByRole('button', { name: '+ إضافة أشخاص' }));
+    await user.click(screen.getByRole('checkbox', { name: /بيتر/ }));
+    await user.click(screen.getByRole('button', { name: /^تم/ }));
+    await user.click(screen.getByRole('button', { name: 'حفظ' }));
+    await waitFor(() => expect(commit).toHaveBeenCalled());
+    const ops = commit.mock.calls[0]![0] as { col: string; data: Record<string, unknown> }[];
+    expect(ops[0]).toMatchObject({ col: 'roles', data: { servants: ['male'] } });
+    expect(ops.find((o) => o.col === 'users')).toMatchObject({ data: { access: { servants: ['male'] } } });
+  });
+
+  it('role editor: the servants block is hidden for an admin role, and an admin role shows as one chip in the list', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: /أدمن/ }));
+    expect(screen.queryByRole('region', { name: 'الخدام' })).not.toBeInTheDocument();
+  });
+
+  it('role editor: a new role with only servants (no class) is accepted', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: '+ دور جديد' }));
+    await user.type(screen.getByLabelText('اسم الدور'), 'مسؤول خادمات');
+    await user.click(within(screen.getByRole('region', { name: 'الخدام' })).getByRole('checkbox', { name: 'خادمات' }));
+    await user.click(screen.getByRole('button', { name: 'حفظ' }));
+    await waitFor(() => expect(commit).toHaveBeenCalled());
+    expect((commit.mock.calls[0]![0] as { data: Record<string, unknown> }[])[0]).toMatchObject({ data: { name: 'مسؤول خادمات', servants: ['female'], cells: [] } });
+  });
+
+  it('people tab: "+ شخص جديد" adds a general servant (no role) in one write', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: 'الأشخاص' }));
+    await user.click(screen.getByRole('button', { name: '+ شخص جديد' }));
+    await user.type(screen.getByLabelText('الاسم'), 'كيرلس هاني');
+    await user.click(screen.getByRole('button', { name: 'إضافة' }));
+    await waitFor(() => expect(commit).toHaveBeenCalled());
+    const ops = commit.mock.calls[0]![0] as { col: string; data: Record<string, unknown> }[];
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ col: 'deacons', data: { name: 'كيرلس هاني', gender: 'male', section: 'boys', roleIds: [] } });
+  });
+
+  it('people tab: a new servant with a role gets it, and roles that do not fit the gender cannot be ticked', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: 'الأشخاص' }));
+    await user.click(screen.getByRole('button', { name: '+ شخص جديد' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'إضافة شخص جديد' }));
+    // admin roles are not offered here (there is "+ أدمن" for that)
+    expect(sheet.queryByRole('checkbox', { name: /^أدمن/ })).not.toBeInTheDocument();
+    await user.selectOptions(sheet.getByLabelText('النوع'), 'female');
+    expect(sheet.getByRole('checkbox', { name: /تالتة أولاد/ })).toBeDisabled();
+    await user.selectOptions(sheet.getByLabelText('النوع'), 'male');
+    await user.type(sheet.getByLabelText('الاسم'), 'ماركو');
+    await user.click(sheet.getByRole('checkbox', { name: /تالتة أولاد/ }));
+    await user.click(sheet.getByRole('button', { name: 'إضافة' }));
+    await waitFor(() => expect(commit).toHaveBeenCalled());
+    expect((commit.mock.calls[0]![0] as { data: Record<string, unknown> }[])[0]).toMatchObject({ data: { name: 'ماركو', roleIds: ['b3'], grade: 'سنة تالتة ابتدائي' } });
+  });
+
+  it('people tab: the name is required', async () => {
+    const user = userEvent.setup();
+    render(<AdminRoles close={() => undefined} />);
+    await user.click(await screen.findByRole('button', { name: 'الأشخاص' }));
+    await user.click(screen.getByRole('button', { name: '+ شخص جديد' }));
+    await user.click(screen.getByRole('button', { name: 'إضافة' }));
+    expect(await screen.findByText('اكتب الاسم')).toBeInTheDocument();
+    expect(commit).not.toHaveBeenCalled();
   });
 
   it('rename: shows what will change and writes the new name everywhere in one batch', async () => {

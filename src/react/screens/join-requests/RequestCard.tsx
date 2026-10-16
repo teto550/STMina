@@ -33,7 +33,7 @@ export const RequestCard: FC<RequestCardProps> = ({ request: r, busy, onApprove,
     <li className="tw:flex tw:flex-col tw:gap-3 tw:rounded-card tw:border tw:border-warn tw:bg-surface-2 tw:p-3">
       <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
         <h3 className="tw:text-base tw:font-bold">{r.name || 'بدون اسم'}</h3>
-        {r.grade && <Chip tone="girls">{r.grade}</Chip>}
+        {r.grade ? <Chip tone="girls">{r.grade}</Chip> : <Chip tone="admin">إدارة — من غير فصل</Chip>}
       </div>
       <dl className="tw:flex tw:flex-col tw:gap-1">
         <Row label="الإيميل" value={r.email} />

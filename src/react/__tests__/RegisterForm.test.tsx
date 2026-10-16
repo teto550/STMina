@@ -221,3 +221,38 @@ describe('RegisterForm: the other fields', () => {
     expect(pass).toHaveAttribute('type', 'text');
   });
 });
+
+describe('RegisterForm: no class (an admin, or someone who manages servants)', () => {
+  beforeEach(() => fetchRoster.mockResolvedValue([...roster, { name: 'مسؤول الخدام', grade: '' }]));
+
+  it('offers a "no class" choice that lists only the people who have no class', async () => {
+    const { user } = setup();
+    await user.selectOptions(await grade(), 'none');
+    const name = await nameSelect();
+    await waitFor(() => expect(name).toBeEnabled());
+    expect(within(name).getByRole('option', { name: 'مسؤول الخدام' })).toBeInTheDocument();
+    expect(within(name).queryByRole('option', { name: 'يوسف' })).not.toBeInTheDocument();
+  });
+
+  it('a class lists only its own servants, never the people without a class', async () => {
+    const { user } = setup();
+    await user.selectOptions(await grade(), 'سنة رابعة ابتدائي');
+    const name = await nameSelect();
+    expect(within(name).queryByRole('option', { name: 'مسؤول الخدام' })).not.toBeInTheDocument();
+  });
+
+  it('registers with an empty class', async () => {
+    registerServant.mockResolvedValue(undefined);
+    const { user } = setup();
+    await user.selectOptions(await grade(), 'none');
+    const name = await nameSelect();
+    await waitFor(() => expect(name).toBeEnabled());
+    await user.selectOptions(name, 'مسؤول الخدام');
+    await user.type(screen.getByLabelText('البريد الإلكتروني *'), 'm@x.com');
+    await user.type(screen.getByLabelText('رقم التليفون 1'), '01000000000');
+    await user.type(screen.getByLabelText('كلمة المرور *'), 'secret1');
+    await send(user);
+    await waitFor(() => expect(registerServant).toHaveBeenCalled());
+    expect(registerServant.mock.calls[0]![0]).toMatchObject({ grade: '', name: 'مسؤول الخدام' });
+  });
+});

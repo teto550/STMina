@@ -5,6 +5,7 @@ import { CheckRow } from '@/react/components/ui/check-row';
 import { Chip } from '@/react/components/ui/chip';
 import { Segmented } from '@/react/components/ui/segmented';
 import { inputClass } from '@/react/components/ui/input';
+import { Select } from '@/react/components/ui/select';
 import type { Gender } from '@/types/access';
 
 type GenderFilter = Gender | 'all';
@@ -29,11 +30,11 @@ export function PersonList({ data, selected, onToggle, forRole, showRoles = true
       <Segmented<GenderFilter> label="النوع" value={gender} onChange={setGender}
         options={[{ value: 'all', label: 'الكل' }, { value: 'male', label: 'خدام' }, { value: 'female', label: 'خادمات' }]} />
       {extraFilter && (
-        <select className={inputClass} aria-label="الدور" value={extraFilter.roleId} onChange={(e) => extraFilter.setRoleId(e.target.value)}>
+        <Select aria-label="الدور" value={extraFilter.roleId} onChange={(e) => extraFilter.setRoleId(e.target.value)}>
           <option value="all">كل الأدوار</option>
           <option value="none">من غير دور</option>
           {data.roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-        </select>
+        </Select>
       )}
       <div className="tw:text-xs tw:text-dim" aria-live="polite">{list.length} من {data.people.length}</div>
       <ul className="tw:flex tw:flex-col">

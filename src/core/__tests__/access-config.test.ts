@@ -1,10 +1,10 @@
 import {
-  gradeNamesOfAccess, canOpenSection, canSwitchSection, cellsOfSection, computeAccess, hasNoAccess, invalidCellsFor,
+  canManageServants, isClassless, gradeNamesOfAccess, canOpenSection, canSwitchSection, cellsOfSection, computeAccess, hasNoAccess, invalidCellsFor,
   isCellAllowedFor, mixedGradeCells, parseCell, sectionOfCell, startSectionOf,
 } from '@/core/access-config';
 import type { Role } from '@/types/access';
 
-const role = (id: string, cells: Role['cells'], admin = false): Role => ({ id, name: id, admin, cells });
+const role = (id: string, cells: Role['cells'], admin = false, servants: Role['servants'] = []): Role => ({ id, name: id, admin, cells, servants });
 
 describe('cells and sections', () => {
   it('parses a cell', () => expect(parseCell('male:3')).toEqual({ gender: 'male', grade: 3 }));
@@ -43,7 +43,7 @@ describe('servant gender rules', () => {
 describe('access', () => {
   it('is the union of the roles', () => {
     const a = computeAccess([role('a', ['male:3']), role('b', ['male:3', 'male:4'])]);
-    expect(a).toEqual({ admin: false, cells: ['male:3', 'male:4'], sections: ['boys'] });
+    expect(a).toEqual({ admin: false, cells: ['male:3', 'male:4'], sections: ['boys'], servants: [] });
   });
   it('an admin role makes the person an admin', () => expect(computeAccess([role('x', [], true)]).admin).toBe(true));
   it('starts in the section of the gender', () => {
@@ -80,5 +80,49 @@ describe('gradeNamesOfAccess', () => {
   });
   it('is empty for a section the person has no class in', () => {
     expect(gradeNamesOfAccess(computeAccess([role('a', ['male:3'])]), 'girls')).toEqual([]);
+  });
+});
+
+describe('servants access (خدام / خادمات)', () => {
+  it('is the union of the servants of the roles', () => {
+    const a = computeAccess([role('a', ['male:3'], false, ['male']), role('b', ['female:3'], false, ['female']), role('c', ['male:4'])]);
+    expect(a.servants).toEqual(['female', 'male']);
+    expect(computeAccess([role('c', ['male:4'])]).servants).toEqual([]);
+  });
+
+  it('opens the الخدام tab only in the section of the servants it gives', () => {
+    const boysServants = computeAccess([role('a', ['male:3', 'male:4'], false, ['male'])]);
+    expect(canManageServants(boysServants, 'boys')).toBe(true);
+    expect(canManageServants(boysServants, 'girls')).toBe(false); // خدام only: nothing in the girls' account
+    const both = computeAccess([role('a', ['male:3'], false, ['male', 'female'])]);
+    expect(canManageServants(both, 'boys')).toBe(true);
+    expect(canManageServants(both, 'girls')).toBe(true);
+  });
+
+  it('an admin always can, a plain servant never', () => {
+    expect(canManageServants(computeAccess([role('adm', [], true)]), 'girls')).toBe(true);
+    expect(canManageServants(computeAccess([role('a', ['male:3'])]), 'boys')).toBe(false);
+  });
+});
+
+describe('people without a class', () => {
+  it('a manager of servants with no class is let in (only "nothing at all" is no access)', () => {
+    expect(hasNoAccess(computeAccess([]))).toBe(true);
+    expect(hasNoAccess(computeAccess([role('adm', [], true)]))).toBe(false);
+    expect(hasNoAccess(computeAccess([role('m', [], false, ['male'])]))).toBe(false);
+    expect(hasNoAccess(computeAccess([role('b3', ['male:3'])]))).toBe(false);
+  });
+
+  it('isClassless: only servants, no class, not admin', () => {
+    expect(isClassless(computeAccess([role('m', [], false, ['male'])]))).toBe(true);
+    expect(isClassless(computeAccess([role('m', ['male:3'], false, ['male'])]))).toBe(false);
+    expect(isClassless(computeAccess([role('adm', [], true)]))).toBe(false);
+    expect(isClassless(computeAccess([]))).toBe(false);
+  });
+
+  it('the servants they manage give them the section (خدام = boys, خادمات = girls), so they can open it', () => {
+    expect(computeAccess([role('m', [], false, ['male'])]).sections).toEqual(['boys']);
+    expect(computeAccess([role('m', [], false, ['female'])]).sections).toEqual(['girls']);
+    expect(computeAccess([role('m', ['male:3'], false, ['female'])]).sections).toEqual(['boys', 'girls']);
   });
 });

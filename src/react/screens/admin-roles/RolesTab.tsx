@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/react/components/ui/button';
 import { membersOf } from './logic';
 import type { AdminData, AdminRole } from './types';
-import { CellChips } from './cell-ui';
-import { Chip } from '@/react/components/ui/chip';
+import { RoleChips } from './cell-ui';
 import { cn } from '@/react/lib/utils';
 import { GRADES, cellOf, isMixedGrade } from '@/core/access-config';
 import type { Cell } from '@/types/access';
@@ -16,7 +15,7 @@ export function RoleCards({ data, roles, onOpen, onNew }: { data: AdminData; rol
       {roles.map((r) => (
         <button key={r.id} type="button" onClick={() => onOpen(r)} className="tw:flex tw:cursor-pointer tw:flex-col tw:gap-2 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-4 tw:text-start">
           <span className="tw:flex tw:items-center tw:justify-between"><span className="tw:text-base tw:font-bold">{r.name}</span><span className="tw:text-sm tw:text-dim">{membersOf(r.id, data.people).length} شخص</span></span>
-          <span className="tw:flex tw:flex-wrap tw:gap-1.5">{r.admin ? <Chip tone="admin">أدمن</Chip> : <CellChips cells={r.cells} />}</span>
+          <span className="tw:flex tw:flex-wrap tw:gap-1.5"><RoleChips role={r} /></span>
         </button>
       ))}
       {roles.length === 0 && <p className="tw:py-8 tw:text-center tw:text-dim">{data.roles.length === 0 ? 'مفيش أدوار لسه. اعمل أول دور.' : 'مفيش دور بالاسم ده'}</p>}
@@ -49,11 +48,14 @@ export function RoleMatrix({ data, roles, onOpen, onNew }: { data: AdminData; ro
             <tr>
               <th rowSpan={2} className={cn(head, 'tw:top-0 tw:start-0 tw:z-20 tw:min-w-36 tw:text-start')}>الدور</th>
               {groups.map((g) => <th key={g.title} colSpan={g.cols.length} className={cn(head, 'tw:top-0 tw:h-9 tw:border-s tw:border-line tw:text-center tw:text-accent')}>{g.title}</th>)}
+              <th colSpan={2} className={cn(head, 'tw:top-0 tw:h-9 tw:border-s tw:border-line tw:text-center tw:text-accent')}>الخدام</th>
               <th rowSpan={2} className={cn(head, 'tw:top-0 tw:border-s tw:border-line')}>أدمن</th>
               <th rowSpan={2} className={cn(head, 'tw:top-0')}>الأعضاء</th>
             </tr>
             <tr>
               {groups.flatMap((g) => g.cols.map((c, i) => <th key={c.key} className={cn(head, 'tw:top-9 tw:h-9 tw:text-center tw:text-dim', i === 0 && 'tw:border-s tw:border-line')}>{c.title}</th>))}
+              <th className={cn(head, 'tw:top-9 tw:h-9 tw:border-s tw:border-line tw:text-center tw:text-dim')}>خدام</th>
+              <th className={cn(head, 'tw:top-9 tw:h-9 tw:text-center tw:text-dim')}>خادمات</th>
             </tr>
           </thead>
           <tbody>
@@ -61,6 +63,8 @@ export function RoleMatrix({ data, roles, onOpen, onNew }: { data: AdminData; ro
               <tr key={r.id} className={cn('tw:cursor-pointer tw:hover:bg-surface-2', selected === r.id && 'tw:bg-surface-2')} onClick={() => setSelected(r.id)}>
                 <th scope="row" className="tw:sticky tw:start-0 tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:font-bold tw:border-b tw:border-line">{r.name}</th>
                 {columns.map((c) => <td key={c.key} className="tw:h-11 tw:min-w-10 tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-ok">{!r.admin && c.cells.every((x) => r.cells.includes(x)) ? '✓' : ''}</td>)}
+                <td className="tw:h-11 tw:min-w-10 tw:border-s tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-ok">{!r.admin && r.servants.includes('male') ? '✓' : ''}</td>
+                <td className="tw:h-11 tw:min-w-10 tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-ok">{!r.admin && r.servants.includes('female') ? '✓' : ''}</td>
                 <td className="tw:border-s tw:border-b tw:border-line tw:text-center tw:text-base tw:font-bold tw:text-warn">{r.admin ? '✓' : ''}</td>
                 <td className="tw:border-b tw:border-line tw:text-center">{membersOf(r.id, data.people).length}</td>
               </tr>

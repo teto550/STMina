@@ -68,6 +68,32 @@ describe('admins (from their role)', () => {
   });
 });
 
+describe('people with no class (they manage servants)', () => {
+  const noClass = { ...complete, grade: null };
+  it('a manager of servants with no class enters (the "no class" refusal is for plain servants)', () => {
+    const d = run({ profile: { ...noClass, access: { admin: false, cells: [], sections: ['boys'], servants: ['male'] } } });
+    expect(d.kind).toBe('enter');
+    if (d.kind === 'enter') {
+      expect(d.session).toMatchObject({ currentUserGrade: null, accessSource: 'roles' });
+      expect(d.session.access.servants).toEqual(['male']);
+    }
+  });
+  it('a role with nothing in it comes in as "no access yet" (not refused)', () => {
+    const d = run({ profile: { ...noClass, access: { admin: false, cells: [], sections: [], servants: [] } } });
+    expect(d.kind).toBe('enter');
+    if (d.kind === 'enter') {
+      expect(d.session.noAccess).toBe(true);
+    }
+  });
+  it('on the girls device a boys-section manager is sent to the boys section, never let into the girls one', () => {
+    const d = run({ deviceSection: 'girls', profile: { ...noClass, access: { admin: false, cells: [], sections: ['boys'], servants: ['male'] } } });
+    expect(d).toEqual({ kind: 'redirect-section', target: 'boys' });
+  });
+  it('an admin needs no class either', () => {
+    expect(run({ profile: { ...noClass, role: 'admin' } }).kind).toBe('enter');
+  });
+});
+
 describe('servants with the old fields', () => {
   it('enters with their class from the old grade field', () => {
     const d = run({});
@@ -77,7 +103,17 @@ describe('servants with the old fields', () => {
       expect(d.session.access.cells).toEqual(['male:4']);
     }
   });
-  it('a servant without a class is refused', () => expect(run({ profile: { ...complete, grade: null } })).toEqual({ kind: 'blocked', reason: 'no-class' }));
+  it('a servant without a class comes in as "no access yet" (profile and settings only)', () => {
+    const d = run({ profile: { ...complete, grade: null } });
+    expect(d.kind).toBe('enter');
+    if (d.kind === 'enter') {
+      expect(d.session).toMatchObject({ noAccess: true, currentUserGrade: null });
+    }
+  });
+  it('a servant with a class has access', () => {
+    const d = run({});
+    expect(d.kind === 'enter' && d.session.noAccess).toBe(false);
+  });
   it('a phase lead without their own class still gets in through the phase grades', () => {
     const d = run({ profile: { ...complete, grade: null, isPhaseLead: true, phaseGrades: ['سنة تالتة ابتدائي'] } });
     expect(d.kind).toBe('enter');
@@ -113,7 +149,11 @@ describe('role-based access', () => {
       expect(d.session).toMatchObject({ currentUserGrade: 'سنة تالتة ابتدائي', currentUserIsLead: false, currentUserPhaseGrades: [], accessSource: 'roles' });
     }
   });
-  it('roles with no class at all show "no access yet"', () => expect(run({ profile: withRoles([]) })).toEqual({ kind: 'blocked', reason: 'no-access' }));
+  it('roles with no class at all: the person comes in as "no access yet", and is still sent to their own section', () => {
+    const d = run({ profile: withRoles([]) });
+    expect(d.kind === 'enter' && d.session.noAccess).toBe(true);
+    expect(run({ profile: { ...withRoles([]), gender: 'female' } })).toEqual({ kind: 'redirect-section', target: 'girls' });
+  });
   it('roles of the girls section on a boys device send the person to the girls section', () => {
     expect(run({ profile: withRoles(['female:3']) })).toEqual({ kind: 'redirect-section', target: 'girls' });
   });

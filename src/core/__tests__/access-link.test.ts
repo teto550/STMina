@@ -25,9 +25,9 @@ describe('approvalPatch', () => {
   it('nothing without a person', () => expect(approvalPatch(null, [])).toEqual({}));
   it('only the link when the person has no roles yet', () => expect(approvalPatch(people[0]!, [])).toEqual({ deaconId: 'p1' }));
   it('link + access snapshot from the roles', () => {
-    expect(approvalPatch(people[0]!, [{ admin: false, cells: ['male:3'] }])).toEqual({ deaconId: 'p1', access: { admin: false, cells: ['male:3'], sections: ['boys'] } });
+    expect(approvalPatch(people[0]!, [{ admin: false, cells: ['male:3'], servants: [] }])).toEqual({ deaconId: 'p1', access: { admin: false, cells: ['male:3'], sections: ['boys'], servants: [] } });
   });
   it('an admin role also makes the account an admin (what the security rules read)', () => {
-    expect(approvalPatch(people[0]!, [{ admin: true, cells: [] }])).toMatchObject({ role: 'admin', access: { admin: true } });
+    expect(approvalPatch(people[0]!, [{ admin: true, cells: [], servants: [] }])).toMatchObject({ role: 'admin', access: { admin: true } });
   });
 });

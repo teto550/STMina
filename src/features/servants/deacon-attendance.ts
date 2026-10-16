@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { getPreferences } from '@/api/preferences';
+import { canUseServantsTab } from '@/core/servants-access';
 import { deaconIdOfName } from '@/core/servants-index';
 import { DEACON_ADMIN_MAP } from '@/features/servants/deacons';
 import { state } from '@/core/state';
@@ -113,14 +114,16 @@ window.setDeaconAttType = (type, btn) => {
 };
 
 export function getCurrentUserScopedDeaconRows() {
-  const managedGrades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
+  // an admin, and a person whose role manages the servants of this section, see all of them; anyone else only the servants of their classes
+  const seesAll = state.currentUserRole === 'admin' || canUseServantsTab();
+  const managedGrades = seesAll ? GRADES.slice() : getUserManagedGrades();
   const managedSet = new Set(managedGrades);
   const seen = new Set();
   return state.ALL_DEACONS_RAW.filter(row => {
     if (!row || !row.name) return false;
     if (seen.has(row.name)) return false;
     seen.add(row.name);
-    if (state.currentUserRole === 'admin') return true;
+    if (seesAll) return true;
     const grade = (row.grade || '').trim();
     return !!grade && managedSet.has(grade);
   });
@@ -131,7 +134,7 @@ export function getCurrentUserScopedDeaconRows() {
 function allDeaconNames() {
   const rows = getCurrentUserScopedDeaconRows();
   const scoreMap = new Map();
-  const managedGrades = state.currentUserRole === 'admin' ? new Set(GRADES) : new Set(getUserManagedGrades());
+  const managedGrades = (state.currentUserRole === 'admin' || canUseServantsTab()) ? new Set(GRADES) : new Set(getUserManagedGrades());
   rows.forEach(row => {
     const grade = (row.grade || '').trim();
     scoreMap.set(row.name, grade && managedGrades.has(grade) ? 0 : 1);

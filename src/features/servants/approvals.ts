@@ -4,6 +4,7 @@ import { fetchJoinRequests, approveJoinRequest } from '@/api/join-requests';
 import { state } from '@/core/state';
 import { GRADES, SECTION } from '@/core/section';
 import { getUserManagedGrades } from '@/core/session';
+import { canUseServantsTab } from '@/core/servants-access';
 
 // تسمية تاب الخدام: "الخدام" + شارة عدد طلبات التسجيل المعلّقة للسنة الحالية (أدمن/مسؤول سنة)، أو "افتقاد" + عدد اللي ما تمش افتقادهم الشهر ده (خادم عادي)
 window.updateDeaconsTabLabel = function() {
@@ -32,8 +33,24 @@ window.updateDeaconsTabLabel = function() {
 // the classes the reader decides on: the servants screen covers every class the reader manages; elsewhere the admin sees the active class
 function requestGrades() {
   const onlyActive = state.currentUserRole === 'admin' && state.activeGrade && !state.servantsDirectoryOpen;
+  if (isServantsManagerOnly()) return GRADES.slice(); // manages the servants of the whole section, in every class
   const grades = state.currentUserRole === 'admin' ? (onlyActive ? [state.activeGrade] : GRADES.slice()) : getUserManagedGrades();
   return grades.length ? grades : [];
+}
+
+// a person who manages the servants of this section through a role (not an admin, not a class / phase lead of the old kind): the
+// Firestore rules let them read and decide only the pending requests of THEIR section, so their query must be limited to it
+function isServantsManagerOnly() {
+  return state.currentUserRole !== 'admin' && !state.currentUserIsLead && !state.currentUserIsPhaseLead && canUseServantsTab();
+}
+
+// requests that chose "no class" belong to the people who manage everything: admins and managers of servants (not class leads)
+function seesClasslessRequests() {
+  return state.currentUserRole === 'admin' || canUseServantsTab();
+}
+
+function canSeeRequests() {
+  return state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead || canUseServantsTab();
 }
 
 function setPendingCount(count) {
@@ -50,18 +67,18 @@ export async function approveDeacon(uid) {
 }
 
 export async function loadPendingDeacons() {
-  const isGradeManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
-  if (!isGradeManager) return;
-  const list = await fetchJoinRequests({ section: SECTION, grades: requestGrades() });
+  if (!canSeeRequests()) return;
+  const list = await fetchJoinRequests({ section: SECTION, grades: requestGrades(), onlySection: isServantsManagerOnly(), includeClassless: seesClasslessRequests() });
   setPendingCount(list.length);
 }
 
 window.openJoinRequests = () => {
-  const isGradeManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead;
-  if (!isGradeManager) return;
+  if (!canSeeRequests()) return;
   window.openReactScreen('join-requests', undefined, {
     section: SECTION,
     grades: requestGrades(),
+    onlySection: isServantsManagerOnly(),
+    includeClassless: seesClasslessRequests(),
     isAdmin: state.currentUserRole === 'admin',
     onCount: setPendingCount,
   });

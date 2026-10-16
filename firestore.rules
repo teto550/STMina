@@ -25,6 +25,16 @@ service cloud.firestore {
             || myDoc().get('phaseGrades', []).size() > 0);
     }
 
+    // Servants block of a role (docs/ROLES-DESIGN.md): `users.access.servants` = ['male'] (خدام, the boys' section) and / or ['female']
+    // (خادمات, the girls' section), written by the admin screen. Whoever holds it manages the servants of that section: here, reading and
+    // deciding the pending join requests of that section.
+    function managesServantsOf(section) {
+      return isApproved() && (
+        isAdmin()
+        || (section == 'girls' ? 'female' : 'male') in myDoc().get('access', {}).get('servants', [])
+      );
+    }
+
     // ===== users =====
     // كل واحد بيقرا ملفه بس، أو الأدمن يقرا الكل، أو أي معتمد يقرا حسابات المعتمدين
     // التانيين (محتاجينها لدليل الخدام)، أو مسؤول سنة يقرا طلبات "pending" بتاعة سنته
@@ -33,7 +43,10 @@ service cloud.firestore {
         request.auth.uid == userId ||
         isAdmin() ||
         (isApproved() && resource.data.status == 'approved') ||
-        (isLead() && resource.data.status == 'pending')
+        (isLead() && resource.data.status == 'pending') ||
+        // NO `.get(..., default)` here on purpose: for a list query the rule is checked against the query's own constraints, and a default
+        // would let a query WITHOUT `where('section', '==', ...)` through and return the other section's requests too
+        (resource.data.status == 'pending' && managesServantsOf(resource.data.section))
       );
 
       // التسجيل: يقدر ينشئ ملفه هو بس، وإجباريًا status=pending و role=deacon —
@@ -67,7 +80,13 @@ service cloud.firestore {
             && request.resource.data.get('access', null)   == resource.data.get('access', null))
         || (isLead() && resource.data.grade == myDoc().grade
             && request.resource.data.role == resource.data.role
-            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false));
+            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false))
+        // whoever manages the servants of this section may approve or reject a pending request of it: only the status, and the link to
+        // the person of the servants list; never the role, the access snapshot or anything else
+        || (resource.data.status == 'pending'
+            && managesServantsOf(resource.data.get('section', 'boys'))
+            && request.resource.data.status in ['approved', 'rejected']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'deaconId']));
 
       allow delete: if isAdmin();
     }

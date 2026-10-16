@@ -7,7 +7,7 @@ import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useRoster } from '@/react/hooks/useServants';
-import type { RegisterValues } from '@/schemas/auth';
+import { NO_CLASS, type RegisterValues } from '@/schemas/auth';
 import type { Section } from '@/types/access';
 
 /** The states of the names list: loading, error, empty, then the data (always in this order). */
@@ -37,14 +37,20 @@ export const ClassAndNameFields: FC = () => {
   const roster = useRoster(SECTION as Section);
   const grade = watch('grade');
   const names = useMemo(
-    () => (roster.data ?? []).filter((r) => r.grade === grade).map((r) => r.name).sort((a, b) => a.localeCompare(b, 'ar')),
+    () => (roster.data ?? []).filter((r) => (grade === NO_CLASS ? !r.grade : r.grade === grade)).map((r) => r.name).sort((a, b) => a.localeCompare(b, 'ar')),
     [roster.data, grade],
   );
   const view = viewOf(roster.isFetching, roster.isError, !!grade && names.length === 0);
 
   return (
     <>
-      <SelectField name="grade" label="السنة الدراسية اللي هتخدم فيها *" placeholder="اختر السنة الدراسية" options={(GRADES as string[]).map((g) => ({ value: g }))} onChange={() => setValue('name', '')} />
+      <SelectField
+        name="grade"
+        label="السنة الدراسية اللي هتخدم فيها *"
+        placeholder="اختر السنة الدراسية"
+        options={[...(GRADES as string[]).map((g) => ({ value: g })), { value: NO_CLASS, label: 'إدارة (أدمن / مسؤول خدام) — من غير فصل' }]}
+        onChange={() => setValue('name', '')}
+      />
       <Switch>
         <Case condition={view === NamesView.Loading}>
           <Spinner label="جاري تحميل الأسماء…" />
@@ -55,7 +61,7 @@ export const ClassAndNameFields: FC = () => {
           </Alert>
         </Case>
         <Case condition={view === NamesView.Empty}>
-          <Alert tone="info">لا يوجد خدام مسجلين في السنة دي — كلم الأدمن</Alert>
+          <Alert tone="info">{grade === NO_CLASS ? 'مفيش حد مسجّل من غير فصل — كلم الأدمن يضيف اسمك الأول' : 'لا يوجد خدام مسجلين في السنة دي — كلم الأدمن'}</Alert>
         </Case>
         <Case condition={view === NamesView.Ready}>
           <SelectField name="name" label="الاسم الكامل *" disabled={!grade} placeholder={grade ? 'اختر اسمك من القائمة' : 'اختر السنة الدراسية الأول'} options={names.map((n) => ({ value: n }))} />

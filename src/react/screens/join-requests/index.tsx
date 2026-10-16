@@ -20,14 +20,18 @@ export type JoinRequestsProps = ScreenProps & {
   section: Section;
   /** the classes the reader manages; empty = all */
   grades: string[];
+  /** the reader manages the servants of this section through a role: only that section's requests are read */
+  onlySection?: boolean;
+  /** also show the requests that chose "no class" */
+  includeClassless?: boolean;
   isAdmin: boolean;
   /** called with the number of requests still waiting, so the old screen can refresh its counters */
   onCount: (count: number) => void;
 };
 
 /** "طلبات انضمام": the servants waiting to join, with their details and approve / reject. */
-const JoinRequests: FC<JoinRequestsProps> = ({ close, section, grades, isAdmin, onCount }) => {
-  const scope = { section, grades };
+const JoinRequests: FC<JoinRequestsProps> = ({ close, section, grades, onlySection = false, includeClassless = false, isAdmin, onCount }) => {
+  const scope = { section, grades, onlySection, includeClassless };
   const requests = useJoinRequests(scope);
   const decide = useDecideJoinRequest(scope, isAdmin);
   const count = requests.data?.length;

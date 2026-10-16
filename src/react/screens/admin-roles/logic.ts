@@ -1,6 +1,6 @@
 // The rules of the roles admin screen as pure functions (no Firestore, no React): who is in a role, what a change would write,
 // what is not allowed. The screen only calls these and hands the resulting writes to one atomic batch (data.ts).
-import { computeAccess, invalidCellsFor } from '@/core/access-config';
+import { GRADE_NAMES, computeAccess, invalidCellsFor, parseCell, sectionOfGender } from '@/core/access-config';
 import type { Access, Gender } from '@/types/access';
 import type { AdminAccount, AdminData, AdminPerson, AdminRole, NameLinks, WriteOp } from './types';
 
@@ -28,7 +28,7 @@ export function accessFor(roleIds: string[], roles: AdminRole[]): Access {
 
 /** The reason a person may not be in this role (their gender does not fit the role's classes), or null. */
 export function blockedReason(person: AdminPerson, role: Pick<AdminRole, 'cells' | 'admin'>): string | null {
-  const bad = invalidCellsFor(person.gender, [{ id: '', name: '', admin: role.admin, cells: role.cells }]);
+  const bad = invalidCellsFor(person.gender, [{ id: '', name: '', admin: role.admin, cells: role.cells, servants: [] }]);
   return bad.length ? 'نوع الخادم ما يناسبش فصول الدور ده' : null;
 }
 
@@ -86,8 +86,8 @@ export function planRoleSave(role: AdminRole, memberIds: string[], data: AdminDa
   if (!role.name.trim()) {
     errors.push('اكتب اسم الدور');
   }
-  if (!role.admin && role.cells.length === 0) {
-    errors.push('اختار فصل واحد على الأقل (أو خلّي الدور أدمن)');
+  if (!role.admin && role.cells.length === 0 && role.servants.length === 0) {
+    errors.push('اختار فصل واحد على الأقل، أو خدام / خادمات (أو خلّي الدور أدمن)');
   }
   for (const p of data.people) if (members.has(p.id)) {
     const why = blockedReason(p, role);
@@ -97,7 +97,7 @@ export function planRoleSave(role: AdminRole, memberIds: string[], data: AdminDa
   }
   const before = new Set(membersOf(role.id, data.people).map((p) => p.id));
   const previous = data.roles.find((r) => r.id === role.id);
-  const changed = (a: AdminRole | undefined) => !a || a.admin !== role.admin || a.name !== role.name || a.cells.join() !== [...role.cells].sort().join();
+  const changed = (a: AdminRole | undefined) => !a || a.admin !== role.admin || a.name !== role.name || a.cells.join() !== [...role.cells].sort().join() || [...(a.servants ?? [])].sort().join() !== [...role.servants].sort().join();
   const roleChanged = changed(previous);
   const touched = new Set<string>();
   for (const id of members) if (!before.has(id) || roleChanged) {
@@ -107,10 +107,10 @@ export function planRoleSave(role: AdminRole, memberIds: string[], data: AdminDa
     touched.add(id);
   }
 
-  const nextRoles = [...data.roles.filter((r) => r.id !== role.id), { ...role, cells: [...role.cells].sort() as AdminRole['cells'] }];
+  const nextRoles = [...data.roles.filter((r) => r.id !== role.id), { ...role, cells: [...role.cells].sort() as AdminRole['cells'], servants: [...role.servants].sort() as AdminRole['servants'] }];
   const changes = new Map<string, string[]>();
   const removedAdmin = new Set<string>();
-  const ops: WriteOp[] = [{ col: 'roles', id: role.id, data: { name: role.name.trim(), admin: role.admin, cells: [...role.cells].sort() }, merge: true }];
+  const ops: WriteOp[] = [{ col: 'roles', id: role.id, data: { name: role.name.trim(), admin: role.admin, cells: [...role.cells].sort(), servants: [...role.servants].sort() }, merge: true }];
   for (const p of data.people) {
     if (!touched.has(p.id)) {
       continue;
@@ -195,14 +195,69 @@ export function planAddAdmin(input: NewAdmin, data: AdminData): Plan {
   }
   const adminRole = data.roles.find((r) => r.admin);
   const roleId = adminRole?.id ?? ADMIN_ROLE_ID;
-  const roles = adminRole ? data.roles : [...data.roles, { id: roleId, name: 'أدمن', admin: true, cells: [] }];
+  const roles = adminRole ? data.roles : [...data.roles, { id: roleId, name: 'أدمن', admin: true, cells: [], servants: [] }];
   const ops: WriteOp[] = [];
   if (!adminRole) {
-    ops.push({ col: 'roles', id: roleId, data: { name: 'أدمن', admin: true, cells: [] }, merge: true });
+    ops.push({ col: 'roles', id: roleId, data: { name: 'أدمن', admin: true, cells: [], servants: [] }, merge: true });
   }
-  ops.push({ col: 'deacons', id: input.id, data: { name, gender: input.gender, roleIds: [roleId], email }, merge: false });
+  ops.push({ col: 'deacons', id: input.id, data: { name, gender: input.gender, section: sectionOfGender(input.gender), roleIds: [roleId], email }, merge: false });
   const existing = data.accounts.filter((a) => a.email.trim().toLowerCase() === email);
   for (const a of existing) ops.push({ col: 'users', id: a.uid, data: { deaconId: input.id, access: accessFor([roleId], roles), role: 'admin' }, merge: true });
+  return { ops, affectedPeople: 1, errors };
+}
+
+/**
+ * The class a person is listed under in the class lists, which still read the old `grade` field of the servants list: the lowest class
+ * among the cells of their roles, or null when their roles give them no class (then the field is simply not written).
+ */
+export function legacyGradeOf(roleIds: string[], roles: AdminRole[]): string | null {
+  const grades = roles.filter((r) => roleIds.includes(r.id)).flatMap((r) => r.cells.map((c) => parseCell(c).grade));
+  return grades.length ? (GRADE_NAMES[Math.min(...grades) - 1] ?? null) : null;
+}
+
+export interface NewPerson { id: string; name: string; gender: Gender; email: string; roleIds: string[] }
+
+/**
+ * "+ شخص جديد": a servant of the list who is NOT an admin. Any mix of roles: a class, servants (خدام / خادمات), several, or none at all
+ * (the class is given later by adding the person to a role). The email, when given, links an account that already uses it, and the
+ * account that registers with it later.
+ */
+export function planAddPerson(input: NewPerson, data: AdminData): Plan {
+  const name = cleanName(input.name);
+  const email = input.email.trim().toLowerCase();
+  const errors: string[] = [];
+  if (!name) {
+    errors.push('اكتب الاسم');
+  }
+  if (data.people.some((p) => norm(p.name) === norm(name))) {
+    errors.push('فيه شخص بنفس الاسم في قايمة الخدام');
+  }
+  const chosen = data.roles.filter((r) => input.roleIds.includes(r.id));
+  if (chosen.some((r) => r.admin)) {
+    errors.push('الأدمن بيتضاف من زرار "+ أدمن"');
+  }
+  const person: AdminPerson = { id: input.id, name, gender: input.gender, roleIds: chosen.map((r) => r.id), email };
+  for (const role of chosen) {
+    const why = blockedReason(person, role);
+    if (why) {
+      errors.push(`${role.name}: ${why}`);
+    }
+  }
+  const grade = legacyGradeOf(person.roleIds, data.roles);
+  const record: Record<string, unknown> = { name, gender: input.gender, section: sectionOfGender(input.gender), roleIds: person.roleIds };
+  if (email) {
+    record.email = email;
+  }
+  if (grade) {
+    record.grade = grade;
+  }
+  const ops: WriteOp[] = [{ col: 'deacons', id: input.id, data: record, merge: false }];
+  if (email) {
+    const access = accessFor(person.roleIds, data.roles);
+    for (const a of data.accounts.filter((acc) => acc.email.trim().toLowerCase() === email)) {
+      ops.push({ col: 'users', id: a.uid, data: { deaconId: input.id, access }, merge: true });
+    }
+  }
   return { ops, affectedPeople: 1, errors };
 }
 
