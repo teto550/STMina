@@ -9,8 +9,6 @@ try { const q = new URLSearchParams(location.search).get('section'); if (q === '
 
 export let SECTION = (() => { try { return localStorage.getItem('appSection') === 'girls' ? 'girls' : 'boys'; } catch(e) { return 'boys'; } })();
 
-const isGirlsSection = () => SECTION === 'girls';
-
 // بيتحط في أي مستند جديد (مخدوم/خادم) عشان يتفلتر بعدين حسب القسم
 export const sectionTag = () => SECTION;
 

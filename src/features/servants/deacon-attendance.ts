@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { getDocs, collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { deaconIdOfName } from '@/core/servants-index';
+import { DEACON_ADMIN_MAP } from '@/features/servants/deacons';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
 import { todayKey } from '@/core/utils';
@@ -9,6 +10,7 @@ import { getUserManagedGrades } from '@/core/session';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 import { logActivity } from '@/core/presence';
 import { getDocsTtl } from '@/core/firestore-helpers';
+import { sessionDates, statusOn } from '@/features/servants/attendance-stats';
 
 // ===== DEACON ATTENDANCE (حضور الخدام أنفسهم) — نوعين: مدارس الأحد + اجتماع الخدام =====
 const DEACON_ATT_TYPES = {
@@ -53,6 +55,18 @@ export function deaconAttendanceCount(name, type) {
   const types = type ? [normAttType(type)] : ['sunday', 'meeting'];
   return types.reduce((sum, t) =>
     sum + Object.keys(DEACON_ATTENDANCE[t]).filter(d => DEACON_ATTENDANCE[t][d][name]).length, 0);
+}
+
+// آخر n أيام متسجل فيها حضور أو اعتذار لنوع معيّن، الأحدث أولاً (نفس تعريف "أيام الحضور" في القائمة) — بتغذّي فلتر آخر مرات حضور/غياب الخدام
+export function recentDeaconSessions(type, n) {
+  const t = normAttType(type);
+  return sessionDates(DEACON_ATTENDANCE[t], DEACON_EXCUSES[t], new Set(allDeaconNames()), n);
+}
+
+// حالة خادم في يوم معيّن: 'present' | 'excuse' | 'absent' (غياب = مش حاضر ومش معتذر، زي تاب "غياب" في تفاصيل اليوم)
+export function deaconStatusOn(name, type, dateKey) {
+  const t = normAttType(type);
+  return statusOn(DEACON_ATTENDANCE[t], DEACON_EXCUSES[t], name, dateKey);
 }
 
 export async function loadDeaconAttendance() {
@@ -131,6 +145,19 @@ function allDeaconNames() {
     });
 }
 
+// المسجلين في البرنامج (عندهم حساب معتمد) الأول، وبعدهم اللي لسه ماسجلوش — وكل مجموعة أبجدي
+export function isRegisteredDeacon(name) {
+  return !!DEACON_ADMIN_MAP[name];
+}
+export function sortRegisteredFirst(names, getName = n => n) {
+  return names.slice().sort((a, b) => {
+    const ra = isRegisteredDeacon(getName(a)) ? 0 : 1;
+    const rb = isRegisteredDeacon(getName(b)) ? 0 : 1;
+    if (ra !== rb) return ra - rb;
+    return getName(a).localeCompare(getName(b), 'ar');
+  });
+}
+
 window.renderDeaconAttPicker = () => {
   const cont = document.getElementById('sd-att-picker');
   if (!cont) return;
@@ -154,7 +181,7 @@ window.renderDeaconAttPicker = () => {
   if (cntEl) cntEl.textContent = allNames.filter(n => todayMap[n]).length;
 
   const q = (document.getElementById('sd-att-search')?.value || '').trim();
-  let list = allNames.slice().sort((a, b) => a.localeCompare(b, 'ar'));
+  let list = sortRegisteredFirst(allNames);
   if (state.servantsGradeFilter) {
     const inGrade = new Set(getCurrentUserScopedDeaconRows().filter(r => (r.grade || '').trim() === state.servantsGradeFilter).map(r => r.name));
     list = list.filter(n => inGrade.has(n));
@@ -168,12 +195,16 @@ window.renderDeaconAttPicker = () => {
   const boxStyle = (on, color, rgb) =>
     `min-width:68px;height:34px;padding:0 8px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;` +
     `border:1px solid ${on ? color : 'var(--border)'};background:${on ? `rgba(${rgb},0.15)` : 'var(--surface2)'};color:${on ? color : 'var(--text-dim)'}`;
-  cont.innerHTML = list.map(name => {
+  const firstUnreg = list.findIndex(n => !isRegisteredDeacon(n));
+  const showDivider = firstUnreg > 0; // فيه مجموعتين: مسجلين وغير مسجلين
+  cont.innerHTML = list.map((name, idx) => {
+    const divider = (showDivider && idx === firstUnreg)
+      ? `<div style="font-size:12px;font-weight:800;color:var(--text-dim);padding:10px 4px 4px;border-top:1px dashed var(--border);margin-top:6px">⏳ لسه ماسجلوش في البرنامج</div>` : '';
     const already = !!todayMap[name];
     const excused = !!excuseMap[name];
     const safe = name.replace(/'/g, "\\'");
     // الضغط على الصف أو مربع "حضور" = حضور، ومربع "اعتذار" = اعتذار (واحد بس منهم في اليوم)
-    return `<div class="manual-result-item ${already ? 'already' : ''}" onclick="deaconToggleAttendance('${safe}')">
+    return `${divider}<div class="manual-result-item ${already ? 'already' : ''}" onclick="deaconToggleAttendance('${safe}')">
       <div style="flex:1"><div class="manual-result-name">${name}</div></div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <div style="${boxStyle(already, 'var(--success)', '46,204,113')}">${already ? '✓ ' : ''}حضور</div>
@@ -182,9 +213,6 @@ window.renderDeaconAttPicker = () => {
     </div>`;
   }).join('');
 };
-
-// اسم قديم لسه متستخدم في أماكن تانية
-window.onDeaconAttSearch = () => renderDeaconAttPicker();
 
 window.deaconToggleAttendance = async (name) => {
   const type = currentDeaconAttType;

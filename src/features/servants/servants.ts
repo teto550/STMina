@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { avatarPlaceholder } from '@/features/students/photos';
 import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
-import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconUsersMap, loadDeaconsList } from '@/features/servants/deacons';
-import { deaconAttendanceCount, getCurrentUserScopedDeaconRows, loadDeaconAttendance, renderDeaconAttDatesList, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
+import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconsList } from '@/features/servants/deacons';
+import { sortRegisteredFirst, deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
 import { loadPendingDeacons } from '@/features/servants/approvals';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
@@ -27,7 +27,54 @@ export function populateUniversitySelect(selectId) {
 
 
 // ===== خانة الخدام: تابين — الحضور + ملفات الخدام (من كل السنين الدراسية) =====
-let currentServantsTab = 'att'; // 'att' | 'list'
+
+let currentServantsTab = 'att'; // 'att' | 'list' (the class filter above both tabs redraws the one that is open)
+
+// فلتر تاب "الخدام": حضر/غاب في آخر 1-4 مرات من نوع معيّن (مدارس الأحد أو اجتماع الخدام)
+let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent' | 'excuse'
+let dirFilterType = 'sunday';  // 'sunday' | 'meeting'
+let dirFilterBirthday = false; // أعياد ميلاد الخدام في الشهر الحالي (من بيانات الخادم المسجلة)
+
+function resetDirFilter() {
+  dirFilterStatus = 'all';
+  dirFilterType = 'sunday';
+  dirFilterBirthday = false;
+  document.getElementById('sd-flt-bday')?.classList.remove('active');
+  document.querySelectorAll('#sd-flt-status-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.status === 'all'));
+  document.querySelectorAll('#sd-flt-type-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.type === 'sunday'));
+  const countEl = document.getElementById('sd-flt-count');
+  if (countEl) countEl.value = '1';
+  const extra = document.getElementById('sd-flt-extra');
+  if (extra) extra.style.display = 'none';
+}
+
+window.setDirFilterStatus = (status, btn) => {
+  dirFilterStatus = status;
+  document.querySelectorAll('#sd-flt-status-tabs .tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const extra = document.getElementById('sd-flt-extra');
+  if (extra) extra.style.display = status === 'all' ? 'none' : 'block';
+  renderServantsDirectory();
+};
+
+window.toggleDirFilterBirthday = (btn) => {
+  dirFilterBirthday = !dirFilterBirthday;
+  if (btn) btn.classList.toggle('active', dirFilterBirthday);
+  renderServantsDirectory();
+};
+
+// يوم وشهر الميلاد من dob (YYYY-MM-DD) — بيرجع null لو مش مكتوب أو الصيغة غلط
+function dobMonthDay(dob) {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(dob || '');
+  return m ? { month: parseInt(m[1], 10), day: parseInt(m[2], 10) } : null;
+}
+
+window.setDirFilterType = (type, btn) => {
+  dirFilterType = type === 'meeting' ? 'meeting' : 'sunday';
+  document.querySelectorAll('#sd-flt-type-tabs .tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderServantsDirectory();
+};
 
 window.openServantsDirectory = async () => {
   if (state.currentUserRole !== 'admin') { showToast('دليل الخدام للأدمن بس', 'error'); return; }
@@ -39,6 +86,7 @@ window.openServantsDirectory = async () => {
   if (searchEl) searchEl.value = '';
   const attSearchEl = document.getElementById('sd-att-search');
   if (attSearchEl) attSearchEl.value = '';
+  resetDirFilter();
   const listEl = document.getElementById('servants-directory-list');
   listEl.innerHTML = '<div class="loading"><div class="spinner"></div>جاري التحميل…</div>';
   try {
@@ -93,26 +141,68 @@ window.renderServantsDirectory = () => {
   if (!searchEl) return;
   const term = (searchEl.value || '').trim();
   // أسماء فريدة من الخدام المسموح لهم في النظام الحالي فقط — مسؤول المرحلة يشوف فصله فقط، والأدمن يشوف الكل
-  const seen = new Set();
-  let all = getCurrentUserScopedDeaconRows().filter(x => !state.servantsGradeFilter || (x.grade || '').trim() === state.servantsGradeFilter).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  let all = sortRegisteredFirst(getCurrentUserScopedDeaconRows(), x => x.name);
+  if (state.servantsGradeFilter) {
+    all = all.filter(x => (x.grade || '').trim() === state.servantsGradeFilter);
+  }
 
   if (term) {
     const norm = s => (s || '').replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').toLowerCase();
     all = all.filter(x => norm(x.name).includes(norm(term)));
   }
 
+  // فلتر الحضور/الغياب: الخادم لازم يكون حضر (أو غاب) في كل واحدة من آخر N مرات متسجلة للنوع المختار
+  const filtering = dirFilterStatus !== 'all';
+  let sessions = [];
+  const hintEl = document.getElementById('sd-flt-hint');
+  if (filtering) {
+    const wantN = parseInt(document.getElementById('sd-flt-count')?.value || '1') || 1;
+    sessions = recentDeaconSessions(dirFilterType, wantN);
+    const want = dirFilterStatus === 'present' ? 'present' : dirFilterStatus === 'excuse' ? 'excuse' : 'absent';
+    all = sessions.length ? all.filter(x => sessions.every(d => deaconStatusOn(x.name, dirFilterType, d) === want)) : [];
+    if (hintEl) {
+      const lbl = d => { const [, m, dd] = d.split('-'); return `${dd}/${m}`; };
+      hintEl.textContent = !sessions.length ? 'مفيش أيام متسجلة للنوع ده لسه'
+        : (sessions.length < wantN ? `المتسجل ${sessions.length} أيام بس، فالفلتر على الأيام دي: ` : 'الأيام المحسوبة: ') + sessions.map(lbl).join(' · ');
+    }
+  } else if (hintEl) hintEl.textContent = '';
+
+  // فلتر أعياد الميلاد: الخدام اللي ميلادهم في الشهر الحالي، مترتبين باليوم (اللي لسه ماسجلش بياناته مالوش تاريخ ميلاد)
+  const bdayMap = {};
+  if (dirFilterBirthday) {
+    const curMonth = new Date().getMonth() + 1;
+    all = all.filter(x => {
+      const md = dobMonthDay((DEACON_ADMIN_MAP[x.name] || {}).dob);
+      if (md && md.month === curMonth) { bdayMap[x.name] = md; return true; }
+      return false;
+    }).sort((a, b) => bdayMap[a.name].day - bdayMap[b.name].day);
+  }
+
   document.getElementById('servants-directory-count').textContent = `${all.length} خادم`;
+  const histIcon = { present: '✅', excuse: '📝', absent: '❌' };
+  // لما فلتر حضر/غاب/اعتذر يكون شغال: العدّادين جنب كل خادم بيعدّوا الحالة دي (مش الحضور بس) في كل مرات النوع ده
+  const metric = filtering ? (dirFilterStatus === 'present' ? 'present' : dirFilterStatus === 'excuse' ? 'excuse' : 'absent') : 'present';
+  const metricLbl = { present: 'حضر', excuse: 'اعتذر', absent: 'غاب' }[metric];
+  const allSessions = filtering ? { sunday: recentDeaconSessions('sunday'), meeting: recentDeaconSessions('meeting') } : null;
+  const metricCount = (name, type) => filtering
+    ? allSessions[type].filter(d => deaconStatusOn(name, type, d) === metric).length
+    : deaconAttendanceCount(name, type);
   const rows = all.map(x => ({
     name: x.name,
     grade: x.grade || '',
     registered: !!DEACON_ADMIN_MAP[x.name],
     photo: (DEACON_ADMIN_MAP[x.name] && DEACON_ADMIN_MAP[x.name].photo) || '',
-    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس
-    sunday: deaconAttendanceCount(x.name, 'sunday'),
-    meeting: deaconAttendanceCount(x.name, 'meeting')
+    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس (أو عدد الحالة المختارة لما الفلتر شغال)
+    sunday: metricCount(x.name, 'sunday'),
+    meeting: metricCount(x.name, 'meeting'),
+    birthday: bdayMap[x.name] ? `${bdayMap[x.name].day}/${bdayMap[x.name].month}` : '',
+    history: filtering ? sessions.map(d => histIcon[deaconStatusOn(x.name, dirFilterType, d)]).join(' ') : '',
+    metric: filtering ? { label: metricLbl, tone: metric } : null
   }));
   window.openReactScreen('servants-list', document.getElementById('servants-directory-list'), {
     rows,
+    emptyIcon: filtering || dirFilterBirthday ? '🔍' : '🙏',
+    emptyText: dirFilterBirthday ? 'مفيش خدام أعياد ميلادهم الشهر ده (أو لسه ماسجلوش تاريخ الميلاد)' : filtering ? 'مفيش خدام بالشرط ده' : 'مفيش خدام مطابقين',
     onOpen: (name) => window.openDeaconProfile(name)
   });
 };

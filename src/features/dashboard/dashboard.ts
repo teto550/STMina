@@ -1,12 +1,20 @@
 // @ts-nocheck
 import { state } from '@/core/state';
 import { isDeaconOf, deaconNameOf } from '@/core/servants-index';
-import { DEACONS } from '@/features/servants/deacons';
-import { DEACON_ATTENDANCE } from '@/features/servants/deacon-attendance';
-import { studentPhonesLabel } from '@/features/students/students';
-import { genderizeText, GRADES } from '@/core/section';
+import { collection, orderBy, query, where } from 'firebase/firestore';
+import { db } from '@/core/firebase';
+import { getDocsTtl } from '@/core/firestore-helpers';
 import { getUserManagedGrades } from '@/core/session';
-import { ensureStudents, ensureDeacons, ensureDeaconAttendance } from '@/core/data';
+import { DEACON_ATTENDANCE, DEACON_EXCUSES, getCurrentUserScopedDeaconRows } from '@/features/servants/deacon-attendance';
+import { sessionDates, tally } from '@/features/servants/attendance-stats';
+import { studentPhonesLabel } from '@/features/students/students';
+import { genderizeText, inCurrentSection, sectionTag } from '@/core/section';
+import { ensureDeacons, ensureDeaconAttendance } from '@/core/data';
+
+// The dashboard covers EVERY servant (all classes the person manages: all of them for an admin) and their kids, not just the
+// class that is open in the app. The kids are read here into their own list so the open class (state.allStudents) is not touched.
+let dashNames = [];     // servants' names, sorted
+let dashStudents = [];  // kids of those servants' classes
 
 // كل الأقسام المتاحة — المستخدم بيختار منها اللي عايزه
 const DASH_SECTIONS = [
@@ -36,21 +44,9 @@ function saveDashPrefs(ids) {
   try { localStorage.setItem('dashSections', JSON.stringify(ids)); } catch (e) {}
 }
 
-// "📊 الداشبورد": first (for people who work in several classes) the popup that picks the class, then the popup that picks the
-// sections; both are React screens ('class-picker', 'dashboard-options')
-function askClass(grades) {
-  return new Promise(resolve => {
-    window.openReactScreen('class-picker', undefined, { grades, current: state.activeGrade, onPick: resolve });
-  });
-}
-
-window.openDashModal = async () => {
-  const grades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
-  if (grades.length > 1) {
-    const picked = await askClass(grades);
-    if (!picked) { window.closeReactOverlay(); return; }
-    if (picked !== state.activeGrade) { await window.switchActiveGrade(picked); }
-  }
+// "📊 الداشبورد": the popup that picks the sections (the React screen 'dashboard-options'), which then loads and shows the dashboard.
+// The dashboard covers every class the person manages, so there is no class to pick first.
+window.openDashModal = () => {
   window.openReactScreen('dashboard-options', undefined, {
     sections: DASH_SECTIONS,
     selected: getDashPrefs(),
@@ -64,8 +60,8 @@ window.openDashModal = async () => {
 // بيحسب كل إحصائيات الخدام مرة واحدة ويستخدمها كل الأقسام
 function computeDashStats() {
   const stats = {};
-  DEACONS.forEach(d => {
-    const mine = state.allStudents.filter(s => isDeaconOf(s, d));
+  dashNames.forEach(d => {
+    const mine = dashStudents.filter(s => isDeaconOf(s, d));
     const called  = mine.filter(s => !!s.lastVisitPhone).length;
     const visited = mine.filter(s => !!s.lastVisitHome).length;
     const touched = mine.filter(s => s.lastVisitPhone || s.lastVisitHome).length;
@@ -81,23 +77,17 @@ function computeDashStats() {
   return stats;
 }
 
-// عدد أيام حضور كل خادم من سجل حضور الخدام (النوعين مع بعض أو نوع واحد)
+// حضور / اعتذار / غياب كل خادم، لكل نوع لوحده (مدارس الأحد واجتماع الخدام) — الغياب = مش حاضر ومش معتذر
+const DASH_ATT_TYPES = [
+  { type: 'sunday',  label: '⛪ مدارس الأحد' },
+  { type: 'meeting', label: '👥 اجتماع الخدام' }
+];
+
 function computeDeaconAttendanceStats(type) {
-  const types = type ? [type] : ['sunday', 'meeting'];
-  const counts = {};
-  DEACONS.forEach(d => { counts[d] = 0; });
-  let totalDays = 0;
-  types.forEach(t => {
-    const map = (DEACON_ATTENDANCE && DEACON_ATTENDANCE[t]) || {};
-    const dates = Object.keys(map);
-    totalDays += dates.length;
-    dates.forEach(dt => {
-      Object.keys(map[dt] || {}).forEach(name => {
-        if (counts[name] !== undefined) counts[name]++;
-      });
-    });
-  });
-  return { totalDays, counts };
+  const att = (DEACON_ATTENDANCE && DEACON_ATTENDANCE[type]) || {};
+  const exc = (DEACON_EXCUSES && DEACON_EXCUSES[type]) || {};
+  const dates = sessionDates(att, exc, new Set(dashNames));
+  return { totalDays: dates.length, rows: tally(att, exc, dashNames, dates) };
 }
 
 // رسم شريط أفقي مرتب (bar chart بسيط وواضح)
@@ -125,16 +115,16 @@ function dashCard(title, inner) {
 function buildDashboardHTML() {
   const stats = computeDashStats();
   const active = getDashPrefs();
-  const names = DEACONS.slice();
-  const totalStudents = state.allStudents.length;
-  const noDeaconList = state.allStudents
+  const names = dashNames.slice();
+  const totalStudents = dashStudents.length;
+  const noDeaconList = dashStudents
     .filter(s => !(deaconNameOf(s) || '').trim())
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   let out = '';
 
   if (active.includes('kpi')) {
-    const totalCalled  = state.allStudents.filter(s => !!s.lastVisitPhone).length;
-    const totalVisited = state.allStudents.filter(s => !!s.lastVisitHome).length;
+    const totalCalled  = dashStudents.filter(s => !!s.lastVisitPhone).length;
+    const totalVisited = dashStudents.filter(s => !!s.lastVisitHome).length;
     const avg = names.length ? (totalStudents / names.length).toFixed(1) : '0';
     out += dashCard('📋 ملخص عام', `<div class="dash-kpis">
       <div class="dash-kpi"><div class="dash-kpi-num" style="color:var(--accent)">${names.length}</div><div class="dash-kpi-lbl">عدد الخدام</div></div>
@@ -191,23 +181,25 @@ function buildDashboardHTML() {
   }
 
   if (active.includes('deaconAtt')) {
-    const { totalDays, counts } = computeDeaconAttendanceStats();
-    if (!totalDays) {
-      out += dashCard('✅ حضور الخدام', `<div class="dash-empty">مفيش أيام حضور متسجلة للخدام لسه</div>`);
-    } else {
-      const rows = names.map(d => ({ name: d, value: counts[d] || 0 })).sort((a, b) => b.value - a.value);
+    DASH_ATT_TYPES.forEach(({ type, label }) => {
+      const { totalDays, rows: tallies } = computeDeaconAttendanceStats(type);
+      if (!totalDays) {
+        out += dashCard(`✅ حضور الخدام — ${label}`, `<div class="dash-empty">مفيش أيام متسجلة لسه</div>`);
+        return;
+      }
+      const rows = names.map(d => ({ name: d, ...tallies[d] })).sort((a, b) => b.present - a.present || a.name.localeCompare(b.name, 'ar'));
       const inner = rows.map((r, i) => {
-        const pct = Math.round(r.value / totalDays * 100);
+        const pct = Math.round(r.present / totalDays * 100);
         const cls = pct >= 75 ? 'ok' : pct >= 40 ? 'warn' : 'bad';
         return `<div class="dash-li">
           <span class="dash-rank ${i < 3 ? 'top' + (i + 1) : ''}">${i + 1}</span>
           <span class="dash-li-name">${r.name}</span>
-          <span class="dash-li-val">${r.value} من ${totalDays}</span>
+          <span class="dash-li-val">✅ ${r.present} · 📝 ${r.excuse} · ❌ ${r.absent}</span>
           <span class="dash-pill ${cls}">${pct}%</span>
         </div>`;
       }).join('');
-      out += dashCard(`✅ حضور الخدام (${totalDays} يوم)`, inner);
-    }
+      out += dashCard(`✅ حضور الخدام — ${label} (${totalDays} يوم)`, inner);
+    });
   }
 
   if (active.includes('noDeacon')) {
@@ -237,13 +229,26 @@ function buildDashboardHTML() {
   return out || `<div class="dash-empty">مختارتش أي قسم — دوس ⚙️ واختار الأقسام</div>`;
 }
 
+// الأدمن: كل مخدومين القسم (كل الفصول). غير كده: فصوله بس.
+async function loadDashStudents() {
+  const managed = state.currentUserRole === 'admin' ? null : getUserManagedGrades();
+  if (managed && !managed.length) return [];
+  const col = collection(db, 'students');
+  const q = managed ? query(col, where('grade', 'in', managed.slice(0, 30))) : query(col, orderBy('name'));
+  const snap = await getDocsTtl(q, `students:${sectionTag()}:${managed ? 'dash:' + managed.join('|') : '*'}`);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(inCurrentSection);
+}
+
+const dashSubtitle = () => `كل الفصول · ${dashNames.length} خادم · ${dashStudents.length} مخدوم`;
+
 // loads what the dashboard needs and shows it; rejects when the data cannot be read (the popup shows the error)
 async function showDashboard() {
-  // the dashboard needs the students, the servants and the servants' attendance: load them now (cached for a few minutes)
-  await Promise.all([ensureStudents(), ensureDeacons(), ensureDeaconAttendance()]);
-  if (!DEACONS.length) { showToast('مفيش خدام مسجلين للسنة دي', 'info'); return; }
-  document.getElementById('dash-subtitle').textContent =
-    `${state.activeGrade || 'كل السنوات'} · ${DEACONS.length} خادم · ${state.allStudents.length} مخدوم`;
+  // the dashboard needs every servant, their kids and the servants' attendance: load them now (cached for a few minutes)
+  await Promise.all([ensureDeacons(), ensureDeaconAttendance()]);
+  dashNames = [...new Set(getCurrentUserScopedDeaconRows().map(r => r.name))].sort((a, b) => a.localeCompare(b, 'ar'));
+  if (!dashNames.length) { showToast('مفيش خدام مسجلين', 'info'); return; }
+  dashStudents = await loadDashStudents();
+  document.getElementById('dash-subtitle').textContent = dashSubtitle();
   document.getElementById('dash-body').innerHTML = buildDashboardHTML();
   document.getElementById('dash-view').style.display = 'block';
   document.body.style.overflow = 'hidden';
@@ -298,7 +303,7 @@ function buildDashboardPrintDocument(bodyHtml) {
 </style></head>
 <body>
   <h1>📊 داشبورد الخدام</h1>
-  <div class="sub">${state.activeGrade || 'كل السنوات'} · ${DEACONS.length} خادم · ${state.allStudents.length} مخدوم · ${new Date().toLocaleDateString('ar-EG', { day:'numeric', month:'long', year:'numeric' })}</div>
+  <div class="sub">${dashSubtitle()} · ${new Date().toLocaleDateString('ar-EG', { day:'numeric', month:'long', year:'numeric' })}</div>
   ${bodyHtml}
 </body></html>`;
 }

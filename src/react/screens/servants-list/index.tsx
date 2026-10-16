@@ -9,16 +9,19 @@ enum ListView {
 
 export type ServantsListProps = {
   rows: ServantRowData[];
+  /** the empty message, which depends on the filters in use */
+  emptyText?: string;
+  emptyIcon?: string;
   onOpen: (name: string) => void;
 };
 
 /** The servants tab: one row per servant with the class and the attendance counts (the data is read by the old page). */
-const ServantsList: FC<ServantsListProps> = ({ rows, onOpen }) => {
+const ServantsList: FC<ServantsListProps> = ({ rows, emptyText = 'مفيش خدام مطابقين', emptyIcon = '🙏', onOpen }) => {
   const view = rows.length === 0 ? ListView.Empty : ListView.Data;
   return (
     <Switch>
       <Case condition={view === ListView.Empty}>
-        <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">🙏 مفيش خدام مطابقين</p>
+        <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">{emptyIcon} {emptyText}</p>
       </Case>
       <Case condition={view === ListView.Data}>
         <ul className="tw:flex tw:flex-col tw:gap-2">

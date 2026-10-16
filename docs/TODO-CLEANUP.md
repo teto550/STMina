@@ -45,6 +45,7 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 
 ## Done
 - [x] `loadConfig` and the `config` collection are no longer used: admins come only from roles; the one-time legacy-data migration button and the manual old-attendance cleanup tool (whose "done" marks lived in `config/settings`) were removed; the email settings moved to env variables (2026-10-10).
+- [x] Unused code removed (2026-10-10, C41 in `docs/PORTING.md`): only what nothing used and was never visible (duplicate root `app-shell.ts`, `lucide-react`, unused imports and trivial dead helpers); anything reusable was kept.
 - [x] Old admin / lead / phase-lead toggle buttons removed from the servants tab (roles are the only way to give access).
 - [x] Kids' passwords are admin only (display + rules; the import stays, admin only); rules deployed 2026-09-25.
 - [x] "مستر" rename completed and verified (0 left, 2026-09-24); 17 duplicate account profiles removed.

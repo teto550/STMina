@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { collection, query, where } from 'firebase/firestore';
 import { state } from '@/core/state';
-import { getDocsFast, getDocsTtl } from '@/core/firestore-helpers';
+import { getDocsTtl } from '@/core/firestore-helpers';
 import { db } from '@/core/firebase';
 import { SECTION } from '@/core/section';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
