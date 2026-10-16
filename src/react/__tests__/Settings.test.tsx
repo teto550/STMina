@@ -47,7 +47,7 @@ describe('Settings screen', () => {
     await user.click(screen.getByLabelText(/قص الصورة بعد اختيارها/));
     await waitFor(() => expect(screen.getByLabelText(/قص الصورة بعد اختيارها/)).toBeChecked());
     expect(updateDoc).toHaveBeenCalledTimes(1);
-    expect(updateDoc).toHaveBeenCalledWith('users/u1', { preferences: { cropPhotos: true } });
+    expect(updateDoc).toHaveBeenCalledWith('users/u1', { preferences: { cropPhotos: true, focusSearchAfterMark: true } });
     expect(getPreferences().cropPhotos).toBe(true);
   });
 
@@ -61,6 +61,33 @@ describe('Settings screen', () => {
   });
 });
 
+describe('Settings: attendance', () => {
+  const FOCUS = /الرجوع لخانة البحث بعد تسجيل الحضور/;
+
+  it('"back to the search box after marking" is on by default', () => {
+    open();
+    expect(screen.getByLabelText(FOCUS)).toBeChecked();
+  });
+
+  it('turning it off saves it on the account and applies it', async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByLabelText(FOCUS));
+    await waitFor(() => expect(screen.getByLabelText(FOCUS)).not.toBeChecked());
+    expect(updateDoc).toHaveBeenCalledWith('users/u1', { preferences: { cropPhotos: false, focusSearchAfterMark: false } });
+    expect(getPreferences().focusSearchAfterMark).toBe(false);
+  });
+
+  it('keeps the crop choice when this one changes', async () => {
+    const user = userEvent.setup();
+    loadPreferences('u1', { cropPhotos: true, focusSearchAfterMark: true });
+    open();
+    await user.click(screen.getByLabelText(FOCUS));
+    await waitFor(() => expect(updateDoc).toHaveBeenCalled());
+    expect(getPreferences()).toEqual({ cropPhotos: true, focusSearchAfterMark: false });
+  });
+});
+
 describe('preferences store', () => {
   it('takes the account value, else the copy kept in this browser, else the defaults', () => {
     loadPreferences('u1', { cropPhotos: true });
@@ -69,12 +96,15 @@ describe('preferences store', () => {
     expect(getPreferences().cropPhotos).toBe(true);
     localStorage.clear();
     loadPreferences('u2', undefined);
-    expect(getPreferences()).toEqual({ cropPhotos: false });
+    expect(getPreferences()).toEqual({ cropPhotos: false, focusSearchAfterMark: true });
   });
 
-  it('ignores garbage', () => {
+  it('ignores garbage, and an older account without the new option gets its default (on)', () => {
     loadPreferences('u1', { cropPhotos: 'yes' });
     expect(getPreferences().cropPhotos).toBe(false);
+    expect(getPreferences().focusSearchAfterMark).toBe(true);
+    loadPreferences('u1', { cropPhotos: true });
+    expect(getPreferences().focusSearchAfterMark).toBe(true);
   });
 
   it('keeps the other preferences when one is saved', async () => {

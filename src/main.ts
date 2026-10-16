@@ -41,4 +41,5 @@ import '@/features/servants/deacon-attendance';
 import '@/features/shell/ui';
 import '@/core/pwa';
 
+window.openReactScreen('update-banner', document.getElementById('update-banner')); // "فيه تحديث جديد" bar (checks version.json)
 mountAuthScreen(); // the login / new-servant screen (React) loads while the splash screen is still showing

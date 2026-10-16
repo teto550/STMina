@@ -131,3 +131,13 @@ Everything about a photo is ONE React component (`src/react/components/photo/pho
 - [ ] Add-kid and edit-kid forms: tap the picture to add / view / change / delete; the photo is saved with the rest of the form.
 - [ ] ⚙️ -> "الإعدادات" (a full screen) -> "✂️ قص الصورة بعد اختيارها" (off by default; saved on my account, so it follows me to another phone). When ON: after picking, the crop screen shows with a centred square already selected: "تم" keeps it (one tap), corners resize, "حر" frees the shape, "إلغاء" goes back. When OFF: no extra step.
 - [ ] Camera photos never come out black or half black (earlier entry).
+
+## Attendance: "back to the search box" option (2026-10-16)
+- [ ] ⚙️ -> الإعدادات -> "الحضور" -> "🔍 الرجوع لخانة البحث بعد تسجيل الحضور": ON by default (saved on the account, so it follows the person to another phone).
+- [ ] ON: kids attendance (search a name, tap to mark) and servants attendance (both types) clear the search box and focus it again after each mark (as before).
+- [ ] OFF: marking someone does NOT clear the search box, does NOT focus it and the page does NOT scroll back: scroll the full list of a class and mark people one after another.
+
+## Update check (2026-10-16)
+- [ ] Deploy a build, open the app on a phone (installed shortcut), deploy ANOTHER build, then bring the app back to the foreground (or wait up to 30 minutes): a bar "🆕 فيه تحديث جديد للتطبيق" appears at the bottom; "تحديث الآن" loads the new build; "✕" hides it for that build. It never reloads by itself.
+- [ ] ⚙️ -> الإعدادات -> "التطبيق": shows the running build's date; "تحقق من التحديث" says "إنت على آخر نسخة" or offers "تحديث الآن"; offline it says it cannot reach the server.
+- [ ] `version.json` is next to index.html in the deployed site and is never served from the cache (Firebase Hosting header `no-cache`; the service worker skips it).

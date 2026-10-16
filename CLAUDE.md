@@ -7,6 +7,17 @@ There used to be a second project cloned from this repo. The user no longer care
 update `docs/PORTING.md`, do not write porting notes, and do not let it block or slow any work. The file stays as history only.
 Project-specific values (Firebase config, keys, worker URLs) still belong in `.env.local` / `.firebaserc`, never hard-coded in `src/`.
 
+## VERSION NUMBER: raise it before EVERY deployment (STANDING RULE, set by the user 2026-10-16)
+The version number is `"version"` in `package.json` (semantic: patch +1 for every deployment; minor for a bigger batch of features, only when the user says). It
+is shown in the app (الإعدادات -> التطبيق, the update banner), written to `version.json`, and names the service worker cache.
+- **Before ANY deployment, anywhere, raise it FIRST:** `npm run deploy:test`, `npm run deploy:live`, `npm run deploy:ghpages` do it themselves (`npm run version:bump`
+  is the first step of each, a test enforces that); a plain `firebase deploy` / `firebase hosting:channel:deploy` must be preceded by `npm run version:bump`.
+- **Before pushing or merging to `main`** (the push deploys through GitHub Actions) run `npm run version:bump` yourself and commit it with the change, in the same push.
+  The workflow only warns when the number was not raised, so it is on you. Never push to `main` without the user's explicit request (see above).
+- Never deploy the same number twice, never lower it. Tell the user the new number after deploying. Stage `package.json` and `package-lock.json` (never commit
+  without the user's word, as usual).
+- This applies in every session and after compaction: re-read this section before deploying.
+
 ## Working agreements
 - **Do not commit (or push) until the user has verified the changes by hand and says so.** Leave edits in the working tree, say what
   changed and how to check it. **But `git add` every NEW core file as you create it** (source, tests, docs, schemas, hooks, the lockfile...)

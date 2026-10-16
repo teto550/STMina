@@ -29,6 +29,7 @@ All three build first (`npm run build`).
 
 | Command | Where it goes |
 | --- | --- |
+| `npm run version:bump` | Raises the patch number in `package.json`. Run automatically by the three deploy scripts below; run it yourself before pushing to `main` (that push deploys). |
 | `npm run deploy:test` | Firebase Hosting preview channel `test` (separate URL, expires after 30 days, re-running updates the same URL). |
 | `npm run deploy:live` | Firebase Hosting live site (`https://attends-39e5b.web.app`). |
 | `npm run deploy:ghpages` | Pushes `dist/` to the `gh-pages` branch of the GitHub repo. |

@@ -25,7 +25,7 @@ export interface UserDoc {
   /** the person's photo (a small JPEG data URL) */
   photo?: string;
   /** the person's own preferences (Settings > التفضيلات), saved per account */
-  preferences?: { cropPhotos?: boolean } | null;
+  preferences?: { cropPhotos?: boolean; focusSearchAfterMark?: boolean } | null;
 }
 
 /** What the old app reads from its shared `state` object about the signed-in person; written when the person is let in. */

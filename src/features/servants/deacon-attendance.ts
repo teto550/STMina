@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { getPreferences } from '@/api/preferences';
 import { deaconIdOfName } from '@/core/servants-index';
 import { DEACON_ADMIN_MAP } from '@/features/servants/deacons';
 import { state } from '@/core/state';
@@ -263,12 +264,14 @@ window.markDeaconAttendance = async (name, type, dateKey) => {
   showToast(`✅ ${name} — ${DEACON_ATT_TYPES[t].short}${dayNote}`, 'success');
   navigator.vibrate && navigator.vibrate([60,30,60]);
   // نفضّي خانة البحث بعد كل تسجيل عشان يكتب اسم الخادم اللي بعده على طول
+  // (when "الرجوع لخانة البحث" is off in الإعدادات the search box is left alone and the page does not scroll back to it)
+  const goBackToSearch = getPreferences().focusSearchAfterMark;
   const searchEl = document.getElementById('sd-att-search');
-  if (searchEl) searchEl.value = '';
+  if (searchEl && goBackToSearch) searchEl.value = '';
   renderDeaconAttPicker();
   renderDeaconAttDatesList();
   if (selectedDeaconAttDate === key) renderDeaconAttDayDetail();
-  if (searchEl) searchEl.focus();
+  if (searchEl && goBackToSearch) searchEl.focus();
 
   setDoc(ref, { name, deaconId: deaconIdOfName(name, sectionTag()), date: key, type: t, section: sectionTag(), ts: serverTimestamp() })
     .catch(e => console.warn('markDeaconAttendance sync error (هيتزامن لما النت يرجع):', e));

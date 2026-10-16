@@ -1,6 +1,8 @@
 import type { FC } from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { ScreenProps } from '../registry';
+import { AttendanceSettings } from './AttendanceSettings';
+import { AppSettings } from './AppSettings';
 import { PhotoSettings } from './PhotoSettings';
 
 /** "الإعدادات": the person's own settings, a full screen (back arrow on top) with one section per topic. */
@@ -14,7 +16,9 @@ const Settings: FC<ScreenProps> = ({ close }) => {
         <h1 className="tw:text-lg tw:font-bold">الإعدادات</h1>
       </header>
       <main className="tw:mx-auto tw:flex tw:max-w-lg tw:flex-col tw:gap-5 tw:p-4">
+        <AttendanceSettings />
         <PhotoSettings />
+        <AppSettings />
       </main>
     </div>
   );

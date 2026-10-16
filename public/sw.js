@@ -1,7 +1,7 @@
 // ===== خدمة ابتدائي — Service Worker =====
-// كل ما تعدّل حاجة في index.html وتنزلها على GitHub Pages، غيّر رقم النسخة
-// دي (CACHE_VERSION) عشان المتصفح يجيب النسخة الجديدة بدل القديمة المخزنة.
-const CACHE_VERSION = 'v6';
+// رقم النسخة (CACHE_VERSION) بيتظبط لوحده وقت الـbuild من "version" في package.json (vite.config.ts)،
+// وده بيترفع قبل أي deploy (انظر CLAUDE.md). مش محتاج تعدّله بإيدك.
+const CACHE_VERSION = 'dev'; // replaced at build time by the version number (vite.config.ts)
 const CACHE_NAME = `sanmina-kids-${CACHE_VERSION}`;
 
 // الملفات الأساسية اللي لازم تتخزن عشان الموقع يفتح بالكامل من غير نت
@@ -51,6 +51,9 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('identitytoolkit')) {
     return;
   }
+
+  // version.json is how the open app learns that a newer build exists: always from the network, never from (or into) the cache
+  if (url.pathname.endsWith('/version.json')) return;
 
   if (req.mode === 'navigate' || (req.method === 'GET' && url.pathname.endsWith('index.html'))) {
     // cache: 'no-store' عشان نجبر الطلب يروح للسيرفر فعليًا كل مرة، من غير ما

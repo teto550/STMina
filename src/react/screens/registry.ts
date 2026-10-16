@@ -17,6 +17,7 @@ export const screens: Record<string, Loader> = {
   'photo-field': () => import('./photo-field'),
   settings: () => import('./settings'),
   'avatar-host': () => import('./avatar-host'),
+  'update-banner': () => import('./update-banner'),
   'servants-filter': () => import('./servants-filter'),
   'servants-list': () => import('./servants-list'),
 };

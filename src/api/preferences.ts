@@ -6,15 +6,17 @@ import { auth, db } from '@/core/firebase';
 export interface Preferences {
   /** show the crop screen after a photo is picked from the camera or the gallery */
   cropPhotos: boolean;
+  /** after marking someone present, go back to the (emptied) search box, focused: for taking attendance by searching a name */
+  focusSearchAfterMark: boolean;
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { cropPhotos: false };
+export const DEFAULT_PREFERENCES: Preferences = { cropPhotos: false, focusSearchAfterMark: true };
 
 const localKey = (uid: string) => `preferences_${uid}`;
 
 const normalize = (value: unknown): Preferences => {
   const v = (value && typeof value === 'object' ? value : {}) as Partial<Preferences>;
-  return { cropPhotos: v.cropPhotos === true };
+  return { cropPhotos: v.cropPhotos === true, focusSearchAfterMark: v.focusSearchAfterMark !== false };
 };
 
 let current: Preferences = DEFAULT_PREFERENCES;
