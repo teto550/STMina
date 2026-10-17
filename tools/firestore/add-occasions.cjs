@@ -3,6 +3,7 @@
 //   node tools/firestore/add-occasions.cjs tools/firestore/occasions.example.json            dry run: prints what would be added
 //   node tools/firestore/add-occasions.cjs my-2027.json --apply --limit 1                    test with one
 //   node tools/firestore/add-occasions.cjs my-2027.json --apply                              all of them
+// To get the file for a year: `node tools/firestore/coptic-occasions.mjs 2028 --out my-2028.json` (the Coptic Orthodox list the church chose).
 // The file is a JSON array of { "title": "عيد الميلاد", "date": "2027-01-07" } (date as YYYY-MM-DD). Several on one day are fine.
 // Only ADDS: an occasion that already exists (same day and name) is skipped, nothing is changed or deleted, so it is safe to run twice.
 // Each one gets a fixed id made of its day and name, and is created only if that id is free. Reads the (small) `occasions` list once.
@@ -33,8 +34,11 @@ function load() {
   const { ok, bad } = load();
   bad.forEach(b => console.error('skipped (needs a title and a date YYYY-MM-DD): ' + b));
   await init();
-  const existing = new Set((await listAll('occasions')).map(d => d.name.split('/').pop()));
-  const todo = ok.filter(o => !existing.has(o.id));
+  // already there = same id (an earlier run of this script) OR the same day and name (typed by hand in the app, which uses random ids)
+  const docs = await listAll('occasions');
+  const existingIds = new Set(docs.map(d => d.name.split('/').pop()));
+  const existingKeys = new Set(docs.map(d => `${d.fields && d.fields.date && d.fields.date.stringValue}|${norm(d.fields && d.fields.title && d.fields.title.stringValue)}`));
+  const todo = ok.filter(o => !existingIds.has(o.id) && !existingKeys.has(`${o.date}|${o.title}`));
   console.log(`${ok.length} valid in the file, ${ok.length - todo.length} already there, ${todo.length} to add`);
   todo.slice(0, 50).forEach(o => console.log(`  + ${o.date}  ${o.title}`));
   if (todo.length > 50) console.log(`  ... and ${todo.length - 50} more`);
