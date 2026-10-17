@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 import type { Part } from '@/api/parts';
+import { dateToStr, formatDateHeader } from '@/react/screens/parts/logic';
 
 const h = vi.hoisted(() => ({ fetchParts: vi.fn(), createPart: vi.fn(), updatePart: vi.fn(), deletePart: vi.fn() }));
 vi.mock('@/api/occasions', () => ({ fetchOccasions: vi.fn(async () => []), addOccasion: vi.fn(), updateOccasion: vi.fn(), deleteOccasion: vi.fn(), yearOf: (d: string) => Number(d.slice(0, 4)) }));
@@ -45,18 +46,65 @@ describe('PartsScreen: the list (loader, error, empty, data)', () => {
     expect(screen.queryByText('ترنيمة الدخول')).not.toBeInTheDocument();
   });
 
-  it('the latest day is first, and the next day from today on stays green wherever it is', async () => {
-    const dayParts = [part('أ', '2030-10-18'), part('ب', '2030-10-21'), part('ج', '2030-10-25'), part('قديمة', '2020-01-03')];
+  it('the next day is on top and the days after it follow; the past is hidden behind an arrow', async () => {
+    const dayParts = [part('ج', '2030-10-25'), part('أ', '2030-10-18'), part('ب', '2030-10-21'), part('قديمة', '2020-01-03')];
     h.fetchParts.mockResolvedValue(dayParts);
     renderWithQuery(<PartsScreen grade="سنة رابعة 99" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
     const heads = await screen.findAllByRole('button', { expanded: false });
     expect(heads.map((b) => b.textContent)).toEqual([
-      expect.stringContaining('يوم الجمعة 25-10'), expect.stringContaining('يوم الاثنين 21-10'), expect.stringContaining('يوم الجمعة 18-10'), expect.stringContaining('يوم الجمعة 3-1'),
+      expect.stringContaining('يوم الجمعة 18-10'), expect.stringContaining('يوم الاثنين 21-10'), expect.stringContaining('يوم الجمعة 25-10'),
     ]);
     const card = (name: RegExp) => screen.getByRole('button', { name }).closest('li');
-    expect(card(/يوم الجمعة 18-10/)).toHaveClass('tw:border-ok/40'); // the NEXT day: green, in the middle of the list
+    expect(card(/يوم الجمعة 18-10/)).toHaveClass('tw:border-ok/40'); // the NEXT day: green, and first
     expect(card(/يوم الاثنين 21-10/)).not.toHaveClass('tw:border-ok/40');
     expect(card(/يوم الجمعة 25-10/)).not.toHaveClass('tw:border-ok/40');
+    expect(screen.queryByRole('button', { name: /يوم الجمعة 3-1/ })).not.toBeInTheDocument(); // the old day is not shown
+    expect(screen.getByRole('button', { name: 'عرض فقرات 2020 (يوم)' })).toBeInTheDocument();
+  });
+
+  it('today stays on top for the whole day, yesterday is already in the past', async () => {
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return dateToStr(d);
+    };
+    h.fetchParts.mockResolvedValue([part('أمس', day(-1)), part('بكرة', day(1)), part('النهاردة', day(0))]);
+    renderWithQuery(<PartsScreen grade="سنة رابعة 98" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
+    const heads = await screen.findAllByRole('button', { expanded: false });
+    expect(heads.map((b) => b.textContent)).toEqual([expect.stringContaining(formatDateHeader(day(0))), expect.stringContaining(formatDateHeader(day(1)))]);
+    expect(heads[0]!.closest('li')).toHaveClass('tw:border-ok/40');
+  });
+
+  it('the arrow loads the previous year, then the one before it, with the year named above its days; then it goes away', async () => {
+    h.fetchParts.mockResolvedValue([part('جديدة', '2030-10-18'), part('أ', '2020-01-03'), part('ب', '2020-05-08'), part('ج', '2019-03-01')]);
+    const user = userEvent.setup();
+    renderWithQuery(<PartsScreen grade="سنة رابعة 97" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
+    await user.click(await screen.findByRole('button', { name: 'عرض فقرات 2020 (يومين)' }));
+    let heads = await screen.findAllByRole('button', { expanded: false });
+    expect(heads.map((b) => b.textContent)).toEqual([expect.stringContaining('يوم الجمعة 3-1'), expect.stringContaining('يوم الجمعة 8-5'), expect.stringContaining('يوم الجمعة 18-10')]); // oldest first
+    expect(screen.getByText('2020')).toBeInTheDocument();
+    expect(screen.getByText('2030')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'عرض فقرات 2019 (يوم)' }));
+    heads = await screen.findAllByRole('button', { expanded: false });
+    expect(heads).toHaveLength(4);
+    expect(heads[0]!.textContent).toContain('يوم الجمعة 1-3');
+    expect(screen.queryByRole('button', { name: /^عرض فقرات/ })).not.toBeInTheDocument();
+  });
+
+  it('with nothing coming up it says so and still offers the past', async () => {
+    h.fetchParts.mockResolvedValue([part('قديمة', '2020-01-03')]);
+    renderWithQuery(<PartsScreen grade="سنة رابعة 96" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
+    expect(await screen.findByText('📋 مفيش فقرات جاية')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'عرض فقرات 2020 (يوم)' })).toBeInTheDocument();
+  });
+
+  it('parts without a day (old data) are the very last page', async () => {
+    h.fetchParts.mockResolvedValue([part('جديدة', '2030-10-18'), part('قديمة جدا', '')]);
+    const user = userEvent.setup();
+    renderWithQuery(<PartsScreen grade="سنة رابعة 95" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
+    expect(screen.queryByText(/بدون تاريخ محدد/)).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'عرض الفقرات من غير تاريخ (يوم)' }));
+    expect(await screen.findByRole('button', { name: /بدون تاريخ محدد/ })).toBeInTheDocument();
   });
 
   it('a part without a type or a servant still shows (title only, "no servant yet")', async () => {
@@ -100,6 +148,18 @@ describe('PartsScreen: adding', () => {
     expect(h.createPart.mock.calls[0]![0]).toMatchObject({ grade: expect.stringContaining('سنة رابعة'), section: 'boys', by: { uid: 'u1', name: 'المسؤول' }, input: { type: '', title: 'ترنيمة جديدة', date: '2030-10-22', deaconName: '' } });
     expect(await screen.findByText('ترنيمة جديدة')).toBeInTheDocument(); // the new day is open
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('a part added on a day that has passed loads that year, so it does not vanish', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('button', { name: 'إضافة فقرة' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'إضافة فقرة' }));
+    await user.type(sheet.getByLabelText(/تفاصيل الفقرة/), 'فقرة قديمة');
+    await user.clear(sheet.getByLabelText(/اليوم/));
+    await user.type(sheet.getByLabelText(/اليوم/), '2020-03-06');
+    await user.click(sheet.getByRole('button', { name: '💾 حفظ' }));
+    expect(await screen.findByText('فقرة قديمة')).toBeInTheDocument();
+    expect(screen.getByText('2020')).toBeInTheDocument();
   });
 
   it('the title and the day are required', async () => {

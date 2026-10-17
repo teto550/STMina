@@ -1,6 +1,6 @@
-import { useMemo, useState, type FC } from 'react';
+import { Fragment, useMemo, useState, type FC } from 'react';
 import { Case, Switch } from 'react-if';
-import { CalendarDays, Plus } from 'lucide-react';
+import { ArrowUp, CalendarDays, Plus } from 'lucide-react';
 import type { Occasion } from '@/api/occasions';
 import type { Part } from '@/api/parts';
 import { Alert } from '@/react/components/ui/alert';
@@ -14,7 +14,7 @@ import { DateGroupCard } from './DateGroupCard';
 import { NextOccasionCard } from './occasions/NextOccasionCard';
 import { OccasionsSheet } from './occasions/OccasionsSheet';
 import { PartFormSheet } from './PartFormSheet';
-import { dateToStr, groupByDate, nextFridayStr, upcomingDate } from './logic';
+import { dateToStr, daysLabel, groupByDate, nextFridayStr, nextOlderPage, olderPages, pageKeyOf, upcomingDate, visibleGroups } from './logic';
 
 enum PartsView {
   Loading = 'loading',
@@ -41,7 +41,10 @@ type Form = { mode: 'add' | 'edit'; part?: Part; initial: PartValues } | null;
 // which days are open, kept per class while the app runs (the screen is drawn again each time the tab opens)
 const openDays = new Map<string, Set<string>>();
 
-/** "توزيع الفقرات": the parts of the open class grouped by day (any day, not only Fridays). */
+/**
+ * "توزيع الفقرات": the parts of the open class grouped by day (any day, not only Fridays). The next day is on top and the days after it follow;
+ * the days that have passed are hidden until the arrow at the top loads them, one year at a time.
+ */
 const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants, isAdmin, user }) => {
   const parts = useParts(grade, section);
   const save = useSavePart({ grade, section, by: user });
@@ -50,9 +53,14 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
   const [occasionsOpen, setOccasionsOpen] = useState(false);
   const [open, setOpen] = useState<Set<string>>(() => new Set(openDays.get(grade) ?? []));
   const [problem, setProblem] = useState<string | null>(null);
+  // the oldest year of past days loaded so far ('' = the parts without a day); null = the past is still hidden
+  const [shownFrom, setShownFrom] = useState<string | null>(null);
 
   const groups = useMemo(() => groupByDate(parts.data ?? []), [parts.data]);
   const today = dateToStr(new Date());
+  const pages = useMemo(() => olderPages(groups, today), [groups, today]);
+  const olderPage = nextOlderPage(pages, shownFrom);
+  const shown = visibleGroups(groups, today, shownFrom);
   const next = upcomingDate(groups, today);
   const nextOccasion = useNextOccasion(today);
 
@@ -110,23 +118,37 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
           <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">📋 لسه مفيش فقرات متوزعة</p>
         </Case>
         <Case condition={view === PartsView.Data}>
+          {olderPage && (
+            <Button variant="secondary" size="lg" onClick={() => setShownFrom(olderPage.key)}>
+              <ArrowUp className="tw:size-5" aria-hidden="true" />
+              {olderPage.key ? `عرض فقرات ${olderPage.key}` : 'عرض الفقرات من غير تاريخ'} ({daysLabel(olderPage.days)})
+            </Button>
+          )}
           <ul className="tw:flex tw:flex-col tw:gap-2.5">
-            {groups.map((g) => (
-              <DateGroupCard
-                key={g.date || 'none'}
-                group={g}
-                open={open.has(g.date)}
-                upcoming={g.date === next}
-                past={!!g.date && g.date < today && g.date !== next}
-                canManage={canManage}
-                busyId={remove.isPending ? (remove.variables ?? null) : null}
-                onToggle={() => setDay(g.date, !open.has(g.date))}
-                onAdd={() => setForm({ mode: 'add', initial: blank(g.date) })}
-                onEdit={(part) => setForm({ mode: 'edit', part, initial: { title: part.title, date: part.date, type: part.type, deaconName: part.deaconName } })}
-                onDelete={(part) => remove.mutate(part.id, { onError: () => setProblem('مقدرناش نمسح الفقرة') })}
-              />
-            ))}
+            {shown.map((g, i) => {
+              const year = pageKeyOf(g.date);
+              // the days show no year, so a year is named where it starts (and at the top when it is not this year)
+              const newYear = !!year && year !== (i === 0 ? today.slice(0, 4) : pageKeyOf(shown[i - 1]!.date));
+              return (
+                <Fragment key={g.date || 'none'}>
+                  {newYear && <li className="tw:px-1 tw:pt-2 tw:text-xs tw:font-bold tw:text-dim">{year}</li>}
+                  <DateGroupCard
+                    group={g}
+                    open={open.has(g.date)}
+                    upcoming={g.date === next}
+                    past={!!g.date && g.date < today}
+                    canManage={canManage}
+                    busyId={remove.isPending ? (remove.variables ?? null) : null}
+                    onToggle={() => setDay(g.date, !open.has(g.date))}
+                    onAdd={() => setForm({ mode: 'add', initial: blank(g.date) })}
+                    onEdit={(part) => setForm({ mode: 'edit', part, initial: { title: part.title, date: part.date, type: part.type, deaconName: part.deaconName } })}
+                    onDelete={(part) => remove.mutate(part.id, { onError: () => setProblem('مقدرناش نمسح الفقرة') })}
+                  />
+                </Fragment>
+              );
+            })}
           </ul>
+          {!shown.some((g) => g.date >= today) && <p className="tw:py-6 tw:text-center tw:text-sm tw:text-dim">📋 مفيش فقرات جاية</p>}
         </Case>
       </Switch>
       {occasionsOpen && (
@@ -150,6 +172,11 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
           onSave={async (values) => {
             await save.mutateAsync({ part: form.part, input: { type: values.type, title: values.title.trim(), date: values.date, deaconName: values.deaconName } });
             setDay(values.date, true); // the day of the part is opened, so it shows up
+            if (values.date < today) {
+              // a day that has passed: its year is loaded too, otherwise the part would stay hidden
+              const year = pageKeyOf(values.date);
+              setShownFrom((cur) => (cur === null || year < cur ? year : cur));
+            }
           }}
         />
       )}

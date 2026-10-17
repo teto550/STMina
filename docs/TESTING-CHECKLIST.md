@@ -173,6 +173,9 @@ denied (the "complete your data" page failed with "حدث خطأ"; the settings 
 ## Parts (توزيع الفقرات) in React (2026-10-17) - needs the rules deployed (editing a part)
 - [ ] The whole tab is the React screen `parts`: title, "➕ إضافة فقرة" (the class manager only), the list grouped by day with a loader, an error with retry and an empty state.
 - [ ] Any day works (pick a Monday): the day shows as "الاثنين 21-10"; the default is the coming Friday. The nearest day from today on is green, the others blue.
+- [ ] Order (changed 2026-10-18): the NEXT day is on top (green) and the later days follow it, soonest first. Today counts as the next day for the whole day (on a Friday, that Friday stays on top). Days that have passed are NOT shown by default.
+- [ ] Past days: a button "⬆ عرض فقرات 2026 (N يوم)" sits at the top. Each tap loads one more year (the most recent first) ABOVE the upcoming days, oldest at the very top, and the year is written above its days ("2025"); the button then offers the year before, and disappears when there is none. Parts with no day (old data) are the last page ("عرض الفقرات من غير تاريخ").
+- [ ] Add or edit a part on a day that has already passed: after saving, its year is loaded and the part is visible (it does not vanish). With nothing coming up the list says "مفيش فقرات جاية" and still offers the older years.
 - [ ] A part needs only a TITLE and a DAY: type and servant are optional ("من غير نوع" / "من غير خادم لسه"); such a part shows its title and "👤 لسه ماتحددش خادم".
 - [ ] Every day has a round "+" in its header (also when the day is closed): it opens the form on THAT day. In the form "💾 حفظ وفقرة تانية" saves and stays open on the same day with the rest cleared.
 - [ ] ✏️ on a part: change the title / day, or give it its type and servant later. Choosing a servant for the first time sends them the push notification (as before); nothing is sent when the servant stays the same.

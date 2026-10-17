@@ -40,8 +40,8 @@ export interface DateGroup {
 }
 
 /**
- * One group per day, the LATEST day first (parts without a day last); inside a day the order of the given list (newest first) is kept.
- * The next day (see `upcomingDate`) is still the green one wherever it falls in the list.
+ * One group per day, the OLDEST day first (parts without a day, old data, before all of them); inside a day the order of the given list
+ * (newest first) is kept. Days from today on are the ones shown by default, the rest are older pages (see `olderPages`).
  */
 export function groupByDate(parts: Part[]): DateGroup[] {
   const byDate = new Map<string, Part[]>();
@@ -49,13 +49,54 @@ export function groupByDate(parts: Part[]): DateGroup[] {
     const key = p.date || '';
     byDate.set(key, [...(byDate.get(key) ?? []), p]);
   }
-  return [...byDate.entries()]
-    .sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : b.localeCompare(a)))
-    .map(([date, list]) => ({ date, parts: list }));
+  return [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, list]) => ({ date, parts: list }));
 }
 
-/** The next day with parts (today or later): the one shown in green, whatever the order of the list. Null when every day has passed. */
+/** The next day with parts (today or later, so a Friday stays the next day for the whole Friday): the one shown in green. Null when every day has passed. */
 export function upcomingDate(groups: DateGroup[], today: string): string | null {
   const days = groups.map((g) => g.date).filter((d) => d !== '' && d >= today).sort();
   return days[0] ?? null;
+}
+
+/** The page an older day belongs to: its year ('' for a part without a day). */
+export const pageKeyOf = (date: string): string => date.slice(0, 4);
+
+export interface OlderPage {
+  /** the year, or '' for the parts without a day */
+  key: string;
+  /** how many days with parts it holds */
+  days: number;
+}
+
+/** The days before today, one page per year, the most recent year first (the parts without a day last). Nothing is shown from them until a page is loaded. */
+export function olderPages(groups: DateGroup[], today: string): OlderPage[] {
+  const days = new Map<string, number>();
+  for (const g of groups) {
+    if (g.date < today) {
+      const key = pageKeyOf(g.date);
+      days.set(key, (days.get(key) ?? 0) + 1);
+    }
+  }
+  return [...days.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([key, n]) => ({ key, days: n }));
+}
+
+/** The page the "show older" button loads next: the most recent one not shown yet. `shownFrom` = the oldest year loaded so far (null = none). */
+export function nextOlderPage(pages: OlderPage[], shownFrom: string | null): OlderPage | undefined {
+  return pages.find((p) => shownFrom === null || p.key < shownFrom);
+}
+
+/** What the list shows: every day from today on, plus the older years loaded so far (`shownFrom` and every year after it). Oldest first. */
+export function visibleGroups(groups: DateGroup[], today: string, shownFrom: string | null): DateGroup[] {
+  return groups.filter((g) => g.date >= today || (shownFrom !== null && pageKeyOf(g.date) >= shownFrom));
+}
+
+/** "يوم", "يومين", "3 أيام" ... for the button that loads a year. */
+export function daysLabel(n: number): string {
+  if (n === 1) {
+    return 'يوم';
+  }
+  if (n === 2) {
+    return 'يومين';
+  }
+  return n <= 10 ? `${n} أيام` : `${n} يوم`;
 }
