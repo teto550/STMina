@@ -27,7 +27,6 @@ import '@/features/dashboard/dashboard';
 import '@/features/assistant/voice';
 import '@/features/students/student-profile';
 import '@/features/servants/deacons';
-import '@/features/servants/parts';
 import '@/features/servants/servants';
 import '@/features/import-export/import-attendance';
 import '@/features/import-export/import-students';

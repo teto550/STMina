@@ -169,8 +169,24 @@ service cloud.firestore {
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       );
-      // only an admin, and only to rename the servant (admin screen: rename a servant)
-      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deaconName']);
+      // editing a part (give it its type / servant later, change the day or the title; the admin screen also renames the servant): the
+      // manager of the class (or an admin), and only these fields: never the class, the section or who created it
+      allow update: if isApproved() && (
+        isAdmin() ||
+        (isLead() && myDoc().grade == resource.data.grade) ||
+        (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'title', 'date', 'deaconName', 'deaconId', 'updatedAt']);
+    }
+
+    // ===== occasions: the Christian occasions (feasts, fasts), ONE list for every class: { title, date } =====
+    // every approved account reads (a list query must be a range on `date`: one year at a time); only an admin writes
+    match /occasions/{occasionId} {
+      allow read: if isApproved();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'date'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+      allow delete: if isAdmin();
     }
 
     // أي حاجة تانية غير كده: ممنوعة

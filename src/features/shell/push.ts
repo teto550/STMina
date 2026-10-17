@@ -128,15 +128,3 @@ export async function notifyManagersPush(user) {
     });
   } catch (e) { console.warn('push notify error:', e); }
 }
-
-// بيتنادى وقت توزيع فقرة: بيبعت اسم الخادم وتفاصيل الفقرة للـ Worker على route جديد (/new-part)،
-// والـ Worker المفروض يدوّر على fcmTokens بتاعت الخادم ده في users ويبعتله Push فيها نوع وتفاصيل الفقرة
-export async function notifyDeaconPush(deaconName, part) {
-  if (!isPushWorkerReady()) return;
-  try {
-    const idToken = await auth.currentUser.getIdToken();
-    await http.post(workerUrl(PUSH_WORKER_URL, '/new-part'),
-      { deaconName, type: part.type, title: part.title, date: part.date, grade: part.grade },
-      { headers: { 'Authorization': 'Bearer ' + idToken }, timeout: 10000 });
-  } catch (e) { console.warn('part push notify error:', e); }
-}

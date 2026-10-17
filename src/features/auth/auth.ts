@@ -10,7 +10,6 @@ import { refreshAllData } from '@/core/data';
 // data when they are signed out.
 
 window.doLogout = async () => {
-  if (state.partNotifUnsub) { state.partNotifUnsub(); state.partNotifUnsub = null; }
   await logActivity('خرج من التطبيق');
   await signOut(auth);
 };

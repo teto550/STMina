@@ -1,7 +1,10 @@
 // @ts-nocheck
 import { state } from '@/core/state';
 import { loadPendingDeacons } from '@/features/servants/approvals';
-import { loadParts } from '@/features/servants/parts';
+import { DEACONS } from '@/features/servants/deacons';
+import { auth } from '@/core/firebase';
+import { isGradeManagerOf } from '@/core/session';
+import { sectionTag } from '@/core/section';
 import { initStatsTab } from '@/features/dashboard/stats';
 import { initOnlineTab } from '@/features/servants/online';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
@@ -26,9 +29,21 @@ async function loadTabData(tab) {
   if (tab === 'attendance') { updateStats(); renderTodayList(); }
   else if (tab === 'students') window.renderStudentsList();
   else if (tab === 'deacons') { window.buildDeaconChips(); if (isManager()) loadPendingDeacons(); }
-  else if (tab === 'parts') loadParts();
+  else if (tab === 'parts') showParts();
   else if (tab === 'stats') initStatsTab();
   else if (tab === 'online' && isManager()) initOnlineTab();
+}
+
+// "توزيع الفقرات" is the React screen 'parts' (src/react/screens/parts); it loads its own data and is drawn again each time the tab opens
+function showParts() {
+  window.openReactScreen('parts', document.getElementById('parts-screen'), {
+    grade: state.activeGrade,
+    section: sectionTag(),
+    canManage: isGradeManagerOf(state.activeGrade),
+    servants: DEACONS.slice(),
+    isAdmin: state.currentUserRole === 'admin',
+    user: { uid: auth.currentUser ? auth.currentUser.uid : '', name: state.currentUserName }
+  });
 }
 
 // after the active class changed: reload the screen that is open (nothing on the home screen)

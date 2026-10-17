@@ -169,3 +169,33 @@ denied (the "complete your data" page failed with "حدث خطأ"; the settings 
 - [ ] "+ شخص جديد" with no role, then that person registers (name picked from "إدارة ... من غير فصل" or their class) and is approved: signing in shows "لسه مفيش صلاحيات" instead of the tabs / dashboard; ⚙️ shows only الإعدادات, ملفي, notifications and sign out (no admin items).
 - [ ] Their profile (ملفي) and الإعدادات open and save; "تحديث" reloads.
 - [ ] An admin then adds them to a role (Roles screen -> People -> add to a role): after "تحديث" / reopening they get the tabs of that role. Removing their last role puts them back on "لسه مفيش صلاحيات".
+
+## Parts (توزيع الفقرات) in React (2026-10-17) - needs the rules deployed (editing a part)
+- [ ] The whole tab is the React screen `parts`: title, "➕ إضافة فقرة" (the class manager only), the list grouped by day with a loader, an error with retry and an empty state.
+- [ ] Any day works (pick a Monday): the day shows as "الاثنين 21-10"; the default is the coming Friday. The nearest day from today on is green, the others blue.
+- [ ] A part needs only a TITLE and a DAY: type and servant are optional ("من غير نوع" / "من غير خادم لسه"); such a part shows its title and "👤 لسه ماتحددش خادم".
+- [ ] Every day has a round "+" in its header (also when the day is closed): it opens the form on THAT day. In the form "💾 حفظ وفقرة تانية" saves and stays open on the same day with the rest cleared.
+- [ ] ✏️ on a part: change the title / day, or give it its type and servant later. Choosing a servant for the first time sends them the push notification (as before); nothing is sent when the servant stays the same.
+- [ ] 🗑 asks once ("أكيد؟ امسح"), then removes the part.
+- [ ] Someone who is not the manager of the class sees the parts only.
+- [ ] `npm run test:rules` passes (9 + 16 + 11 checks).
+- Removed: the in-app "🔔 اتوزعت عليك فقرة" toast: it never worked since the security rules were tightened (no rule for `part_notifications`, so every read and write was refused). The phone push still works.
+
+## Keyboard friendly on a phone: sheets and the parts form (2026-10-17) - test on a real phone
+- [ ] Every popup sheet (parts form, settings popups, role pickers, ...) fits the area ABOVE the on-screen keyboard: with the keyboard open the save buttons stay visible and the sheet scrolls; the field you tap scrolls into view.
+- [ ] Parts -> ➕: opens with the title focused and the keyboard up; the keyboard's "done" key saves. "💾 حفظ وفقرة تانية" saves, clears the form, keeps the same day and focuses the title again (keyboard stays up); after using it once, the "done" key keeps adding parts to that day, "💾 حفظ" ends it.
+- [ ] ✏️ edit does not pop the keyboard up (you may only want to pick the type or the servant).
+- [ ] Typing Arabic with the phone keyboard never saves by accident while a word is still being composed.
+
+## Occasions (المناسبات) under توزيع الفقرات (2026-10-17) - needs the rules deployed (new `occasions` collection)
+- [ ] Parts tab -> "🗓 المناسبات" opens a popup: ONE list for every class and both sections; nothing is read until it opens; one year at a time (the current year first, ‹ › for the other years).
+- [ ] An admin: "مناسبة جديدة" (a name and a day, both required), edit ✏️, delete 🗑 (asks once). Several occasions on one day are fine. Everyone else only reads.
+- [ ] The coming occasions are first ("الجاية", nearest first, with "بعد N يوم" / "بكرة" / "النهاردة"), then the ones that passed ("اللي عدّت", the most recent first).
+- [ ] Opening it again (or another year you already saw) costs NO reads: each year is kept in the browser for a week. "تحديث" reads the year again; a change you make shows at once on your phone and on the others after a week or their "تحديث".
+- [ ] The manager of the class sees "➕ فقرة" on each occasion: it closes the popup and opens the new-part form with the occasion as the title and the DAY EMPTY (required: pick it), focus on the day.
+- [ ] To add many at once, ask Claude to fetch a year's dates into a JSON file, then run `node tools/firestore/add-occasions.cjs file.json` (dry run first, then `--apply`).
+- [ ] `npm run test:rules` passes (9 + 16 + 11 + 13 checks).
+
+## Next occasion card + parts newest first (2026-10-17)
+- [ ] توزيع الفقرات: the FIRST thing under the main tabs is a green card "المناسبة الجاية" with the next occasion, its day and "بعد N يوم" (nothing when there is none or it cannot be read). Tapping it opens the whole list. It reads (and keeps for a week, like the popup) the current year only when the tab opens; at the very end of the year it also looks at the next year.
+- [ ] The parts are grouped by day with the LATEST day first; the next day from today on is still the green one (it can be in the middle of the list); old days are dimmer at the bottom.

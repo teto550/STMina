@@ -8,6 +8,7 @@ project. They talk to the Firebase MCP server through `npx firebase-tools@latest
   `--apply --limit 1` to test, then `--apply`. Only 'male' and 'female' are ever valid values.
 - `remove-word.cjs` – removes a whole word (default "مستر") from servant-name fields in all collections, trims spaces.
   Dry run by default (writes only a local backup); `--apply --limit 1` to test on one document, then `--apply`.
+- `add-occasions.cjs` – adds a JSON list of occasions (feasts / fasts: `{ title, date }`) to the `occasions` collection; only adds, skips ones that exist. Dry run by default; `--apply --limit 1`, then `--apply`. See `occasions.example.json`. (Ask Claude to fetch a year's dates into such a file first.)
 - One-off scripts used on 2026-09-24 in the first project (legacy collection cleanup) were removed after use; see git history
   (`git show cd33c1c:tools/firestore/cleanup-legacy.cjs`). In another project, run `analyze.cjs` first and adapt.
 

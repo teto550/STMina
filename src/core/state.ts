@@ -29,7 +29,6 @@ export const state = {
   ALL_DEACONS_RAW: [], // [{ id, name, grade }] — كل الخدام في كل السنين (مصدر واحد للحقيقة)
   currentDeacon: null,
   currentDeaconFilter: 'all', // 'all' | 'attendance' | 'absence' | 'birthday'
-  partNotifUnsub: null,
 };
 
 // Dev only: lets you inspect the state from the browser console (`__state`).

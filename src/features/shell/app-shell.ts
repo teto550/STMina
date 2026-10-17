@@ -7,7 +7,6 @@ import { saveProfileCache } from '@/core/firestore-helpers';
 import { logActivity, touchLastActive } from '@/core/presence';
 import { approveDeacon, loadPendingDeacons } from '@/features/servants/approvals';
 import { setupPushBell } from '@/features/shell/push';
-import { setupPartNotifications } from '@/features/servants/parts';
 import { auth } from '@/core/firebase';
 import { applyActiveGradeDeacons } from '@/features/servants/deacons';
 import { reloadOpenTab } from '@/features/shell/tabs';
@@ -87,12 +86,8 @@ function applyRoleUI() {
   if (isGradeManager || canUseServantsTab()) loadPendingDeacons();
   // 🔔 إشعارات الموبايل: زرار تفعيل الإشعارات ظاهر لكل خادم معتمد (مش بس المسؤولين) عشان يقدر ياخد Push لما يتوزع عليه فقرة
   setupPushBell(true);
-  // 🔔 إشعارات توزيع الفقرات: لأي خادم اتوزعت عليه فقرة (كل المستخدمين المعتمدين)
-  setupPartNotifications();
   // add deacon button: admin أو مسؤول السنة أو مسؤول المرحلة
   document.getElementById('add-deacon-btn-wrap').style.display = isGradeManager ? 'block' : 'none';
-  // add part button (توزيع الفقرات): بس مسؤول الفصل النشط ده تحديدًا (أو الأدمن)
-  document.getElementById('add-part-btn-wrap').style.display = isGradeManagerOf(state.activeGrade) ? 'block' : 'none';
   // promote grade year button: admin أو مسؤول السنة أو مسؤول المرحلة
   document.getElementById('promote-grade-btn').style.display = isGradeManager ? 'block' : 'none';
   // upload students-from-excel button: admin بس (بيرفع بيانات لكل السنة الدراسية النشطة activeGrade)
@@ -192,7 +187,6 @@ window.switchActiveGrade = async (g) => {
   if (state.ALL_DEACONS_RAW.length) applyActiveGradeDeacons();
   backToDeaconList();
   updateDeaconsTabLabel();
-  document.getElementById('add-part-btn-wrap').style.display = isGradeManagerOf(state.activeGrade) ? 'block' : 'none';
   await reloadOpenTab();
   showToast('السنة الدراسية النشطة: ' + g, 'success');
 };
