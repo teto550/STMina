@@ -18,6 +18,28 @@ is shown in the app (الإعدادات -> التطبيق, the update banner), w
   without the user's word, as usual).
 - This applies in every session and after compaction: re-read this section before deploying.
 
+## BACKEND ACCESS: one door, `src/api/` (STANDING RULE, set by the user 2026-10-18)
+Goal: if the project ever moves from Firebase to another backend (Supabase was considered, see the advice given 2026-10-18), the change must be
+minimal: a rewrite of `src/api/`, not of every screen. So **every backend call lives in `src/api/<feature>.ts`, and nowhere else.**
+- **Backend = Firestore, Auth, Storage, Messaging, and any worker/HTTP call.** Only `src/api/**`, `src/core/firebase.ts` (initialisation) and
+  `src/core/firestore-helpers.ts` may import `firebase/*`, `@/core/firebase` or `@/core/firestore-helpers`. Screens, components, hooks, schemas, `src/features/**`
+  and the rest of `src/core/**` never do. Non-Firebase HTTP goes through `src/core/http.ts` (axios), called from `src/api/` too.
+- **A new backend call = a new function in `src/api/<feature>.ts`** (reuse the feature's file), plain TypeScript, no React, typed. Hooks in
+  `src/react/hooks/` wrap it with React Query; screens call the hooks only.
+- **Backend-neutral boundary:** a function's name says what it does for the app (`saveAttendance`, `listPartsOfDay`), not how (`setDoc`, `onSnapshot`).
+  It takes and returns the app's own types (plain objects, ids, ISO date strings, `number` timestamps): never a `DocumentSnapshot`, `QueryDocumentSnapshot`,
+  `DocumentReference`, `Timestamp`, `serverTimestamp()`, `FieldValue` or `FirebaseError` outside `src/api/`. Live listeners are `subscribeX(cb)` returning an `unsubscribe`
+  function. Batching, paging and transactions stay inside the api function.
+- **Errors:** backend error codes (`permission-denied`, `auth/...`) are turned into app errors / messages in `src/api/errors.ts` only; UI code never tests a Firebase code.
+- **Touching an OLD file that still uses the backend directly** (the list is `tools/backend-imports-baseline.json`): move the direct calls of the lines you
+  change into `src/api/`, then remove the file from the list with `node tools/check-backend-imports.cjs --shrink`. Do not widen the old files.
+- **Enforced:** `npm run check:backend` (part of `npm run build`, tested in `src/core/__tests__/backend-boundary.test.ts`) fails when a file outside the allowed
+  places uses the backend and is not on the baseline, and when a file on the baseline became clean (so the list only shrinks). Never add a file to the baseline
+  by hand to make it pass: put the call in `src/api/` instead.
+- **Document what a migration needs:** when a collection, field or security rule is added, note it in `docs/ROLES-DESIGN.md` / `docs/SECURITY-SECTIONS.md` (or the
+  feature's doc) so the same access rules can be rewritten as Supabase RLS policies. Rules tests in `tools/rules-tests/` stay the specification of who may do what.
+- This applies in every session and after compaction: re-read this section before adding or changing any data call.
+
 ## Working agreements
 - **Do not commit (or push) until the user has verified the changes by hand and says so.** Leave edits in the working tree, say what
   changed and how to check it. **But `git add` every NEW core file as you create it** (source, tests, docs, schemas, hooks, the lockfile...)

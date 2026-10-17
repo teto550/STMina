@@ -36,6 +36,8 @@ time, or never.
 - **Schemas are global** in `src/schemas/<topic>.ts`; forms = react-hook-form + the zod resolver, using the shared form fields.
 - **Data through hooks:** `src/react/hooks/use<Feature>.ts` (React Query) wrapping plain functions in `src/api/`; non-Firebase HTTP uses the
   axios instance (`src/core/http.ts`). Every screen shows a **visible loader** and a **visible error** (with retry).
+- **Backend only in `src/api/`** (CLAUDE.md, BACKEND ACCESS): hooks, screens and components never import `firebase/*`, `@/core/firebase` or `@/core/firestore-helpers`,
+  and `src/api/` functions take and return plain app types (no snapshots, refs, `Timestamp`). `npm run check:backend` enforces it (legacy files: `tools/backend-imports-baseline.json`).
 - **react-if for conditions:** tabs are `<Switch><Case condition=...>`; async states are loading -> error -> empty -> data, on an enum (example: `auth/register/ClassAndNameFields.tsx`).
 - **No side channels** (event buses, globals) between old code and React when React can own the logic. A screen opened by the old code
   gets props only for data it truly needs from the caller (`edit-servant` gets the servant); `auth` takes none.

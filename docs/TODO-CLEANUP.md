@@ -36,6 +36,10 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
   How, when needed: (1) a script in `tools/firestore/` uploads each photo to `photos/students/{id}.jpg` / `photos/servants/{uid}.jpg` and replaces the field by the link (idempotent: skip values that already start with `http`; one read per document that has a photo, backup first);
   (2) `savePhoto()` in `src/api/photos.ts` uploads to Storage and stores the link, delete removes the file (the photo manager, the avatars and the lists do not change: `<Avatar src>` already takes a data URL or a link);
   (3) Storage rules: signed-in approved users read; a servant (or an admin) writes their own photo, an admin or the kid's servants write a kid's. Optional meanwhile: shrink the saved size from 480 to about 320 px (one constant in `src/core/image.ts`).
+- [ ] **Move the legacy backend calls into `src/api/`** (BACKEND ACCESS rule in CLAUDE.md, 2026-10-18). `tools/backend-imports-baseline.json` lists the 32 old files that still import
+  `firebase/*`, `@/core/firebase` or `@/core/firestore-helpers` directly (core: access-link, data, presence, servant-rename; features: assistant, attendance, auth, dashboard, import-export,
+  servants, shell, students; React: `useAuth.ts`, `admin-roles/data.ts`, `edit-servant`). Do it file by file when a screen is rewritten in React (or touched), then run
+  `node tools/check-backend-imports.cjs --shrink`. When the list is empty, a backend change (e.g. to Supabase) is a rewrite of `src/api/` only.
 - [ ] **Classes of servants that come from roles are not copied to the old `grade` field of the servants list**, which the class lists (servants of a class, the kids' servant dropdown) still read. "+ شخص جديد" sets it for the new person, but adding an EXISTING person to a class role (batch bar, role editor) does not change it. Make the class lists read the roles (or sync the field when roles change) before relying on roles alone.
 
 ## C. Decisions pending / postponed (roles design)

@@ -1,11 +1,11 @@
 {
   "name": "st-mina-attendance",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && npm run check:names && npm run check:braces && vite build",
+    "build": "npm run typecheck && npm run check:names && npm run check:braces && npm run check:backend && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.strict.json",
     "version:bump": "npm version patch --no-git-tag-version",
@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "test:rules": "firebase emulators:exec --only auth,firestore --project demo-stmina \"EXPECT=new node tools/rules-tests/users-self-edit.mjs && EXPECT=new node tools/rules-tests/servants-manager.mjs && EXPECT=new node tools/rules-tests/parts-edit.mjs && EXPECT=new node tools/rules-tests/occasions.mjs\"",
     "check:names": "node tools/check-undefined-names.cjs",
-    "check:braces": "node tools/check-braces.cjs --skip-nocheck src"
+    "check:braces": "node tools/check-braces.cjs --skip-nocheck src",
+    "check:backend": "node tools/check-backend-imports.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
