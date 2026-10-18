@@ -6,6 +6,7 @@ import '@/core/firebase';
 import '@/features/assistant/assistant';
 import '@/features/shell/push';
 import '@/features/shell/settings-menu';
+import '@/features/shell/theme';
 import '@/core/config';
 import '@/core/session';
 import '@/core/firestore-helpers';

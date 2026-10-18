@@ -248,3 +248,51 @@
   .home-tile:active { transform: scale(0.98); }
   .home-icon { font-size: 30px; line-height: 1; }
   .home-refresh { display: block; margin: 18px auto 0; background: transparent; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 600; padding: 8px 16px; cursor: pointer; }
+
+  /* ===== Light mode (settings menu -> "الوضع المظلم" switch; the default is still the dark look above) =====
+     Calm, soft blue-grey palette. Everything in the app is driven by the variables, so only the variables change;
+     the few hard-coded dark/pastel colours below are tuned for a light background. ===== */
+  html.light {
+    color-scheme: light;
+    --bg: #eef2f8;
+    --surface: #fbfcfe;
+    --surface2: #e8eef8;
+    --accent: #3f7be0;
+    --accent-rgb: 63,123,224;
+    --accent2: #7357b8;
+    --accent2-rgb: 115,87,184;
+    --success: #1f9d5b;
+    --warning: #c77d0a;
+    --danger: #d64545;
+    --text: #1f2a3d;
+    --text-dim: #5f6e86;
+    --border: rgba(63,91,140,0.16);
+    --section-rgb: 63,123,224;
+    --section-tint: 0.10;
+    --badge-rgb: 63,123,224;
+    --badge-text: #2f5fc4;
+  }
+  html.light #splash-screen { background: #eef2f8 !important; }
+  html.light #splash-screen div { color: #5f6e86 !important; }
+  html.light .modal-overlay { background: rgba(31,42,61,0.42); }
+  html.light #settings-menu { box-shadow: 0 8px 28px rgba(31,42,61,0.14) !important; }
+  html.light #toast { box-shadow: 0 6px 20px rgba(31,42,61,0.12); }
+  html.light #install-banner { background: linear-gradient(180deg, transparent 0%, #eef2f8 20%) !important; }
+  html.light #legacy-migrate-wrap button { color: #a8680a !important; }
+  html.light .dash-rank.top1 { color: #b07d00; }
+  html.light .dash-rank.top2 { background: rgba(120,135,150,0.18); color: #66758a; }
+  html.light .dash-rank.top3 { color: #c4600f; }
+  html.light .dash-pill.warn { background: rgba(199,125,10,0.14); color: #a8680a; }
+  html.light .date-chip.all { color: #6a49bd; }
+  html.light .rx-root { color-scheme: light; }
+  /* inline colours written by the scripts (status colours): darker shades so they stay readable on a light card */
+  html.light [style*="color:#f1c40f"], html.light [style*="color: #f1c40f"] { color: #a8680a !important; }
+  html.light [style*="color:#2ecc71"], html.light [style*="color: #2ecc71"] { color: #1f9d5b !important; }
+  html.light [style*="color:#e74c3c"], html.light [style*="color: #e74c3c"] { color: #d64545 !important; }
+  html.light [style*="color:#f39c12"], html.light [style*="color: #f39c12"] { color: #b9700a !important; }
+
+  /* ON/OFF switch in the settings menu (ON = dark mode, the default) */
+  .theme-switch { position: relative; width: 44px; height: 24px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0; transition: background 0.2s, border-color 0.2s; }
+  .theme-knob { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-dim); transition: transform 0.2s, background 0.2s; }
+  #theme-toggle-btn[aria-checked="true"] .theme-switch { background: var(--accent); border-color: var(--accent); }
+  #theme-toggle-btn[aria-checked="true"] .theme-knob { transform: translateX(-20px); background: #fff; }

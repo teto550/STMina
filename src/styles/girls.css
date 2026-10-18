@@ -10,3 +10,6 @@
   html.girls .top-bar { border-bottom: 1px solid rgba(160,120,240,0.35); border-radius: 0 0 18px 18px; }
   html.girls .grade-chip, html.girls .date-chip, html.girls .action-btn { border-radius: 999px; }
   html.girls .icon-btn { border-radius: 50%; }
+
+  /* light mode of the girls account: softer violet tint, darker badge text */
+  html.girls.light { --section-tint: 0.14; --badge-text: #6a45c4; }

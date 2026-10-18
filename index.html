@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1f2e">
-<script>try{if(localStorage.getItem('appSection')==='girls'&&localStorage.getItem('appSessionHint')==='1'){document.documentElement.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content','#221e38');}}catch(e){}</script>
+<script>try{var d=document.documentElement,l=localStorage.getItem('appTheme')==='light',g=localStorage.getItem('appSection')==='girls'&&localStorage.getItem('appSessionHint')==='1';if(l)d.classList.add('light');if(g)d.classList.add('girls');document.querySelector('meta[name="theme-color"]').setAttribute('content',l?(g?'#ece6f8':'#e4ebf7'):(g?'#221e38':'#1a1f2e'));}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="خدمة ابتدائي">
@@ -163,6 +163,7 @@
       <button class="icon-btn" id="settings-gear-btn" onclick="toggleSettingsMenu(event)" title="الإعدادات">⚙️</button>
       <div id="settings-menu" style="display:none;position:absolute;top:48px;left:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 32px rgba(0,0,0,0.45);min-width:210px;z-index:200;overflow:hidden">
         <button onclick="closeSettingsMenu();openMyProfile()" style="width:100%;text-align:right;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:8px">👤 ملفي</button>
+        <button id="theme-toggle-btn" type="button" role="switch" aria-checked="true" onclick="toggleTheme()" style="width:100%;text-align:right;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px"><span>🌙 الوضع المظلم</span><span class="theme-switch"><span class="theme-knob"></span></span></button>
         <button id="push-bell-btn" onclick="enablePushNotifications()" style="display:none;width:100%;text-align:right;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;align-items:center;gap:8px">🔕 شغّل الإشعارات</button>
         <div id="admin-settings-wrap" style="display:none;border-bottom:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--text-dim);padding:8px 16px 0">إعدادات الأدمن</div>

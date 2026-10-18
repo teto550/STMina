@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { syncThemeColorMeta } from '@/features/shell/theme';
 import { state } from '@/core/state';
 import { canOpenSection, canSwitchSection } from '@/core/access-config';
 
@@ -144,12 +145,10 @@ if (sectionBadge) sectionBadge.textContent = SECTION === 'girls' ? '🌸 حسا�
 // The girls look only applies inside the app (after login). Login / pending / complete-profile screens
 // always use the default blue. `appSessionHint` lets the inline <head> script apply the right theme
 // before first paint on a reload, so a girls session doesn't flash blue.
-const THEME_COLOR = { boys: '#1a1f2e', girls: '#221e38' }; // browser bar: dark blue / dark violet
 export function applySectionTheme(inApp) {
   const girls = inApp && SECTION === 'girls';
   document.documentElement.classList.toggle('girls', girls);
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', girls ? THEME_COLOR.girls : THEME_COLOR.boys);
+  syncThemeColorMeta();
   document.title = girls ? 'خدمة ابتدائي 🌸 بنات' : 'خدمة ابتدائي';
   try { if (inApp) localStorage.setItem('appSessionHint', '1'); else localStorage.removeItem('appSessionHint'); } catch (e) {}
 }
