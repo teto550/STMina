@@ -75,6 +75,11 @@ await check('9. an admin edits any part', true, () => updateDoc(part(), give));
 await check('10. an admin renames the servant on a part (the admin screen rename keeps working)', true, () => updateDoc(part(), { deaconName: 'مينا (جديد)' }));
 await check('11. must stay forbidden even for an admin: other fields', false, () => updateDoc(part(), { createdByName: 'x' }));
 
+await as('lead4');
+await check('12. the manager of the class adds a reference (notes / links, several lines) to a part', true, () => updateDoc(part(), { reference: 'https://example.com/a\nملاحظة', updatedAt: serverTimestamp() }));
+await as('plain');
+await check('13. must stay forbidden: a servant who is not a manager changes the reference', false, () => updateDoc(part(), { reference: 'x', updatedAt: serverTimestamp() }));
+
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}\n      expected ${r.expected}, got ${r.outcome}${r.detail ? `  -> ${r.detail}` : ''}`);
 }

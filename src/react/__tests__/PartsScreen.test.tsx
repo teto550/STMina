@@ -15,7 +15,7 @@ const part = (id: string, date: string, over: Partial<Part> = {}): Part => ({ id
 const parts = [
   part('ترنيمة الدخول', '2030-10-18', { type: 'الترانيم', deaconName: 'مينا' }),
   part('فقرة من غير نوع', '2030-10-18'),
-  part('درس الإثنين', '2030-10-21', { type: 'الدرس', deaconName: 'ماركو' }),
+  part('درس الإثنين', '2030-10-21', { type: 'الدرس', deaconName: 'ماركو', reference: 'المرجع: https://example.com/lesson\nصفحة ٢٠' }),
 ];
 
 // each test uses its own class: which days are open is remembered per class while the app runs
@@ -116,6 +116,23 @@ describe('PartsScreen: the list (loader, error, empty, data)', () => {
     expect(screen.getByText('👤 مينا')).toBeInTheDocument();
   });
 
+  it('shows the reference under the title with its links tappable, and nothing when there is none', async () => {
+    const { user } = setup();
+    await open(user, /يوم الاثنين 21-10/);
+    expect(screen.getByRole('link', { name: 'https://example.com/lesson' })).toHaveAttribute('href', 'https://example.com/lesson');
+    expect(screen.getByText(/المرجع:/)).toHaveTextContent('المرجع: https://example.com/lesson صفحة ٢٠');
+    await user.click(screen.getByRole('button', { name: /يوم الجمعة 18-10/ }));
+    expect(screen.getAllByRole('link')).toHaveLength(1); // the parts of that day have no reference
+  });
+
+  it('a link in the title is tappable too', async () => {
+    h.fetchParts.mockResolvedValue([part('اسمع https://youtu.be/x', '2030-10-18')]);
+    const user = userEvent.setup();
+    renderWithQuery(<PartsScreen grade="سنة رابعة 94" section="boys" canManage isAdmin={false} servants={[]} user={{ uid: 'u', name: 'n' }} />);
+    await open(user, /يوم الجمعة 18-10/);
+    expect(screen.getByRole('link', { name: 'https://youtu.be/x' })).toHaveAttribute('href', 'https://youtu.be/x');
+  });
+
   it('error with a retry, and the empty state', async () => {
     const user = userEvent.setup();
     h.fetchParts.mockRejectedValueOnce(new Error('offline')).mockResolvedValue([]);
@@ -160,6 +177,43 @@ describe('PartsScreen: adding', () => {
     await user.click(sheet.getByRole('button', { name: '💾 حفظ' }));
     expect(await screen.findByText('فقرة قديمة')).toBeInTheDocument();
     expect(screen.getByText('2020')).toBeInTheDocument();
+  });
+
+  it('the reference is a multi-line box: Enter makes a new line (it does not save) and the lines are saved with the part', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('button', { name: 'إضافة فقرة' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'إضافة فقرة' }));
+    await user.type(sheet.getByLabelText(/تفاصيل الفقرة/), 'ترنيمة');
+    const reference = sheet.getByLabelText(/مرجع/);
+    expect(reference.tagName).toBe('TEXTAREA');
+    await user.type(reference, 'سطر أول{Enter}https://example.com/x');
+    expect(h.createPart).not.toHaveBeenCalled(); // Enter in the box is a new line
+    expect(reference).toHaveValue('سطر أول\nhttps://example.com/x');
+    await user.click(sheet.getByRole('button', { name: '💾 حفظ' }));
+    await waitFor(() => expect(h.createPart).toHaveBeenCalled());
+    expect(h.createPart.mock.calls[0]![0]).toMatchObject({ input: { title: 'ترنيمة', reference: 'سطر أول\nhttps://example.com/x' } });
+  });
+
+  it('the reference is optional', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('button', { name: 'إضافة فقرة' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'إضافة فقرة' }));
+    expect(sheet.getByLabelText(/مرجع/)).toHaveValue('');
+    await user.type(sheet.getByLabelText(/تفاصيل الفقرة/), 'بدون مرجع');
+    await user.click(sheet.getByRole('button', { name: '💾 حفظ' }));
+    await waitFor(() => expect(h.createPart).toHaveBeenCalled());
+    expect(h.createPart.mock.calls[0]![0]).toMatchObject({ input: { reference: '' } });
+  });
+
+  it('"حفظ وفقرة تانية" clears the reference too', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('button', { name: /إضافة فقرة تانية في الجمعة 18-10/ }));
+    const sheet = within(screen.getByRole('dialog', { name: 'إضافة فقرة' }));
+    await user.type(sheet.getByLabelText(/تفاصيل الفقرة/), 'الأولى');
+    await user.type(sheet.getByLabelText(/مرجع/), 'ملاحظة');
+    await user.click(sheet.getByRole('button', { name: '💾 حفظ وفقرة تانية' }));
+    await waitFor(() => expect(h.createPart).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(sheet.getByLabelText(/مرجع/)).toHaveValue(''));
   });
 
   it('the title and the day are required', async () => {
@@ -265,6 +319,20 @@ describe('PartsScreen: editing and deleting', () => {
     await waitFor(() => expect(h.updatePart).toHaveBeenCalled());
     expect(h.updatePart.mock.calls[0]![0]).toMatchObject({ before: { id: 'فقرة من غير نوع' }, input: { type: 'الصلاة', deaconName: 'ماركو', title: 'فقرة من غير نوع' } });
     expect(await screen.findByText('👤 ماركو')).toBeInTheDocument();
+  });
+
+  it('editing shows the saved reference and can change it', async () => {
+    const { user } = setup();
+    await open(user, /يوم الاثنين 21-10/);
+    await user.click(screen.getByRole('button', { name: 'تعديل درس الإثنين' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'تعديل الفقرة' }));
+    expect(sheet.getByLabelText(/مرجع/)).toHaveValue('المرجع: https://example.com/lesson\nصفحة ٢٠');
+    await user.clear(sheet.getByLabelText(/مرجع/));
+    await user.type(sheet.getByLabelText(/مرجع/), 'مرجع جديد');
+    await user.click(sheet.getByRole('button', { name: '💾 حفظ' }));
+    await waitFor(() => expect(h.updatePart).toHaveBeenCalled());
+    expect(h.updatePart.mock.calls[0]![0]).toMatchObject({ input: { reference: 'مرجع جديد' } });
+    expect(await screen.findByText('مرجع جديد')).toBeInTheDocument();
   });
 
   it('deleting asks once, then removes the part from the list', async () => {

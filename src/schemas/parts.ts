@@ -11,5 +11,7 @@ export const partSchema = z.object({
   type: z.string().refine((v) => v === '' || (PART_TYPES as readonly string[]).includes(v), 'نوع الفقرة مش معروف'),
   /** '' = no servant yet */
   deaconName: z.string(),
+  /** optional notes or links for the part: several lines, any web link in it is tappable */
+  reference: z.string().trim().max(2000, 'المرجع طويل أوي (٢٠٠٠ حرف بالكتير)'),
 });
 export type PartValues = z.infer<typeof partSchema>;

@@ -179,9 +179,10 @@ denied (the "complete your data" page failed with "حدث خطأ"; the settings 
 - [ ] A part needs only a TITLE and a DAY: type and servant are optional ("من غير نوع" / "من غير خادم لسه"); such a part shows its title and "👤 لسه ماتحددش خادم".
 - [ ] Every day has a round "+" in its header (also when the day is closed): it opens the form on THAT day. In the form "💾 حفظ وفقرة تانية" saves and stays open on the same day with the rest cleared.
 - [ ] ✏️ on a part: change the title / day, or give it its type and servant later. Choosing a servant for the first time sends them the push notification (as before); nothing is sent when the servant stays the same.
+- [ ] **Reference (مرجع / ملاحظات, optional, 2026-10-18) - needs the rules deployed first** (editing a part writes the new `reference` field; the old rules refuse it): in ➕ and ✏️ a multi-line box under the servant. Enter makes a new line (it does not save); write a few lines with a link (`https://...` or `www....`). The part shows the lines under its title and the link is tappable (opens in a new tab); a full stop or bracket right after the link is not part of it. A link typed in the title itself is tappable too. "💾 حفظ وفقرة تانية" clears the box. Old parts have no reference and look as before.
 - [ ] 🗑 asks once ("أكيد؟ امسح"), then removes the part.
 - [ ] Someone who is not the manager of the class sees the parts only.
-- [ ] `npm run test:rules` passes (9 + 16 + 11 checks).
+- [ ] `npm run test:rules` passes (9 + 16 + 13 checks).
 - Removed: the in-app "🔔 اتوزعت عليك فقرة" toast: it never worked since the security rules were tightened (no rule for `part_notifications`, so every read and write was refused). The phone push still works.
 
 ## Keyboard friendly on a phone: sheets and the parts form (2026-10-17) - test on a real phone
@@ -197,7 +198,7 @@ denied (the "complete your data" page failed with "حدث خطأ"; the settings 
 - [ ] Opening it again (or another year you already saw) costs NO reads: each year is kept in the browser for a week. "تحديث" reads the year again; a change you make shows at once on your phone and on the others after a week or their "تحديث".
 - [ ] The manager of the class sees "➕ فقرة" on each occasion: it closes the popup and opens the new-part form with the occasion as the title and the DAY EMPTY (required: pick it), focus on the day.
 - [ ] To add many at once, ask Claude to fetch a year's dates into a JSON file, then run `node tools/firestore/add-occasions.cjs file.json` (dry run first, then `--apply`).
-- [ ] `npm run test:rules` passes (9 + 16 + 11 + 13 checks).
+- [ ] `npm run test:rules` passes (9 + 16 + 13 + 13 checks: users, servants managers, parts, occasions).
 
 ## Next occasion card + parts newest first (2026-10-17)
 - [ ] توزيع الفقرات: the FIRST thing under the main tabs is a green card "المناسبة الجاية" with the next occasion, its day and "بعد N يوم" (nothing when there is none or it cannot be read). Tapping it opens the whole list. It reads (and keeps for a week, like the popup) the current year only when the tab opens; at the very end of the year it also looks at the next year.

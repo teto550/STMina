@@ -6,6 +6,7 @@ import { Button } from '@/react/components/ui/button';
 import { inputClass } from '@/react/components/ui/input';
 import { Select } from '@/react/components/ui/select';
 import { Sheet } from '@/react/components/ui/sheet';
+import { cn } from '@/react/lib/utils';
 import { PART_TYPES, partSchema, type PartValues } from '@/schemas/parts';
 import { weekdayOf } from './logic';
 
@@ -65,7 +66,7 @@ export const PartFormSheet: FC<PartFormSheetProps> = ({ mode, initial, servants,
       await onSave(values);
       if (another.current) {
         // the next part of the same day: everything but the day is cleared
-        reset({ title: '', date: values.date, type: '', deaconName: '' });
+        reset({ title: '', date: values.date, type: '', deaconName: '', reference: '' });
         setAdded(values.title.trim());
         setRefocus((n) => n + 1); // the keyboard stays open for the next title (focused once the form is drawn again)
       } else {
@@ -125,6 +126,11 @@ export const PartFormSheet: FC<PartFormSheetProps> = ({ mode, initial, servants,
             {options.map((n) => <option key={n} value={n}>{n}</option>)}
           </Select>
           <span className="tw:text-xs tw:font-normal tw:text-dim">لما تختار خادم بياخد إشعار بالفقرة.</span>
+        </label>
+        <label className="tw:flex tw:flex-col tw:gap-1 tw:text-sm tw:font-bold">مرجع / ملاحظات (اختياري)
+          <textarea className={cn(inputClass, 'tw:h-auto tw:min-h-24 tw:py-2.5 tw:leading-relaxed')} rows={3} placeholder="أي ملاحظات، أو لينك للترنيمة أو الدرس" autoComplete="off" {...register('reference')} />
+          <span className="tw:text-xs tw:font-normal tw:text-dim">ينفع تكتب كذا سطر، واللينكات بتتفتح بلمسة.</span>
+          {errors.reference && <span className="tw:text-xs tw:font-normal tw:text-bad">{errors.reference.message}</span>}
         </label>
         {problem && <Alert onDismiss={() => setProblem(null)}>{problem}</Alert>}
       </form>

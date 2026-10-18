@@ -18,6 +18,8 @@ export interface Part {
   /** '' = nobody yet */
   deaconName: string;
   deaconId?: string | null;
+  /** optional notes or links, several lines; missing on parts saved before the field existed */
+  reference?: string;
   section?: string;
   createdAt?: { seconds: number };
 }
@@ -27,6 +29,7 @@ export interface PartInput {
   title: string;
   date: string;
   deaconName: string;
+  reference: string;
 }
 
 const PUSH_WORKER_URL: string = import.meta.env.VITE_PUSH_WORKER_URL || '';
@@ -68,6 +71,7 @@ export async function createPart({ grade, section, input, by }: { grade: string;
     deaconId: input.deaconName ? deaconIdOfName(input.deaconName, section) : null,
     title: input.title,
     date: input.date,
+    reference: input.reference,
     section,
     createdByUid: by.uid,
     createdByName: by.name,
@@ -80,7 +84,7 @@ export async function createPart({ grade, section, input, by }: { grade: string;
 /** Edits a part: its day, title, type or servant (the class never changes). The servant is told only when they are newly given it. */
 export async function updatePart({ before, section, input }: { before: Part; section: Section; input: PartInput }): Promise<Part> {
   const deaconId = input.deaconName ? deaconIdOfName(input.deaconName, section) : null;
-  await updateDoc(doc(db, 'parts_distribution', before.id), { type: input.type, title: input.title, date: input.date, deaconName: input.deaconName, deaconId, updatedAt: serverTimestamp() });
+  await updateDoc(doc(db, 'parts_distribution', before.id), { type: input.type, title: input.title, date: input.date, reference: input.reference, deaconName: input.deaconName, deaconId, updatedAt: serverTimestamp() });
   if (input.deaconName && input.deaconName !== before.deaconName) {
     void tellServant(input, before.grade);
   }

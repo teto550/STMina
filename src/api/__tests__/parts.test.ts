@@ -34,15 +34,21 @@ describe('fetchParts', () => {
 
 describe('createPart', () => {
   it('a part with only a title and a day: no type, no servant, nobody is told', async () => {
-    const part = await createPart({ grade: 'g4', section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '' }, by });
+    const part = await createPart({ grade: 'g4', section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '', reference: '' }, by });
     expect(addDoc.mock.calls[0]![1]).toMatchObject({ grade: 'g4', type: '', deaconName: '', deaconId: null, title: 'ترنيمة', date: '2026-10-19', section: 'boys', createdByUid: 'u1' });
     expect(part).toMatchObject({ id: 'new1', title: 'ترنيمة', date: '2026-10-19' });
     await tick();
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('stores the reference (notes and links, several lines) with the part', async () => {
+    const part = await createPart({ grade: 'g4', section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '', reference: 'https://example.com/a\nالسطر التاني' }, by });
+    expect(addDoc.mock.calls[0]![1]).toMatchObject({ reference: 'https://example.com/a\nالسطر التاني' });
+    expect(part.reference).toBe('https://example.com/a\nالسطر التاني');
+  });
+
   it('with a servant: the id of the servant is stored and they get a push (a part without a type is announced as "فقرة")', async () => {
-    await createPart({ grade: 'g4', section: 'boys', input: { type: '', title: 'درس', date: '2026-10-19', deaconName: 'مينا' }, by });
+    await createPart({ grade: 'g4', section: 'boys', input: { type: '', title: 'درس', date: '2026-10-19', deaconName: 'مينا', reference: '' }, by });
     expect(addDoc.mock.calls[0]![1]).toMatchObject({ deaconName: 'مينا', deaconId: 'p1' });
     await tick();
     expect(post).toHaveBeenCalledWith('https://push.example.test/new-part', { deaconName: 'مينا', type: 'فقرة', title: 'درس', date: '2026-10-19', grade: 'g4' }, expect.anything());
@@ -51,7 +57,7 @@ describe('createPart', () => {
   it('a failing push never fails the save', async () => {
     post.mockRejectedValueOnce(new Error('worker down'));
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    await expect(createPart({ grade: 'g4', section: 'boys', input: { type: 'الدرس', title: 'x', date: '2026-10-19', deaconName: 'مينا' }, by })).resolves.toBeTruthy();
+    await expect(createPart({ grade: 'g4', section: 'boys', input: { type: 'الدرس', title: 'x', date: '2026-10-19', deaconName: 'مينا', reference: '' }, by })).resolves.toBeTruthy();
   });
 });
 
@@ -59,17 +65,25 @@ describe('updatePart', () => {
   const before: Part = { id: 'p9', grade: 'g4', type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '' };
 
   it('gives a part its type and servant later: only those fields are written, and the new servant is told', async () => {
-    const saved = await updatePart({ before, section: 'boys', input: { type: 'الترانيم', title: 'ترنيمة', date: '2026-10-19', deaconName: 'مينا' } });
+    const saved = await updatePart({ before, section: 'boys', input: { type: 'الترانيم', title: 'ترنيمة', date: '2026-10-19', deaconName: 'مينا', reference: '' } });
     expect(updateDoc.mock.calls[0]![0]).toBe('parts_distribution/p9');
-    expect(Object.keys(updateDoc.mock.calls[0]![1] as object).sort()).toEqual(['date', 'deaconId', 'deaconName', 'title', 'type', 'updatedAt']);
+    expect(Object.keys(updateDoc.mock.calls[0]![1] as object).sort()).toEqual(['date', 'deaconId', 'deaconName', 'reference', 'title', 'type', 'updatedAt']);
     expect(saved).toMatchObject({ type: 'الترانيم', deaconName: 'مينا', deaconId: 'p1', grade: 'g4' });
     await tick();
     expect(post).toHaveBeenCalledTimes(1);
   });
 
+  it('changes the reference of a part without telling anybody', async () => {
+    const saved = await updatePart({ before, section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '', reference: 'www.example.com' } });
+    expect(updateDoc.mock.calls[0]![1]).toMatchObject({ reference: 'www.example.com' });
+    expect(saved.reference).toBe('www.example.com');
+    await tick();
+    expect(post).not.toHaveBeenCalled();
+  });
+
   it('nobody is told again when the servant stays the same, or is taken off', async () => {
-    await updatePart({ before: { ...before, deaconName: 'مينا' }, section: 'boys', input: { type: 'الدرس', title: 'ترنيمة', date: '2026-10-19', deaconName: 'مينا' } });
-    await updatePart({ before: { ...before, deaconName: 'مينا' }, section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '' } });
+    await updatePart({ before: { ...before, deaconName: 'مينا' }, section: 'boys', input: { type: 'الدرس', title: 'ترنيمة', date: '2026-10-19', deaconName: 'مينا', reference: '' } });
+    await updatePart({ before: { ...before, deaconName: 'مينا' }, section: 'boys', input: { type: '', title: 'ترنيمة', date: '2026-10-19', deaconName: '', reference: '' } });
     await tick();
     expect(post).not.toHaveBeenCalled();
   });

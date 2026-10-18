@@ -169,13 +169,13 @@ service cloud.firestore {
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       );
-      // editing a part (give it its type / servant later, change the day or the title; the admin screen also renames the servant): the
+      // editing a part (give it its type / servant later, change the day, the title or the reference; the admin screen also renames the servant): the
       // manager of the class (or an admin), and only these fields: never the class, the section or who created it
       allow update: if isApproved() && (
         isAdmin() ||
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
-      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'title', 'date', 'deaconName', 'deaconId', 'updatedAt']);
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'title', 'date', 'reference', 'deaconName', 'deaconId', 'updatedAt']);
     }
 
     // ===== occasions: the Christian occasions (feasts, fasts), ONE list for every class: { title, date } =====

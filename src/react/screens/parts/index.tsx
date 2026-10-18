@@ -86,7 +86,7 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
     view = PartsView.Empty;
   }
 
-  const blank = (date: string): PartValues => ({ title: '', date, type: '', deaconName: '' });
+  const blank = (date: string): PartValues => ({ title: '', date, type: '', deaconName: '', reference: '' });
 
   return (
     <section aria-label="توزيع الفقرات" className="tw:flex tw:flex-col tw:gap-3">
@@ -141,7 +141,7 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
                     busyId={remove.isPending ? (remove.variables ?? null) : null}
                     onToggle={() => setDay(g.date, !open.has(g.date))}
                     onAdd={() => setForm({ mode: 'add', initial: blank(g.date) })}
-                    onEdit={(part) => setForm({ mode: 'edit', part, initial: { title: part.title, date: part.date, type: part.type, deaconName: part.deaconName } })}
+                    onEdit={(part) => setForm({ mode: 'edit', part, initial: { title: part.title, date: part.date, type: part.type, deaconName: part.deaconName, reference: part.reference ?? '' } })}
                     onDelete={(part) => remove.mutate(part.id, { onError: () => setProblem('مقدرناش نمسح الفقرة') })}
                   />
                 </Fragment>
@@ -170,7 +170,7 @@ const PartsScreen: FC<PartsScreenProps> = ({ grade, section, canManage, servants
           servants={servants}
           onClose={() => setForm(null)}
           onSave={async (values) => {
-            await save.mutateAsync({ part: form.part, input: { type: values.type, title: values.title.trim(), date: values.date, deaconName: values.deaconName } });
+            await save.mutateAsync({ part: form.part, input: { type: values.type, title: values.title.trim(), date: values.date, deaconName: values.deaconName, reference: values.reference } });
             setDay(values.date, true); // the day of the part is opened, so it shows up
             if (values.date < today) {
               // a day that has passed: its year is loaded too, otherwise the part would stay hidden
