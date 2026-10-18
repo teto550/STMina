@@ -14,7 +14,7 @@ describe('gradeNumber', () => {
 
 describe('legacyAccess (today\'s fields)', () => {
   it('gives a male servant the male cell of his class', () => {
-    expect(legacyAccess({ role: 'deacon', gender: 'male', grade: 'سنة رابعة ابتدائي' })).toEqual({ admin: false, cells: ['male:4'], sections: ['boys'] });
+    expect(legacyAccess({ role: 'deacon', gender: 'male', grade: 'سنة رابعة ابتدائي' })).toEqual({ admin: false, cells: ['male:4'], sections: ['boys'], servants: [] });
   });
   it('adds the phase grades', () => {
     const a = legacyAccess({ role: 'deacon', gender: 'male', grade: 'سنة تالتة ابتدائي', phaseGrades: ['سنة رابعة ابتدائي'] });
@@ -22,7 +22,7 @@ describe('legacyAccess (today\'s fields)', () => {
   });
   it('a servant of grade 1-2 gets both cells of the class and the girls section', () => {
     const a = legacyAccess({ role: 'deacon', gender: 'female', grade: 'سنة أولى ابتدائي' });
-    expect(a).toEqual({ admin: false, cells: ['female:1', 'male:1'], sections: ['girls'] });
+    expect(a).toEqual({ admin: false, cells: ['female:1', 'male:1'], sections: ['girls'], servants: [] });
   });
   it('keeps admins as admins', () => expect(legacyAccess({ role: 'admin' }).admin).toBe(true));
   it('a servant with no class has no cells', () => expect(legacyAccess({ role: 'deacon' }).cells).toEqual([]));
@@ -30,12 +30,12 @@ describe('legacyAccess (today\'s fields)', () => {
 
 describe('resolveAccess', () => {
   it('uses the stored snapshot when there is one', () => {
-    const r = resolveAccess({ role: 'deacon', grade: 'سنة رابعة ابتدائي', access: { admin: false, cells: ['male:5'] } });
+    const r = resolveAccess({ role: 'deacon', grade: 'سنة رابعة ابتدائي', access: { admin: false, cells: ['male:5'], servants: [] } });
     expect(r.source).toBe('roles');
     expect(r.access.cells).toEqual(['male:5']);
   });
   it('keeps a legacy admin an admin even if the snapshot says otherwise', () => {
-    expect(resolveAccess({ role: 'admin', access: { admin: false, cells: [] } }).access.admin).toBe(true);
+    expect(resolveAccess({ role: 'admin', access: { admin: false, cells: [], servants: [] } }).access.admin).toBe(true);
   });
   it('ignores unusable cells in a snapshot', () => {
     expect(storedAccess({ access: { cells: ['male:9', 'nonsense', 'male:3'] } })?.cells).toEqual(['male:3']);
@@ -56,4 +56,13 @@ describe('newKidFields', () => {
     expect(newKidFields('girls', 'سنة أولى ابتدائي')).toBeNull();
   });
   it('unknown grade: null', () => expect(newKidFields('boys', 'x')).toBeNull());
+});
+
+describe('the stored snapshot carries the servants a person manages', () => {
+  it('reads them, ignoring junk, and older snapshots without the field mean none', () => {
+    const withServants = resolveAccess({ role: 'deacon', access: { admin: false, cells: ['male:3'], servants: ['male', 'robot'] } });
+    expect(withServants.access.servants).toEqual(['male']);
+    expect(resolveAccess({ role: 'deacon', access: { admin: false, cells: ['male:3'] } }).access.servants).toEqual([]);
+    expect(legacyAccess({ role: 'deacon', gender: 'male', grade: 'سنة رابعة ابتدائي' }).servants).toEqual([]);
+  });
 });

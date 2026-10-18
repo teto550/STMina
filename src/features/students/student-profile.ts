@@ -6,6 +6,7 @@ import { credsEsc } from '@/features/import-export/import-creds';
 import { getDocFast, getDocsTtl } from '@/core/firestore-helpers';
 import { inCurrentSection } from '@/core/section';
 import { db } from '@/core/firebase';
+import { avatarPlaceholder } from '@/features/students/photos';
 import { logActivity } from '@/core/presence';
 
 // ===== STUDENT PROFILE =====
@@ -16,12 +17,7 @@ window.openProfile = (id) => {
   // Header
   document.getElementById('prof-edit-id').value = id;
   const profAvatar = document.getElementById('prof-avatar');
-  if (s.photo) {
-    profAvatar.innerHTML = `<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;cursor:zoom-in" onclick="openLightbox('${s.photo}')">`;
-  } else {
-    profAvatar.innerHTML = '';
-    profAvatar.textContent = s.name.trim()[0] || '؟';
-  }
+  profAvatar.innerHTML = avatarPlaceholder(s.name, s.photo, 56, { accent: true, photoTarget: `student:${s.id}` });
   document.getElementById('prof-name').textContent   = s.name;
   document.getElementById('prof-grade').textContent  = s.grade || '';
 

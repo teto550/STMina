@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { getPreferences } from '@/api/preferences';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore';
 import { deaconNameOf } from '@/core/servants-index';
 import { state } from '@/core/state';
@@ -190,8 +191,9 @@ window.manualToggleAttendance = async (id) => {
   // clear the search box so the next name can be typed right away — only
   // if it's the field currently being used (avoid stealing focus/scroll
   // when the toggle was tapped from elsewhere, like today's list)
+  // (skipped when the person turned "الرجوع لخانة البحث" off in الإعدادات: they scroll the list and keep marking)
   const input = document.getElementById('manual-search');
-  if (document.activeElement === input || input.value.trim()) {
+  if (getPreferences().focusSearchAfterMark && (document.activeElement === input || input.value.trim())) {
     input.value = '';
     document.getElementById('manual-results').innerHTML = '';
     input.focus();

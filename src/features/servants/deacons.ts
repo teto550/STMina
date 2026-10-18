@@ -22,7 +22,6 @@ export async function loadDeaconsList() {
       .filter(x => x.name && x.section === SECTION);
   } catch(e) { console.error('loadDeaconsList error:', e.code || e.message || e); state.ALL_DEACONS_RAW = []; }
   applyActiveGradeDeacons();
-  populateRegDeaconSelect();
 }
 
 // يحدد DEACONS/DEACON_DOC_IDS بناءً على السنة الدراسية النشطة (activeGrade) والقسم النشط (بنين/بنات) بس
@@ -51,35 +50,12 @@ export async function loadDeaconUsersMap() {
         isPhaseLead: !!u.isPhaseLead || phaseGrades.length > 0, phaseGrades,
         phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []), phone: u.phone || '',
         address: u.address || '', dob: u.dob || '',
-        graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+        graduated: !!u.graduated, college: u.college || '', university: u.university || '', photo: u.photo || ''
       };
     });
     DEACON_ADMIN_MAP = map;
   } catch(e) { console.error('loadDeaconUsersMap error:', e.code || e.message || e); }
 }
-
-// Fill the "register as new deacon" name dropdown — بيتفلتر حسب السنة المختارة في فورم التسجيل
-window.populateRegDeaconSelect = function() {
-  const sel = document.getElementById('reg-name');
-  const gradeSel = document.getElementById('reg-grade');
-  if (!sel) return;
-  const grade = gradeSel ? gradeSel.value : '';
-  const cur = sel.value;
-  if (!grade) {
-    sel.innerHTML = `<option value="">اختر السنة الدراسية الأول</option>`;
-    return;
-  }
-  const names = state.ALL_DEACONS_RAW
-    .filter(x => x.grade === grade)
-    .map(x => x.name)
-    .sort((a, b) => a.localeCompare(b, 'ar'));
-  if (!names.length) {
-    sel.innerHTML = `<option value="">لا يوجد خدام مسجلين في السنة دي — كلم الأدمن</option>`;
-    return;
-  }
-  sel.innerHTML = `<option value="">اختر اسمك من القائمة</option>` +
-    names.map(d => `<option${cur===d?' selected':''}>${d}</option>`).join('');
-};
 
 function refreshDeaconDropdowns() {
   // Update new-deacon select in add student form

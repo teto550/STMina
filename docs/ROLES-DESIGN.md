@@ -1,6 +1,6 @@
 # Roles and access design (agreed decisions + plan)
 
-Status: **in progress (2026-09-25).** Done: config/types, data backfill, access module (dual mode), rules, admin screen. Not yet: applying access to the app (classes, sections, directory, switch menu, no-access screen), auto-link of accounts by email. Decisions below come from the user (2026-09-25). Open questions are at the end.
+Status: **in progress (2026-09-25; servants block added 2026-10-17).** Done: config/types, data backfill, access module (dual mode), rules, admin screen. Not yet: applying access to the app (classes, sections, directory, switch menu, no-access screen), auto-link of accounts by email. Decisions below come from the user (2026-09-25). Open questions are at the end.
 
 ## 1. Decisions (updated 2026-09-25, second round)
 1. **One checkbox per class**, and it means everything. A class cell covers the kids AND the servants of that class: a servant of a class can do
@@ -116,6 +116,40 @@ The live site still runs the OLD code, so every data step must be harmless to it
 - **The admin screen is the same in the boys' and the girls' section.** It is not scoped by the current section: it always shows everything.
 - **The picker for adding people to a role lists ALL servants, male and female**, with a local (in-browser, no reads) search box and a
   gender filter: الكل / خدام (male) / خادمات (female). The same search + gender filter is on the People tab.
+
+## 9c. Servants block: خدام / خادمات (2026-10-17, asked by the user)
+A role can manage servants, not only classes, without being an admin: in the role editor, under the classes, two blocks **خدام** and **خادمات**.
+- Data: `roles/{id}.servants` = `['male']` (خدام) and / or `['female']` (خادمات); the union of a person's roles is written into the account
+  snapshot `users/{uid}.access.servants` by the admin screen (same batch as everything else). Older roles / snapshots without it mean none.
+- It depends on the account being used: **خدام counts on the boys' account, خادمات on the girls' account** (`canManageServants(access, section)`;
+  an admin always can). A role with only خدام opens nothing on the girls' account.
+- What it opens (`src/core/servants-access.ts`, `canUseServantsTab()`): the "🙏 الخدام" chip and screen of that section (servants attendance,
+  servants list with its filters, profiles, the dashboard of all servants and their kids), the servants of the WHOLE section (not only of the
+  person's classes), and the join requests of that section (read, approve, reject).
+- Rules (`firestore.rules`, `managesServantsOf`): a holder may read and decide only the PENDING requests of their section: the status
+  (approved / rejected) and the link to the person, never the role, the access snapshot or anything else. The request list query must say
+  `where('section', '==', ...)` (the rule has no default on purpose: a default let an unrestricted query through). Tested in the emulator
+  (`npm run test:rules`).
+- Not included (admin only, as before): the roles screen, renaming / editing another servant's data, adding or deleting servants.
+- The role needs at least one of: a class, خدام / خادمات, or the admin switch.
+
+## 9d. People without a class (2026-10-17, asked by the user)
+Admins already need no class. Now a manager of servants (a role with only خدام / خادمات) needs none either:
+- `hasNoAccess` is "no class AND no servants AND not admin"; the sign-in check no longer refuses a manager of servants for having no class.
+- Their sections come from the servants they manage (خدام = boys, خادمات = girls), so they open that section and are sent to it from the other one.
+- The app has no class to show them: `isClasslessManager()` (`core/servants-access.ts`) makes it open straight on the الخدام tab, with no class tabs
+  and no class chips (`state.activeGrade` is null).
+- **Sign-up** has a last choice in the class list: "إدارة (أدمن / مسؤول خدام) — من غير فصل". It lists the people of the servants list who have no
+  class (no `grade`), and registers with an empty class. Their join request shows as "إدارة — من غير فصل" and is visible to admins and
+  managers of servants (not to class leads).
+- **A person with no role (or no class) is not refused any more** (2026-10-17): they come in and see "لسه مفيش صلاحيات" instead of the tabs and the dashboard
+  (`SessionPatch.noAccess`, `state.noAccess`, React screen `no-access`). The ⚙️ menu still works: their profile (👤 ملفي), الإعدادات and sign out. Once an
+  admin gives them a role, "تحديث" (or opening the app again) shows the app. It replaces the old blocked screens "no-access" and "no-class".
+- **People tab -> "+ شخص جديد"** creates a servant who is not an admin: name, gender, optional email, any roles (a class, خدام / خادمات, several) or none
+  ("general": the class comes later by adding the person to a role). The person is listed in the section of their gender. When the roles
+  have classes, the old `grade` field of the servants list (what the class lists still read) is set to the lowest class; with only servants
+  or no role it is not written. An account that already uses the email is linked at once and gets the access.
+
 
 ## 10. Still open
 Nothing that blocks the start. Cross-class actions are postponed (see the to-do list).

@@ -13,6 +13,11 @@ export interface Role {
   name: string;
   admin: boolean;
   cells: Cell[];
+  /**
+   * Which servants the role may manage, by gender: 'male' = the servants of the boys' section (خدام), 'female' = those of the girls'
+   * section (خادمات). It opens the الخدام tab (servants attendance, list, profiles, join requests) in that section.
+   */
+  servants: Gender[];
 }
 
 /** A person of the servants list (`deacons/{id}`), the fields the access design adds or uses. */
@@ -30,4 +35,6 @@ export interface Access {
   admin: boolean;
   cells: Cell[];
   sections: Section[];
+  /** the servants the person may manage (see Role.servants) */
+  servants: Gender[];
 }

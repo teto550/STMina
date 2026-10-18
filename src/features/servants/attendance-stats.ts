@@ -19,8 +19,12 @@ export function sessionDates(att: DayMap, exc: DayMap, names: ReadonlySet<string
 
 /** present, or excused, or absent (= neither present nor excused: same meaning as the "غياب" tab of a day's detail). */
 export function statusOn(att: DayMap, exc: DayMap, name: string, date: string): AttStatus {
-  if (att[date]?.[name]) return 'present';
-  if (exc[date]?.[name]) return 'excuse';
+  if (att[date]?.[name]) {
+    return 'present';
+  }
+  if (exc[date]?.[name]) {
+    return 'excuse';
+  }
   return 'absent';
 }
 

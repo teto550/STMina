@@ -5,6 +5,7 @@ import { collection, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/core/firebase';
 import { getDocsTtl } from '@/core/firestore-helpers';
 import { getUserManagedGrades } from '@/core/session';
+import { canUseServantsTab } from '@/core/servants-access';
 import { DEACON_ATTENDANCE, DEACON_EXCUSES, getCurrentUserScopedDeaconRows } from '@/features/servants/deacon-attendance';
 import { sessionDates, tally } from '@/features/servants/attendance-stats';
 import { studentPhonesLabel } from '@/features/students/students';
@@ -44,22 +45,18 @@ function saveDashPrefs(ids) {
   try { localStorage.setItem('dashSections', JSON.stringify(ids)); } catch (e) {}
 }
 
+// "📊 الداشبورد": the popup that picks the sections (the React screen 'dashboard-options'), which then loads and shows the dashboard.
+// The dashboard covers every class the person manages, so there is no class to pick first.
 window.openDashModal = () => {
-  const active = getDashPrefs();
-  document.getElementById('dash-options').innerHTML = DASH_SECTIONS.map(s => `
-    <label class="dash-opt">
-      <input type="checkbox" value="${s.id}" ${active.includes(s.id) ? 'checked' : ''}>
-      <span class="dash-opt-txt">
-        <span class="dash-opt-name">${s.name}</span>
-        <div class="dash-opt-desc">${s.desc}</div>
-      </span>
-    </label>`).join('');
-  document.getElementById('dash-modal').style.display = 'flex';
+  window.openReactScreen('dashboard-options', undefined, {
+    sections: DASH_SECTIONS,
+    selected: getDashPrefs(),
+    onShow: async (ids) => {
+      saveDashPrefs(ids);
+      await showDashboard();
+    }
+  });
 };
-
-window.closeDashModal = () => { document.getElementById('dash-modal').style.display = 'none'; };
-
-window.closeDashModalOutside = (e) => { if (e.target.id === 'dash-modal') closeDashModal(); };
 
 // بيحسب كل إحصائيات الخدام مرة واحدة ويستخدمها كل الأقسام
 function computeDashStats() {
@@ -233,9 +230,9 @@ function buildDashboardHTML() {
   return out || `<div class="dash-empty">مختارتش أي قسم — دوس ⚙️ واختار الأقسام</div>`;
 }
 
-// الأدمن: كل مخدومين القسم (كل الفصول). غير كده: فصوله بس.
+// الأدمن (ومسؤول الخدام في القسم ده): كل مخدومين القسم (كل الفصول). غير كده: فصوله بس.
 async function loadDashStudents() {
-  const managed = state.currentUserRole === 'admin' ? null : getUserManagedGrades();
+  const managed = (state.currentUserRole === 'admin' || canUseServantsTab()) ? null : getUserManagedGrades();
   if (managed && !managed.length) return [];
   const col = collection(db, 'students');
   const q = managed ? query(col, where('grade', 'in', managed.slice(0, 30))) : query(col, orderBy('name'));
@@ -245,24 +242,18 @@ async function loadDashStudents() {
 
 const dashSubtitle = () => `كل الفصول · ${dashNames.length} خادم · ${dashStudents.length} مخدوم`;
 
-window.openDashboard = async () => {
-  // خزّن اختيارات المستخدم لو الشاشة دي اتفتحت من مودال الإعدادات
-  const boxes = document.querySelectorAll('#dash-options input[type=checkbox]');
-  if (boxes.length) {
-    saveDashPrefs(Array.from(boxes).filter(b => b.checked).map(b => b.value));
-  }
-  closeDashModal();
+// loads what the dashboard needs and shows it; rejects when the data cannot be read (the popup shows the error)
+async function showDashboard() {
   // the dashboard needs every servant, their kids and the servants' attendance: load them now (cached for a few minutes)
   await Promise.all([ensureDeacons(), ensureDeaconAttendance()]);
   dashNames = [...new Set(getCurrentUserScopedDeaconRows().map(r => r.name))].sort((a, b) => a.localeCompare(b, 'ar'));
   if (!dashNames.length) { showToast('مفيش خدام مسجلين', 'info'); return; }
-  try { dashStudents = await loadDashStudents(); }
-  catch (e) { console.error('dashboard students error:', e.code || e.message || e); showToast('حصلت مشكلة في تحميل المخدومين', 'error'); return; }
+  dashStudents = await loadDashStudents();
   document.getElementById('dash-subtitle').textContent = dashSubtitle();
   document.getElementById('dash-body').innerHTML = buildDashboardHTML();
   document.getElementById('dash-view').style.display = 'block';
   document.body.style.overflow = 'hidden';
-};
+}
 
 window.closeDashboard = () => {
   document.getElementById('dash-view').style.display = 'none';

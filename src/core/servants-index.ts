@@ -18,8 +18,15 @@ function index(): Map<string, RosterEntry> {
 
 /** The servant's current display name for a record (kid, ...): by id when it has one, else the stored name. */
 export function deaconNameOf(item: Linked | null | undefined): string {
-  if (!item) return '';
-  if (item.deaconId) { const d = index().get(item.deaconId); if (d) return d.name; }
+  if (!item) {
+    return '';
+  }
+  if (item.deaconId) {
+    const d = index().get(item.deaconId);
+    if (d) {
+      return d.name;
+    }
+  }
   return item.deacon || '';
 }
 
@@ -29,7 +36,9 @@ export const isDeaconOf = (item: Linked | null | undefined, name: string): boole
 /** The roster id for a typed/selected servant name in a section (null when there is no single match; nothing is guessed). */
 export function deaconIdOfName(name: string, section: string = 'boys'): string | null {
   const wanted = (name || '').replace(/\s+/g, ' ').trim();
-  if (!wanted) return null;
+  if (!wanted) {
+    return null;
+  }
   const hits = [...index().values()].filter((d) => d.name === wanted && (d.section || 'boys') === section);
   return hits.length === 1 ? hits[0]!.id : null;
 }

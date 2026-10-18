@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { getPreferences } from '@/api/preferences';
+import { canUseServantsTab } from '@/core/servants-access';
 import { deaconIdOfName } from '@/core/servants-index';
 import { DEACON_ADMIN_MAP } from '@/features/servants/deacons';
 import { state } from '@/core/state';
@@ -112,14 +114,16 @@ window.setDeaconAttType = (type, btn) => {
 };
 
 export function getCurrentUserScopedDeaconRows() {
-  const managedGrades = state.currentUserRole === 'admin' ? GRADES.slice() : getUserManagedGrades();
+  // an admin, and a person whose role manages the servants of this section, see all of them; anyone else only the servants of their classes
+  const seesAll = state.currentUserRole === 'admin' || canUseServantsTab();
+  const managedGrades = seesAll ? GRADES.slice() : getUserManagedGrades();
   const managedSet = new Set(managedGrades);
   const seen = new Set();
   return state.ALL_DEACONS_RAW.filter(row => {
     if (!row || !row.name) return false;
     if (seen.has(row.name)) return false;
     seen.add(row.name);
-    if (state.currentUserRole === 'admin') return true;
+    if (seesAll) return true;
     const grade = (row.grade || '').trim();
     return !!grade && managedSet.has(grade);
   });
@@ -130,7 +134,7 @@ export function getCurrentUserScopedDeaconRows() {
 function allDeaconNames() {
   const rows = getCurrentUserScopedDeaconRows();
   const scoreMap = new Map();
-  const managedGrades = state.currentUserRole === 'admin' ? new Set(GRADES) : new Set(getUserManagedGrades());
+  const managedGrades = (state.currentUserRole === 'admin' || canUseServantsTab()) ? new Set(GRADES) : new Set(getUserManagedGrades());
   rows.forEach(row => {
     const grade = (row.grade || '').trim();
     scoreMap.set(row.name, grade && managedGrades.has(grade) ? 0 : 1);
@@ -182,6 +186,10 @@ window.renderDeaconAttPicker = () => {
 
   const q = (document.getElementById('sd-att-search')?.value || '').trim();
   let list = sortRegisteredFirst(allNames);
+  if (state.servantsGradeFilter) {
+    const inGrade = new Set(getCurrentUserScopedDeaconRows().filter(r => (r.grade || '').trim() === state.servantsGradeFilter).map(r => r.name));
+    list = list.filter(n => inGrade.has(n));
+  }
   if (q) list = list.filter(n => nameMatchesSearch(n, q));
 
   if (!list.length) {
@@ -259,12 +267,14 @@ window.markDeaconAttendance = async (name, type, dateKey) => {
   showToast(`✅ ${name} — ${DEACON_ATT_TYPES[t].short}${dayNote}`, 'success');
   navigator.vibrate && navigator.vibrate([60,30,60]);
   // نفضّي خانة البحث بعد كل تسجيل عشان يكتب اسم الخادم اللي بعده على طول
+  // (when "الرجوع لخانة البحث" is off in الإعدادات the search box is left alone and the page does not scroll back to it)
+  const goBackToSearch = getPreferences().focusSearchAfterMark;
   const searchEl = document.getElementById('sd-att-search');
-  if (searchEl) searchEl.value = '';
+  if (searchEl && goBackToSearch) searchEl.value = '';
   renderDeaconAttPicker();
   renderDeaconAttDatesList();
   if (selectedDeaconAttDate === key) renderDeaconAttDayDetail();
-  if (searchEl) searchEl.focus();
+  if (searchEl && goBackToSearch) searchEl.focus();
 
   setDoc(ref, { name, deaconId: deaconIdOfName(name, sectionTag()), date: key, type: t, section: sectionTag(), ts: serverTimestamp() })
     .catch(e => console.warn('markDeaconAttendance sync error (هيتزامن لما النت يرجع):', e));

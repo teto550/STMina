@@ -7,3 +7,6 @@ dist
 
 # Local Firestore backups (personal data) - never commit
 backups/
+
+# Firebase emulator logs
+*-debug.log

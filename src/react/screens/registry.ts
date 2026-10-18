@@ -8,6 +8,21 @@ export type ScreenProps = { close?: () => void };
 type Loader = () => Promise<{ default: ComponentType<any> }>;
 
 export const screens: Record<string, Loader> = {
-  'admin-roles': () => import('./AdminRoles'),
-  'edit-servant': () => import('./EditServant'),
+  'admin-roles': () => import('./admin-roles'),
+  'edit-servant': () => import('./edit-servant'),
+  auth: () => import('./auth'),
+  'join-requests': () => import('./join-requests'),
+  'class-picker': () => import('./class-picker'),
+  'dashboard-options': () => import('./dashboard-options'),
+  'photo-field': () => import('./photo-field'),
+  settings: () => import('./settings'),
+  'avatar-host': () => import('./avatar-host'),
+  'update-banner': () => import('./update-banner'),
+  'no-access': () => import('./no-access'),
+  parts: () => import('./parts'),
+  'servants-filter': () => import('./servants-filter'),
+  'servants-list': () => import('./servants-list'),
 };
+
+// Screens shown as a popup over the running app (they draw their own backdrop) instead of a full-screen page.
+export const popupScreens = new Set(['join-requests', 'class-picker', 'dashboard-options']);

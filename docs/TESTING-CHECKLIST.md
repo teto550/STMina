@@ -81,3 +81,125 @@ Use two extra accounts (one servant, one new registration) and your admin. Give 
 - [ ] Add a kid in the boys' section (gets gender male + cell), and in the girls' section grade 1 (the ولد/بنت choice appears; grade 3 does not show it).
 - [ ] Kids' passwords: only the admin sees them (a phase lead no longer does). Rules are deployed (2026-09-25).
 - [ ] Rename a servant (edit screen and admin screen): kids, attendance and parts follow.
+
+## The React login screen (2026-10-10) - needs a real account, I cannot sign in for you
+- [ ] Open the test link logged out: the login screen appears right after the splash (no blank flash), looks the same as before.
+- [ ] Sign in as an admin and as a servant: works, the app opens. A wrong password shows "بيانات خاطئة، حاول تاني" and the ✕ closes it.
+- [ ] Sign out, sign in again: the button works again and the password field is empty.
+- [ ] Accounts that cannot come in see a screen with the reason and a "خروج" button (they stay signed in until they press it): pending ("في انتظار الموافقة"), rejected, not registered (an account that exists only in Firebase Auth; the admin also gets the security email once EmailJS is configured), wrong section (when the device cannot be switched), no class, and "no access yet" (approved but no class). An account of the OTHER section instead reloads straight into its own section.
+- [ ] "خادم جديد": the class list matches the section, the name list shows that class's servants, fill everything, send: the confirmation shows, the form empties, the admin gets the email/push, and the account appears as pending.
+- [ ] Registering with an email that already exists says "الإيميل ده مسجل بالفعل".
+- [ ] Change "النوع" to خادمه: the page reloads in the girls section and comes back on the "خادم جديد" tab.
+- [ ] Slow or no network: the loading picture shows, and after 7 seconds the login form appears with a "connection problem" warning.
+- [ ] Reload while signed in: the loading picture, then the app (no flash of the login form). Sign out from the app's menu: the login form comes back, with the password field empty.
+- [ ] Registering: the new account must NOT show the loading picture or the "not registered" message while the request runs; at the end the form shows the confirmation. The admin gets the email (now sent through EmailJS's web API, not the old script).
+- [ ] The eye in the password field (login and "خادم جديد") shows and hides what you typed; the browser's own password-manager fill still works.
+- [ ] Error / confirmation boxes (login, registration, admin screens, rename) have a ✕ that closes them; the "saved" box in the roles screen also closes itself after a few seconds.
+- [ ] Admins now come ONLY from their role (`users.role = 'admin'`, given by the roles screen): sign in with each of your admin accounts and check they still get the admin menu. (An account that was admin only because its email matched the old `config/settings.adminEmail` is no longer an admin.)
+
+## Join requests popup (2026-10-10, React) - needs a pending account
+- [ ] Servants screen: the "طلبات انضمام ›" card shows the number and opens a popup with each request (name, class, email, phone, address, birth date, study, date).
+- [ ] ✓ قبول: the request disappears, the card number drops, the servant can sign in (and is linked to their person / roles as before).
+- [ ] ✕ رفض asks "أكيد؟" on the second tap, then the request disappears and that account is rejected.
+- [ ] A class lead sees only the requests of their own classes; the admin sees all classes in the servants screen (the count is loaded when the screen opens, no need to open a class first) and the active class elsewhere.
+- [ ] The old list at the top of the "الخدام" list tab is gone; the `?approve=` link from the admin email still approves.
+
+## Servants screen: class filter + React list (2026-10-10)
+- [ ] Above the "الحضور | الخدام" tabs there is a row of chips: الكل + the classes (girls section also has أولى and تانية).
+- [ ] Picking a class narrows the attendance list (both "مدارس الأحد" and "اجتماع الخدام") and the "الخدام" list; the choice is kept when you switch tabs; "الكل" clears it. The day's present counter still counts everyone.
+- [ ] The filter works together with the name search; opening the screen again starts on "الكل".
+- [ ] The "الخدام" tab (now React) shows the same rows and counts as before; tapping a row opens the servant's profile.
+
+## Dashboard button: sections popup (2026-10-16, after merging main)
+- [ ] Reloading the app shows NO popup.
+- [ ] "📊 الداشبورد" opens the sections popup (the long list of checkboxes) straight away: the dashboard now covers every class (main's change), so there is no class to pick first (the `class-picker` screen still exists, unused).
+- [ ] "اعرض الداشبورد" keeps the popup open with "جاري التحميل…" until the dashboard is ready; a failed load shows an error and stays open.
+
+## Photo: camera or gallery popup + black-image fix (2026-10-16) - test on a real phone
+- [ ] New kid form, edit kid form and tapping the letter avatar of a kid without a photo: each asks "إضافة صورة" -> "من الكاميرا" / "من المعرض" (closing the popup does nothing), then opens the camera or the gallery.
+- [ ] Take several photos with the camera (iPhone and Android, portrait and landscape): none comes out black or half black, and the rotation is right.
+- [ ] A transparent PNG / screenshot from the gallery gets a white background (not black).
+- [ ] If a photo really cannot be read the toast says so ("الصورة طلعت سودا أو ناقصة...") instead of saving a black picture.
+
+## Photos: one component for everything (2026-10-16) - test on a real phone
+Everything about a photo is ONE React component (`src/react/components/photo/photo-manager.tsx`), used by the avatars of kids and servants (lists and profiles) and by the photo of the add-kid / edit-kid forms.
+- [ ] Tap an avatar WITHOUT a photo: the camera / gallery popup. Pick one: the photo is saved and the popup closes (no extra taps).
+- [ ] Tap an avatar WITH a photo: the photo opens full screen, with three icons on top (camera, gallery, delete) and X to close. Pinch to zoom, drag to move, double-tap to zoom in / out.
+- [ ] Camera / gallery icon on top replaces the photo; the delete icon asks once ("تحذف الصورة؟") then deletes. Lists and profile update at once.
+- [ ] Deleting or changing a photo costs ONE write and no extra reads (check `__reads` before / after).
+- [ ] Servants: my own photo (👤 profile) and, as admin, any registered servant's; a servant I may not edit opens the photo view-only (no icons).
+- [ ] Add-kid and edit-kid forms: tap the picture to add / view / change / delete; the photo is saved with the rest of the form.
+- [ ] ⚙️ -> "الإعدادات" (a full screen) -> "✂️ قص الصورة بعد اختيارها" (off by default; saved on my account, so it follows me to another phone). When ON: after picking, the crop screen shows with a centred square already selected: "تم" keeps it (one tap), corners resize, "حر" frees the shape, "إلغاء" goes back. When OFF: no extra step.
+- [ ] Camera photos never come out black or half black (earlier entry).
+
+## Attendance: "back to the search box" option (2026-10-16)
+- [ ] ⚙️ -> الإعدادات -> "الحضور" -> "🔍 الرجوع لخانة البحث بعد تسجيل الحضور": ON by default (saved on the account, so it follows the person to another phone).
+- [ ] ON: kids attendance (search a name, tap to mark) and servants attendance (both types) clear the search box and focus it again after each mark (as before).
+- [ ] OFF: marking someone does NOT clear the search box, does NOT focus it and the page does NOT scroll back: scroll the full list of a class and mark people one after another.
+
+## Update check (2026-10-16)
+- [ ] Deploy a build, open the app on a phone (installed shortcut), deploy ANOTHER build, then bring the app back to the foreground (or wait up to 30 minutes): a bar "🆕 فيه تحديث جديد للتطبيق" appears at the bottom; "تحديث الآن" loads the new build; "✕" hides it for that build. It never reloads by itself.
+- [ ] ⚙️ -> الإعدادات -> "التطبيق": shows the running build's date; "تحقق من التحديث" says "إنت على آخر نسخة" or offers "تحديث الآن"; offline it says it cannot reach the server.
+- [ ] `version.json` is next to index.html in the deployed site and is never served from the cache (Firebase Hosting header `no-cache`; the service worker skips it).
+
+## Firestore rules: a servant editing their own account (2026-10-16)
+Found and fixed: a new account has no `isLead` field, and the old self-edit rule read it, which is an ERROR in rules, so EVERY self-edit of a normal servant was
+denied (the "complete your data" page failed with "حدث خطأ"; the settings preferences and the servant photo would have failed too). Exact error from the emulator:
+`PERMISSION_DENIED: evaluation error ... Property isLead is undefined on object`. The rules now use `.get('isLead', false)`; deployed 2026-10-16.
+- [ ] `npm run test:rules` (local emulators, project `demo-stmina`, never the real project) passes 9/9: sign-up, "complete your data", preference, own photo, and the five
+      escalations that must stay denied (isLead, role, status, access, isPhaseLead). The project's firebase-tools needs Java 21; on a Mac with Java 17 run the same with
+      the global one: `firebase emulators:exec --only auth,firestore --project demo-stmina "EXPECT=new node tools/rules-tests/users-self-edit.mjs"` (global v13).
+- [ ] With a real new account on the test channel: register, get approved, sign in: the "complete your data" page saves and lets you in (the error now also shows its code).
+
+## Servants block: خدام / خادمات in a role (2026-10-17) - needs the rules deployed (firebase deploy --only firestore:rules)
+- [ ] Roles screen -> a role -> under "الفصول" there is "الخدام" with two toggles (خدام, خادمات); hidden for an admin role; the role cards and the desktop matrix show them.
+- [ ] Save a role with خدام and a member: that member's account gets `access.servants: ['male']` (they need to sign in again, or wait for the 24 h cache).
+- [ ] That member on the BOYS account: the "🙏 الخدام" chip appears (even with a single class), the screen shows ALL boys-section servants, servants attendance works, the dashboard covers everyone, the "طلبات انضمام" card shows the boys' pending requests and approve / reject works.
+- [ ] The same member on the GIRLS account (if they have a class there): no "الخدام" chip, no access. A role with خادمات does the reverse.
+- [ ] Not allowed for them: the roles screen, editing / renaming another servant, adding or deleting servants.
+- [ ] `npm run test:rules` passes (9 + 16 checks) after deploying; run `firebase emulators:exec ...` with the global firebase on a Mac with Java 17 (see the earlier entry).
+
+## People without a class, sign-up for them, "+ شخص جديد" (2026-10-17)
+- [ ] Roles screen -> People -> "+ شخص جديد": a name only (no role) adds a general servant; with a class role, the person shows in that class's servants list; with a role that only has خدام, they get no class. Roles that do not fit the gender are disabled with the reason; admin roles are not listed.
+- [ ] A person with ONLY a servants role (no class) who signs in: lands on the الخدام tab (no class tabs, no class chips), sees all servants of the section, can mark servants attendance and decide join requests. Signing in on the other section's device sends them to their own.
+- [ ] Sign-up: the class list ends with "إدارة (أدمن / مسؤول خدام) — من غير فصل"; picking it lists only people without a class; the request shows to admins as "إدارة — من غير فصل".
+- [ ] An admin with no class still enters as before.
+
+## A person with no role yet (2026-10-17)
+- [ ] "+ شخص جديد" with no role, then that person registers (name picked from "إدارة ... من غير فصل" or their class) and is approved: signing in shows "لسه مفيش صلاحيات" instead of the tabs / dashboard; ⚙️ shows only الإعدادات, ملفي, notifications and sign out (no admin items).
+- [ ] Their profile (ملفي) and الإعدادات open and save; "تحديث" reloads.
+- [ ] An admin then adds them to a role (Roles screen -> People -> add to a role): after "تحديث" / reopening they get the tabs of that role. Removing their last role puts them back on "لسه مفيش صلاحيات".
+
+## Parts (توزيع الفقرات) in React (2026-10-17) - needs the rules deployed (editing a part)
+- [ ] The whole tab is the React screen `parts`: title, "➕ إضافة فقرة" (the class manager only), the list grouped by day with a loader, an error with retry and an empty state.
+- [ ] Any day works (pick a Monday): the day shows as "الاثنين 21-10"; the default is the coming Friday. The nearest day from today on is green, the others blue.
+- [ ] Order (changed 2026-10-18): the NEXT day is on top (green) and the later days follow it, soonest first. Today counts as the next day for the whole day (on a Friday, that Friday stays on top). Days that have passed are NOT shown by default.
+- [ ] Past days: a button "⬆ عرض فقرات 2026 (N يوم)" sits at the top. Each tap loads one more year (the most recent first) ABOVE the upcoming days, oldest at the very top, and the year is written above its days ("2025"); the button then offers the year before, and disappears when there is none. Parts with no day (old data) are the last page ("عرض الفقرات من غير تاريخ").
+- [ ] Add or edit a part on a day that has already passed: after saving, its year is loaded and the part is visible (it does not vanish). With nothing coming up the list says "مفيش فقرات جاية" and still offers the older years.
+- [ ] A part needs only a TITLE and a DAY: type and servant are optional ("من غير نوع" / "من غير خادم لسه"); such a part shows its title and "👤 لسه ماتحددش خادم".
+- [ ] Every day has a round "+" in its header (also when the day is closed): it opens the form on THAT day. In the form "💾 حفظ وفقرة تانية" saves and stays open on the same day with the rest cleared.
+- [ ] ✏️ on a part: change the title / day, or give it its type and servant later. Choosing a servant for the first time sends them the push notification (as before); nothing is sent when the servant stays the same.
+- [ ] **Reference (مرجع / ملاحظات, optional, 2026-10-18) - needs the rules deployed first** (editing a part writes the new `reference` field; the old rules refuse it): in ➕ and ✏️ a multi-line box under the servant. Enter makes a new line (it does not save); write a few lines with a link (`https://...` or `www....`). The part shows the lines under its title and the link is tappable (opens in a new tab); a full stop or bracket right after the link is not part of it. A link typed in the title itself is tappable too. "💾 حفظ وفقرة تانية" clears the box. Old parts have no reference and look as before.
+- [ ] 🗑 asks once ("أكيد؟ امسح"), then removes the part.
+- [ ] Someone who is not the manager of the class sees the parts only.
+- [ ] `npm run test:rules` passes (9 + 16 + 13 checks).
+- Removed: the in-app "🔔 اتوزعت عليك فقرة" toast: it never worked since the security rules were tightened (no rule for `part_notifications`, so every read and write was refused). The phone push still works.
+
+## Keyboard friendly on a phone: sheets and the parts form (2026-10-17) - test on a real phone
+- [ ] Every popup sheet (parts form, settings popups, role pickers, ...) fits the area ABOVE the on-screen keyboard: with the keyboard open the save buttons stay visible and the sheet scrolls; the field you tap scrolls into view.
+- [ ] Parts -> ➕: opens with the title focused and the keyboard up; the keyboard's "done" key saves. "💾 حفظ وفقرة تانية" saves, clears the form, keeps the same day and focuses the title again (keyboard stays up); after using it once, the "done" key keeps adding parts to that day, "💾 حفظ" ends it.
+- [ ] ✏️ edit does not pop the keyboard up (you may only want to pick the type or the servant).
+- [ ] Typing Arabic with the phone keyboard never saves by accident while a word is still being composed.
+
+## Occasions (المناسبات) under توزيع الفقرات (2026-10-17) - needs the rules deployed (new `occasions` collection)
+- [ ] Parts tab -> "🗓 المناسبات" opens a popup: ONE list for every class and both sections; nothing is read until it opens; one year at a time (the current year first, ‹ › for the other years).
+- [ ] An admin: "مناسبة جديدة" (a name and a day, both required), edit ✏️, delete 🗑 (asks once). Several occasions on one day are fine. Everyone else only reads.
+- [ ] The coming occasions are first ("الجاية", nearest first, with "بعد N يوم" / "بكرة" / "النهاردة"), then the ones that passed ("اللي عدّت", the most recent first).
+- [ ] Opening it again (or another year you already saw) costs NO reads: each year is kept in the browser for a week. "تحديث" reads the year again; a change you make shows at once on your phone and on the others after a week or their "تحديث".
+- [ ] The manager of the class sees "➕ فقرة" on each occasion: it closes the popup and opens the new-part form with the occasion as the title and the DAY EMPTY (required: pick it), focus on the day.
+- [ ] To add many at once, ask Claude to fetch a year's dates into a JSON file, then run `node tools/firestore/add-occasions.cjs file.json` (dry run first, then `--apply`).
+- [ ] `npm run test:rules` passes (9 + 16 + 13 + 13 checks: users, servants managers, parts, occasions).
+
+## Next occasion card + parts newest first (2026-10-17)
+- [ ] توزيع الفقرات: the FIRST thing under the main tabs is a green card "المناسبة الجاية" with the next occasion, its day and "بعد N يوم" (nothing when there is none or it cannot be read). Tapping it opens the whole list. It reads (and keeps for a week, like the popup) the current year only when the tab opens; at the very end of the year it also looks at the next year.
+- [ ] The parts are grouped by day with the LATEST day first; the next day from today on is still the green one (it can be in the middle of the list); old days are dimmer at the bottom.

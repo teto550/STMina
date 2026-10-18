@@ -18,6 +18,7 @@ in `.env.local`, which is only needed if App Check enforcement is switched on in
 After changing `.env.local`, stop and start `npm run dev` (don't rely on Vite's auto-restart).
 
 ## Layout
+- `src/api/` – the only place that talks to the backend (Firestore, Auth, Storage, worker calls); checked by `npm run check:backend` (see CLAUDE.md, BACKEND ACCESS).
 - `src/core/` – Firebase init, shared state, session/permissions, helpers.
 - `src/features/<feature>/` – auth, shell (tabs/toast/push), students, attendance, assistant, servants, dashboard, import-export. Import with the `@/` alias.
 - `src/styles/` – CSS.
@@ -29,6 +30,7 @@ All three build first (`npm run build`).
 
 | Command | Where it goes |
 | --- | --- |
+| `npm run version:bump` | Raises the patch number in `package.json`. Run automatically by the three deploy scripts below; run it yourself before pushing to `main` (that push deploys). |
 | `npm run deploy:test` | Firebase Hosting preview channel `test` (separate URL, expires after 30 days, re-running updates the same URL). |
 | `npm run deploy:live` | Firebase Hosting live site (`https://attends-39e5b.web.app`). |
 | `npm run deploy:ghpages` | Pushes `dist/` to the `gh-pages` branch of the GitHub repo. |

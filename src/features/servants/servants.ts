@@ -1,14 +1,17 @@
 // @ts-nocheck
 import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { avatarPlaceholder } from '@/features/students/photos';
 import { state } from '@/core/state';
 import { buildActiveGradeBar, showMainAppTabs, showServantsDirectorySection } from '@/features/shell/app-shell';
 import { ensureDeacons, ensureDeaconUsers, ensureDeaconAttendance } from '@/core/data';
 import { DEACONS, DEACON_ADMIN_MAP, applyActiveGradeDeacons, loadDeaconsList } from '@/features/servants/deacons';
 import { sortRegisteredFirst, deaconAttendanceCount, deaconStatusOn, getCurrentUserScopedDeaconRows, loadDeaconAttendance, recentDeaconSessions, resetDeaconAttDay } from '@/features/servants/deacon-attendance';
+import { loadPendingDeacons } from '@/features/servants/approvals';
+import { canUseServantsTab } from '@/core/servants-access';
 import { formatAssignedGradesLabel } from '@/core/session';
 import { auth, db } from '@/core/firebase';
 import { getDocFast } from '@/core/firestore-helpers';
-import { sectionTag, genderOfSection } from '@/core/section';
+import { sectionTag, genderOfSection, ALL_GRADES } from '@/core/section';
 import { logActivity } from '@/core/presence';
 import { EGYPT_UNIVERSITIES } from '@/core/universities';
 
@@ -23,13 +26,10 @@ export function populateUniversitySelect(selectId) {
     EGYPT_UNIVERSITIES.map(u => `<option${cur === u ? ' selected' : ''}>${u}</option>`).join('');
 }
 
-window.toggleRegGradFields = function() {
-  const status = document.getElementById('reg-grad-status').value;
-  const wrap = document.getElementById('reg-grad-fields-wrap');
-  if (wrap) wrap.style.display = status === 'student' ? 'block' : 'none';
-};
 
 // ===== خانة الخدام: تابين — الحضور + ملفات الخدام (من كل السنين الدراسية) =====
+
+let currentServantsTab = 'att'; // 'att' | 'list' (the class filter above both tabs redraws the one that is open)
 
 // فلتر تاب "الخدام": حضر/غاب في آخر 1-4 مرات من نوع معيّن (مدارس الأحد أو اجتماع الخدام)
 let dirFilterStatus = 'all';   // 'all' | 'present' | 'absent' | 'excuse'
@@ -78,7 +78,7 @@ window.setDirFilterType = (type, btn) => {
 };
 
 window.openServantsDirectory = async () => {
-  if (state.currentUserRole !== 'admin') { showToast('دليل الخدام للأدمن بس', 'error'); return; }
+  if (!canUseServantsTab()) { showToast('تاب الخدام مش متاح لك', 'error'); return; }
   state.servantsDirectoryOpen = true;
   resetDeaconAttDay(); // التحضير بيبدأ على اليوم اللي اتفتحت فيه الخانة
   showServantsDirectorySection();
@@ -102,6 +102,9 @@ window.openServantsDirectory = async () => {
     console.error('openServantsDirectory error:', e.code || e.message || e);
   }
   updateServantsDashStats();
+  loadPendingDeacons().then(updateServantsDashStats).catch(e => console.warn('join requests count:', e)); // all classes, not just the active one
+  state.servantsGradeFilter = '';
+  mountServantsClassFilter();
   // كل مرة تتفتح الخانة: تابع الحضور → حضور مدارس الأحد (مهما كان اللي اتفتح قبل كده)
   window.setServantsTab('att', document.getElementById('sd-tab-btn-att'));
   window.setDeaconAttType('sunday', document.getElementById('sd-type-btn-sunday'));
@@ -124,6 +127,7 @@ window.closeServantsDirectory = () => {
 };
 
 window.setServantsTab = (tab, btn) => {
+  currentServantsTab = tab;
   document.querySelectorAll('#sd-main-tabs .tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('sd-tab-att').style.display  = tab === 'att'  ? 'block' : 'none';
@@ -139,6 +143,9 @@ window.renderServantsDirectory = () => {
   const term = (searchEl.value || '').trim();
   // أسماء فريدة من الخدام المسموح لهم في النظام الحالي فقط — مسؤول المرحلة يشوف فصله فقط، والأدمن يشوف الكل
   let all = sortRegisteredFirst(getCurrentUserScopedDeaconRows(), x => x.name);
+  if (state.servantsGradeFilter) {
+    all = all.filter(x => (x.grade || '').trim() === state.servantsGradeFilter);
+  }
 
   if (term) {
     const norm = s => (s || '').replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').toLowerCase();
@@ -173,47 +180,48 @@ window.renderServantsDirectory = () => {
   }
 
   document.getElementById('servants-directory-count').textContent = `${all.length} خادم`;
-  const listEl = document.getElementById('servants-directory-list');
-  if (!all.length) {
-    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">${filtering || dirFilterBirthday ? '🔍' : '🙏'}</div>${dirFilterBirthday ? 'مفيش خدام أعياد ميلادهم الشهر ده (أو لسه ماسجلوش تاريخ الميلاد)' : filtering ? 'مفيش خدام بالشرط ده' : 'مفيش خدام مطابقين'}</div>`;
-    return;
-  }
   const histIcon = { present: '✅', excuse: '📝', absent: '❌' };
   // لما فلتر حضر/غاب/اعتذر يكون شغال: العدّادين جنب كل خادم بيعدّوا الحالة دي (مش الحضور بس) في كل مرات النوع ده
   const metric = filtering ? (dirFilterStatus === 'present' ? 'present' : dirFilterStatus === 'excuse' ? 'excuse' : 'absent') : 'present';
   const metricLbl = { present: 'حضر', excuse: 'اعتذر', absent: 'غاب' }[metric];
-  const metricColor = { present: 'var(--success)', excuse: 'var(--warning)', absent: 'var(--danger)' }[metric];
   const allSessions = filtering ? { sunday: recentDeaconSessions('sunday'), meeting: recentDeaconSessions('meeting') } : null;
   const metricCount = (name, type) => filtering
     ? allSessions[type].filter(d => deaconStatusOn(name, type, d) === metric).length
     : deaconAttendanceCount(name, type);
-  listEl.innerHTML = all.map(x => {
-    const u = DEACON_ADMIN_MAP[x.name];
-    const safeName = x.name.replace(/'/g, "\\'");
-    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس (ALL_DEACONS_RAW ومصدر الحضور شاملين كل السنين أصلاً)
-    const sundayCount  = metricCount(x.name, 'sunday');
-    const meetingCount = metricCount(x.name, 'meeting');
-    return `
-      <div class="deacon-row" onclick="openDeaconProfile('${safeName}')" style="display:flex;align-items:center;gap:12px;cursor:pointer">
-        <div class="student-avatar" style="flex-shrink:0">${x.name.trim().charAt(0)}</div>
-        <div style="flex:1;min-width:0">
-          <div class="deacon-row-name">${x.name}</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${x.grade || '—'}${u ? '' : ' · لسه ماسجلش بياناته'}${bdayMap[x.name] ? ` · 🎂 ${bdayMap[x.name].day}/${bdayMap[x.name].month}` : ''}</div>
-          ${filtering ? `<div style="font-size:12px;margin-top:3px;letter-spacing:2px">${sessions.map(d => histIcon[deaconStatusOn(x.name, dirFilterType, d)]).join(' ')}</div>` : ''}
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${sundayCount ? metricColor : 'var(--text-dim)'}">${sundayCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">⛪ مدارس أحد${filtering ? ' · ' + metricLbl : ''}</div>
-          </div>
-          <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px">
-            <div style="font-size:17px;font-weight:900;color:${meetingCount ? metricColor : 'var(--text-dim)'}">${meetingCount}</div>
-            <div style="font-size:9px;color:var(--text-dim)">👥 اجتماع خدام${filtering ? ' · ' + metricLbl : ''}</div>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+  const rows = all.map(x => ({
+    name: x.name,
+    grade: x.grade || '',
+    registered: !!DEACON_ADMIN_MAP[x.name],
+    photo: (DEACON_ADMIN_MAP[x.name] && DEACON_ADMIN_MAP[x.name].photo) || '',
+    // عدد مرات الحضور لكل الخادم ده، في كل السنين الدراسية مش سنة معينة بس (أو عدد الحالة المختارة لما الفلتر شغال)
+    sunday: metricCount(x.name, 'sunday'),
+    meeting: metricCount(x.name, 'meeting'),
+    birthday: bdayMap[x.name] ? `${bdayMap[x.name].day}/${bdayMap[x.name].month}` : '',
+    history: filtering ? sessions.map(d => histIcon[deaconStatusOn(x.name, dirFilterType, d)]).join(' ') : '',
+    metric: filtering ? { label: metricLbl, tone: metric } : null
+  }));
+  window.openReactScreen('servants-list', document.getElementById('servants-directory-list'), {
+    rows,
+    emptyIcon: filtering || dirFilterBirthday ? '🔍' : '🙏',
+    emptyText: dirFilterBirthday ? 'مفيش خدام أعياد ميلادهم الشهر ده (أو لسه ماسجلوش تاريخ الميلاد)' : filtering ? 'مفيش خدام بالشرط ده' : 'مفيش خدام مطابقين',
+    onOpen: (name) => window.openDeaconProfile(name)
+  });
 };
+
+// الفلتر بالفصل فوق تابي الخدام (الحضور والخدام): بيتعمل بالـReact، والاختيار محفوظ في state عشان التابين يشاركوه
+function mountServantsClassFilter() {
+  const el = document.getElementById('sd-class-filter');
+  if (!el) return;
+  window.openReactScreen('servants-filter', el, {
+    grades: ALL_GRADES,
+    value: state.servantsGradeFilter,
+    onChange: (grade) => {
+      state.servantsGradeFilter = grade;
+      mountServantsClassFilter();
+      if (currentServantsTab === 'att') renderDeaconAttPicker(); else renderServantsDirectory();
+    }
+  });
+}
 
 function formatDobDisplay(dob) {
   try {
@@ -226,7 +234,6 @@ window.openDeaconProfile = (name) => {
   const raw = state.ALL_DEACONS_RAW.find(x => x.name === name);
   const u = DEACON_ADMIN_MAP[name];
   document.getElementById('dprof-name').textContent = name;
-  document.getElementById('dprof-avatar').textContent = name.trim().charAt(0);
   document.getElementById('dprof-grade').textContent = (raw && raw.grade) ? raw.grade : '';
 
   const canEdit = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserName === name;
@@ -268,8 +275,31 @@ window.openDeaconProfile = (name) => {
       </div>
     </div>`).join('');
 
+  mountDeaconAvatar(name);
   document.getElementById('deacon-profile-modal').style.display = 'block';
 };
+
+// the picture in the profile header is the same React <Avatar> as everywhere (via the 'avatar-host'): tap = see the photo; the servant
+// themselves, or an admin, can also change or delete it (the photo manager)
+function mountDeaconAvatar(name) {
+  const u = DEACON_ADMIN_MAP[name];
+  const mine = !!(u && auth.currentUser && u.uid === auth.currentUser.uid);
+  const editable = !!u && (mine || state.currentUserRole === 'admin');
+  document.getElementById('dprof-avatar').innerHTML = avatarPlaceholder(name, (u && u.photo) || '', 56, {
+    accent: true,
+    photoTarget: editable ? `servant:${u.uid}` : ''
+  });
+}
+
+// a servant's photo was saved or deleted (by the photo manager): keep the data in memory in step
+document.addEventListener('photo-changed', (e) => {
+  const { kind, id, photo } = e.detail || {};
+  if (kind !== 'servant') return;
+  const entry = Object.entries(DEACON_ADMIN_MAP).find(([, u]) => u.uid === id);
+  if (!entry) return;
+  entry[1].photo = photo;
+  if (window.renderServantsDirectory && state.servantsDirectoryOpen) window.renderServantsDirectory();
+});
 
 window.closeDeaconProfile = () => {
   document.getElementById('deacon-profile-modal').style.display = 'none';
@@ -289,7 +319,7 @@ window.openMyProfile = async () => {
           uid: auth.currentUser.uid, role: u.role || 'deacon', email: u.email || '', grade: u.grade || '', isLead: !!u.isLead,
           phones: (u.phones && u.phones.length) ? u.phones : (u.phone ? [u.phone] : []), phone: u.phone || '',
           address: u.address || '', dob: u.dob || '',
-          graduated: !!u.graduated, college: u.college || '', university: u.university || ''
+          graduated: !!u.graduated, college: u.college || '', university: u.university || '', photo: u.photo || ''
         };
       }
     } catch(e) { console.error('openMyProfile error:', e.code || e.message || e); }
@@ -298,7 +328,7 @@ window.openMyProfile = async () => {
   openDeaconProfile(name);
 };
 
-// "✏️ تعديل بيانات الخادم" is a React screen (src/react/screens/EditServant.tsx); this only prepares its data and applies the result
+// "✏️ تعديل بيانات الخادم" is a React screen (src/react/screens/edit-servant/index.tsx); this only prepares its data and applies the result
 window.openEditDeaconProfile = (name) => {
   const nm = name || document.getElementById('dprof-name').textContent;
   const u = DEACON_ADMIN_MAP[nm];

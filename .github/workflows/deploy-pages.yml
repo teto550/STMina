@@ -23,6 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the version check below compares with the commit that was on main before this push
+      # The rule (CLAUDE.md): the version number in package.json is raised before every push to main, because this push deploys.
+      # A missed bump only raises a warning on the run, it never blocks the deploy.
+      - name: Check the version number was raised
+        if: github.event_name == 'push'
+        run: |
+          before="${{ github.event.before }}"
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then exit 0; fi
+          old=$(git show "$before:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" || true)
+          new=$(node -p "require('./package.json').version")
+          if [ -n "$old" ] && [ "$old" = "$new" ]; then
+            echo "::warning title=Version number not raised::package.json is still at $new. Run 'npm run version:bump' before pushing to main (see CLAUDE.md)."
+          else
+            echo "Version: ${old:-?} -> $new"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -46,6 +62,10 @@ jobs:
           VITE_FCM_VAPID_KEY: ${{ secrets.VITE_FCM_VAPID_KEY }}
           VITE_PUSH_WORKER_URL: ${{ secrets.VITE_PUSH_WORKER_URL }}
           VITE_ASSISTANT_WORKER_URL: ${{ secrets.VITE_ASSISTANT_WORKER_URL }}
+          VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
+          VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
+          VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+          VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

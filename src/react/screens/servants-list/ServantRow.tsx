@@ -1,0 +1,55 @@
+import type { FC } from 'react';
+import { cn } from '@/react/lib/utils';
+import { Avatar } from '@/react/components/ui/avatar';
+
+export type ServantRowData = {
+  name: string;
+  grade: string;
+  /** false = has not registered in the app yet */
+  registered: boolean;
+  sunday: number;
+  meeting: number;
+  /** the servant's photo (when they have one) */
+  photo?: string;
+  /** birthday as "day/month" (shown by the birthday filter) */
+  birthday?: string;
+  /** one icon per recent session (✅ 📝 ❌), shown while the attended / absent / excused filter is on */
+  history?: string;
+  /** set while that filter is on: what the two counters count ("حضر" / "اعتذر" / "غاب") and the colour of the numbers */
+  metric?: { label: string; tone: 'present' | 'excuse' | 'absent' } | null;
+};
+
+type ServantRowProps = {
+  row: ServantRowData;
+  onOpen: (name: string) => void;
+};
+
+const TONE: Record<'present' | 'excuse' | 'absent', string> = { present: 'tw:text-ok', excuse: 'tw:text-warn', absent: 'tw:text-bad' };
+
+const Count: FC<{ value: number; label: string; tone: 'present' | 'excuse' | 'absent' }> = ({ value, label, tone }) => {
+  return (
+    <div className="tw:rounded-field tw:border tw:border-line tw:bg-surface-2 tw:px-2.5 tw:py-1.5 tw:text-center">
+      <div className={cn('tw:text-base tw:font-black', value ? TONE[tone] : 'tw:text-dim')}>{value}</div>
+      <div className="tw:text-[9px] tw:text-dim">{label}</div>
+    </div>
+  );
+};
+
+export const ServantRow: FC<ServantRowProps> = ({ row, onOpen }) => {
+  return (
+    <li>
+      <button type="button" onClick={() => onOpen(row.name)} className="tw:flex tw:w-full tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3 tw:text-start">
+        <Avatar name={row.name} src={row.photo} size={40} />
+        <span className="tw:min-w-0 tw:flex-1">
+          <span className="tw:block tw:truncate tw:text-sm tw:font-bold">{row.name}</span>
+          <span className="tw:mt-0.5 tw:block tw:text-xs tw:text-dim">{row.grade || '—'}{row.registered ? '' : ' · لسه ماسجلش بياناته'}{row.birthday ? ` · 🎂 ${row.birthday}` : ''}</span>
+          {row.history && <span className="tw:mt-1 tw:block tw:text-xs tw:tracking-widest">{row.history}</span>}
+        </span>
+        <span className="tw:flex tw:shrink-0 tw:gap-1.5">
+          <Count value={row.sunday} label={`⛪ مدارس أحد${row.metric ? ` · ${row.metric.label}` : ''}`} tone={row.metric?.tone ?? 'present'} />
+          <Count value={row.meeting} label={`👥 اجتماع خدام${row.metric ? ` · ${row.metric.label}` : ''}`} tone={row.metric?.tone ?? 'present'} />
+        </span>
+      </button>
+    </li>
+  );
+};

@@ -6,19 +6,16 @@ import '@/core/firebase';
 import '@/features/assistant/assistant';
 import '@/features/shell/push';
 import '@/features/shell/settings-menu';
-import '@/core/config';
 import '@/core/session';
 import '@/core/firestore-helpers';
-import '@/core/splash';
 import '@/core/presence';
 import '@/core/section';
 import '@/core/utils';
 import '@/features/students/photos';
-import '@/features/auth/auth';
+import { mountAuthScreen } from '@/features/auth/auth';
 import '@/features/auth/phone-rows';
 import '@/features/auth/profile-complete';
 import '@/features/shell/app-shell';
-import '@/features/shell/legacy-migration';
 import '@/features/servants/approvals';
 import '@/features/students/students';
 import '@/features/students/maintenance';
@@ -30,7 +27,6 @@ import '@/features/dashboard/dashboard';
 import '@/features/assistant/voice';
 import '@/features/students/student-profile';
 import '@/features/servants/deacons';
-import '@/features/servants/parts';
 import '@/features/servants/servants';
 import '@/features/import-export/import-attendance';
 import '@/features/import-export/import-students';
@@ -43,3 +39,6 @@ import '@/features/servants/online';
 import '@/features/servants/deacon-attendance';
 import '@/features/shell/ui';
 import '@/core/pwa';
+
+window.openReactScreen('update-banner', document.getElementById('update-banner')); // "فيه تحديث جديد" bar (checks version.json)
+mountAuthScreen(); // the login / new-servant screen (React) loads while the splash screen is still showing

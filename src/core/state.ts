@@ -1,13 +1,14 @@
 // @ts-nocheck
 // Shared mutable state (was module-level `let` variables in the single-file script).
 export const state = {
-  LEGACY_MIGRATED: false, // هل اتعمل ترحيل البيانات القديمة (قبل نظام السنين المتعددة) ولا لسه
   currentUserRole: null, // 'admin' | 'deacon'
+  servantsGradeFilter: '', // class chosen in the servants screen filter ('' = all), shared by its attendance and list tabs
   pendingDeaconsCount: 0, // عدد طلبات تسجيل الخدام المعلّقة للسنة الدراسية الحالية (شارة تاب الخدام)
   currentUserName: '',
   currentUserEmail: '',
   currentUserGrade: null, // السنة الدراسية اللي الخادم مسجل يخدم فيها
   access: null,               // Access of the logged-in account (docs/ROLES-DESIGN.md): { admin, cells, sections }
+  noAccess: false,            // nothing is given to this account yet (no role / no class): the app shows "no access yet"
   accessSource: null,         // 'roles' (from the stored snapshot) or 'legacy' (derived from today's fields)
   currentUserPhaseGrades: [], // الفصول اللي مسؤول المرحلة بيفتحها (مثال: تالتة/رابعة)
   currentUserIsLead: false, // هل هو "مسؤول" السنة دي
@@ -25,11 +26,9 @@ export const state = {
   selectedDates: [],
   newPhotoData: '', // base64 data-url للصورة أثناء إضافة مخدوم جديد
   editPhotoData: '', // base64 data-url للصورة أثناء تعديل مخدوم
-  quickPhotoTargetId: '', // آي دي المخدوم اللي بنرفعله صورة بسرعة من قوائم الحضور
   ALL_DEACONS_RAW: [], // [{ id, name, grade }] — كل الخدام في كل السنين (مصدر واحد للحقيقة)
   currentDeacon: null,
   currentDeaconFilter: 'all', // 'all' | 'attendance' | 'absence' | 'birthday'
-  partNotifUnsub: null,
 };
 
 // Dev only: lets you inspect the state from the browser console (`__state`).

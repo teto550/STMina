@@ -1,10 +1,10 @@
-import { filterPeople, filterRoles, planAddAdmin, planRename, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/admin/logic';
-import type { AdminData } from '@/react/admin/types';
+import { legacyGradeOf, planAddPerson, filterPeople, filterRoles, planAddAdmin, planRename, sortRoles, planMembership, planRoleDelete, planRoleSave } from '@/react/screens/admin-roles/logic';
+import type { AdminData } from '@/react/screens/admin-roles/types';
 
 const data = (): AdminData => ({
   roles: [
-    { id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] },
-    { id: 'adm', name: 'أدمن', admin: true, cells: [] },
+    { id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: [] },
+    { id: 'adm', name: 'أدمن', admin: true, cells: [], servants: [] },
   ],
   people: [
     { id: 'p1', name: 'مينا', gender: 'male', roleIds: ['b3'] },
@@ -59,21 +59,21 @@ describe('planMembership', () => {
 
 describe('planRoleSave', () => {
   it('needs a name and at least one class (unless admin)', () => {
-    expect(planRoleSave({ id: 'n', name: ' ', admin: false, cells: [] }, [], data()).errors).toHaveLength(2);
-    expect(planRoleSave({ id: 'n', name: 'أدمن 2', admin: true, cells: [] }, [], data()).errors).toEqual([]);
+    expect(planRoleSave({ id: 'n', name: ' ', admin: false, cells: [], servants: [] }, [], data()).errors).toHaveLength(2);
+    expect(planRoleSave({ id: 'n', name: 'أدمن 2', admin: true, cells: [], servants: [] }, [], data()).errors).toEqual([]);
   });
   it('refreshes the accounts of every member when the classes change, in one plan', () => {
-    const plan = planRoleSave({ id: 'b3', name: 'تالتة ورابعة', admin: false, cells: ['male:3', 'male:4'] }, ['p1'], data());
+    const plan = planRoleSave({ id: 'b3', name: 'تالتة ورابعة', admin: false, cells: ['male:3', 'male:4'], servants: [] }, ['p1'], data());
     expect(plan.errors).toEqual([]);
     expect(plan.affectedPeople).toBe(1);
     const acc = plan.ops.find((o) => o.col === 'users' && o.id === 'u1');
     expect(acc && 'data' in acc && (acc.data.access as { cells: string[] }).cells).toEqual(['male:3', 'male:4']);
   });
   it('blocks a member whose gender does not fit', () => {
-    expect(planRoleSave({ id: 'b3', name: 'x', admin: false, cells: ['male:3'] }, ['p1', 'p2'], data()).errors[0]).toContain('ماريا');
+    expect(planRoleSave({ id: 'b3', name: 'x', admin: false, cells: ['male:3'], servants: [] }, ['p1', 'p2'], data()).errors[0]).toContain('ماريا');
   });
   it('a removed member loses the role and gets a refreshed snapshot', () => {
-    const plan = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'] }, [], data());
+    const plan = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: [] }, [], data());
     expect(plan.ops).toContainEqual({ col: 'deacons', id: 'p1', data: { roleIds: [] }, merge: true });
   });
 });
@@ -95,7 +95,7 @@ describe('planAddAdmin', () => {
     const plan = planAddAdmin({ id: 'p9', name: ' سارة  ', gender: 'female', email: 'new@x.com' }, d);
     expect(plan.errors).toEqual([]);
     expect(plan.ops[0]).toMatchObject({ col: 'roles', id: 'admin', data: { admin: true } });
-    expect(plan.ops).toContainEqual({ col: 'deacons', id: 'p9', data: { name: 'سارة', gender: 'female', roleIds: ['admin'], email: 'new@x.com' }, merge: false });
+    expect(plan.ops).toContainEqual({ col: 'deacons', id: 'p9', data: { name: 'سارة', gender: 'female', section: 'girls', roleIds: ['admin'], email: 'new@x.com' }, merge: false });
     expect(plan.ops.find((o) => o.col === 'users')).toMatchObject({ id: 'u9', data: { deaconId: 'p9', role: 'admin' } });
   });
   it('reuses the existing admin role and refuses a duplicate name', () => {
@@ -107,9 +107,9 @@ describe('planAddAdmin', () => {
 
 describe('roles list', () => {
   const roles = [
-    { id: '1', name: 'ثالثة أولاد', admin: false, cells: [] },
-    { id: '2', name: 'أدمن', admin: true, cells: [] },
-    { id: '3', name: 'رابعة  أولاد', admin: false, cells: [] },
+    { id: '1', name: 'ثالثة أولاد', admin: false, cells: [], servants: [] },
+    { id: '2', name: 'أدمن', admin: true, cells: [], servants: [] },
+    { id: '3', name: 'رابعة  أولاد', admin: false, cells: [], servants: [] },
   ] as AdminData['roles'];
   it('sorts alphabetically (Arabic)', () => expect(sortRoles(roles).map((r) => r.name)).toEqual(['أدمن', 'ثالثة أولاد', 'رابعة  أولاد']));
   it('searches by name and ignores extra spaces', () => {
@@ -136,5 +136,81 @@ describe('planRename', () => {
     expect(planRename(p, '   ', data(), links).errors).toHaveLength(1);
     expect(planRename(p, 'مينا', data(), links).errors[0]).toContain('نفس الاسم');
     expect(planRename(p, ' بيتر ', data(), links).errors[0]).toContain('بنفس الاسم');
+  });
+});
+
+describe('roles that manage servants', () => {
+  it('a role may have only servants (no class, not admin)', () => {
+    expect(planRoleSave({ id: 'n', name: 'مسؤول خدام', admin: false, cells: [], servants: ['male'] }, [], data()).errors).toEqual([]);
+    expect(planRoleSave({ id: 'n', name: 'x', admin: false, cells: [], servants: [] }, [], data()).errors).toHaveLength(1);
+  });
+
+  it('saves the servants on the role and on the access snapshot of every member, in one plan', () => {
+    const plan = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: ['male'] }, ['p1'], data());
+    expect(plan.ops[0]).toMatchObject({ col: 'roles', id: 'b3', data: { servants: ['male'] } });
+    const account = plan.ops.find((o) => o.col === 'users');
+    expect(account).toMatchObject({ data: { access: { servants: ['male'] } } });
+  });
+
+  it('changing only the servants counts as a change for the existing members', () => {
+    const before = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: [] }, ['p1'], data());
+    const after = planRoleSave({ id: 'b3', name: 'تالتة أولاد', admin: false, cells: ['male:3'], servants: ['male'] }, ['p1'], data());
+    expect(after.affectedPeople).toBeGreaterThanOrEqual(before.affectedPeople);
+    expect(after.affectedPeople).toBe(1);
+  });
+});
+
+describe('planAddPerson (+ شخص جديد, not an admin)', () => {
+  const withRoles = (): AdminData => {
+    const d = data();
+    d.roles.push({ id: 'm', name: 'مسؤول خدام', admin: false, cells: [], servants: ['male'] }, { id: 'g3', name: 'تالتة بنات', admin: false, cells: ['female:3'], servants: [] }, { id: 'b4', name: 'رابعة أولاد', admin: false, cells: ['male:4', 'male:5'], servants: [] });
+    return d;
+  };
+  const person = (over: Partial<Parameters<typeof planAddPerson>[0]> = {}) => ({ id: 'n1', name: 'كيرلس', gender: 'male' as const, email: '', roleIds: [] as string[], ...over });
+
+  it('a general person (no role): just the person, listed in their section, class given later', () => {
+    const plan = planAddPerson(person(), withRoles());
+    expect(plan.errors).toEqual([]);
+    expect(plan.ops).toEqual([{ col: 'deacons', id: 'n1', data: { name: 'كيرلس', gender: 'male', section: 'boys', roleIds: [] }, merge: false }]);
+  });
+
+  it('a girl is listed in the girls section', () => {
+    expect(planAddPerson(person({ gender: 'female' }), withRoles()).ops[0]).toMatchObject({ data: { section: 'girls' } });
+  });
+
+  it('only servants (no class): the roles are kept and no class is written', () => {
+    const plan = planAddPerson(person({ roleIds: ['m'] }), withRoles());
+    expect(plan.errors).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({ data: { roleIds: ['m'], section: 'boys' } });
+    expect((plan.ops[0] as { data: Record<string, unknown> }).data.grade).toBeUndefined();
+  });
+
+  it('a class role: the old class field the class lists read gets the LOWEST class of the roles', () => {
+    const plan = planAddPerson(person({ roleIds: ['b4'] }), withRoles());
+    expect(plan.ops[0]).toMatchObject({ data: { roleIds: ['b4'], grade: 'سنة رابعة ابتدائي' } });
+    expect(legacyGradeOf(['b4', 'b3'], withRoles().roles)).toBe('سنة تالتة ابتدائي');
+    expect(legacyGradeOf([], withRoles().roles)).toBeNull();
+    expect(legacyGradeOf(['m'], withRoles().roles)).toBeNull();
+  });
+
+  it('an account that already uses the email is linked at once and gets the access of the roles', () => {
+    const d = withRoles();
+    d.accounts.push({ uid: 'u9', name: 'كيرلس', email: 'Kero@X.com', role: 'deacon' });
+    const plan = planAddPerson(person({ email: ' kero@x.com ', roleIds: ['m', 'b4'] }), d);
+    expect(plan.ops[0]).toMatchObject({ data: { email: 'kero@x.com' } });
+    expect(plan.ops[1]).toMatchObject({ col: 'users', id: 'u9', merge: true, data: { deaconId: 'n1', access: { admin: false, cells: ['male:4', 'male:5'], servants: ['male'] } } });
+  });
+
+  it('refuses: an empty or duplicate name, an admin role, and a class that does not fit the gender', () => {
+    expect(planAddPerson(person({ name: '  ' }), withRoles()).errors).toContain('اكتب الاسم');
+    expect(planAddPerson(person({ name: 'مينا' }), withRoles()).errors).toContain('فيه شخص بنفس الاسم في قايمة الخدام');
+    expect(planAddPerson(person({ roleIds: ['adm'] }), withRoles()).errors[0]).toContain('+ أدمن');
+    expect(planAddPerson(person({ roleIds: ['g3'] }), withRoles()).errors[0]).toContain('تالتة بنات');
+  });
+});
+
+describe('planAddAdmin lists the new admin in their own section', () => {
+  it('a female admin is in the girls section', () => {
+    expect(planAddAdmin({ id: 'a1', name: 'ماريا الأدمن', gender: 'female', email: 'a@x.com' }, data()).ops.find((o) => o.col === 'deacons')).toMatchObject({ data: { section: 'girls' } });
   });
 });

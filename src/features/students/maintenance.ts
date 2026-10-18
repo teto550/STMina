@@ -1,12 +1,11 @@
 // @ts-nocheck
-import { getDocs, query, collection, where, writeBatch, doc, setDoc } from 'firebase/firestore';
+import { getDocs, query, collection, where, writeBatch, doc } from 'firebase/firestore';
 import { state } from '@/core/state';
 import { db } from '@/core/firebase';
-import { GRADES, GRADE_SEQUENCE, SECTION } from '@/core/section';
-import { buildGradeFilters, updateAttendanceCleanupVisibility } from '@/features/shell/app-shell';
+import { GRADES, GRADE_SEQUENCE } from '@/core/section';
+import { buildGradeFilters } from '@/features/shell/app-shell';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { logActivity } from '@/core/presence';
-import { CLEANED_ATTENDANCE_GRADES } from '@/core/config';
 
 // شيل كل سجلات الحضور (كل التواريخ) الخاصة بمجموعة مخدومين معيّنين من فايرستور،
 // من غير ما نلمس attendanceCount المحفوظ في ملف كل واحد — فيفضل عدد مرات الحضور
@@ -74,7 +73,7 @@ window.promoteGradeYear = async () => {
       if (purged > 0) showToast(`🧹 اتشال ${purged} سجل حضور قديم من السنة اللي فاتت`, 'success');
     } catch (e) {
       console.error(e);
-      showToast('الترقية تمت، بس حصل خطأ أثناء تنظيف الحضور القديم — استخدم زرار "تنظيف حضور قديم"', 'error');
+      showToast('الترقية تمت، بس حصل خطأ أثناء تنظيف الحضور القديم — حاول تاني أو كلّم الأدمن', 'error');
     }
   } catch (e) {
     console.error(e);
@@ -82,56 +81,3 @@ window.promoteGradeYear = async () => {
   }
 };
 
-// تنظيف يدوي لمرة واحدة: شيل حضور قديم (قبل تاريخ معيّن) لمخدومين الفصل النشط دلوقتي (activeGrade)
-// — بيستخدم لتصحيح ترقيات سنة اتعملت قبل إضافة التنظيف التلقائي (زي ترقية 11/9/2026)، أو أي
-// تنظيف يدوي تاني. بيشتغل على الفصل اللي واقف فيه بس (نفس اللي شغال بيه من شريط الفصول فوق)،
-// عشان allStudents أصلاً بيحمل مخدومين الفصل النشط بس. عدد مرات الحضور (attendanceCount) بيفضل
-// محفوظ في ملف كل مخدوم زي ما هو، وبعد أول تنظيف ناجح للفصل ده الزرار بيختفي تلقائي.
-window.cleanupOldAttendanceManual = async () => {
-  if (state.currentUserRole !== 'admin') { showToast('الأدمن بس يقدر يعمل التنظيف ده', 'error'); return; }
-  if (!state.activeGrade) { showToast('اختار الفصل الأول من شريط الفصول فوق', 'error'); return; }
-
-  const cutoff = prompt(`هيتشال كل حضور "${state.activeGrade}" *قبل* التاريخ ده (يعني اليوم ده نفسه مش هيتشال). اكتب التاريخ بصيغة YYYY-MM-DD، مثلاً 2026-09-11:`);
-  if (!cutoff || !/^\d{4}-\d{2}-\d{2}$/.test(cutoff)) { showToast('صيغة التاريخ لازم تكون YYYY-MM-DD', 'error'); return; }
-
-  const targetStudents = state.allStudents.filter(s => s.grade === state.activeGrade);
-  if (!targetStudents.length) { showToast('مفيش مخدومين في الفصل النشط ده', 'error'); return; }
-
-  if (!confirm(`هيتشال كل حضور ${targetStudents.length} مخدوم (${state.activeGrade}) قبل ${cutoff}.\nعدد مرات الحضور المحفوظ في ملف كل واحد هيفضل زي ما هو، بس التواريخ التفصيلية القديمة هتتشال نهائي.\nمتأكد؟`)) return;
-
-  try {
-    const ids = targetStudents.map(s => s.id);
-    let deletedCount = 0;
-    for (let i = 0; i < ids.length; i += 10) {
-      const chunk = ids.slice(i, i + 10);
-      const snap = await getDocs(query(collection(db, 'attendance'), where('studentId', 'in', chunk)));
-      let batch = writeBatch(db);
-      let opCount = 0;
-      for (const d of snap.docs) {
-        const data = d.data();
-        if (data.date < cutoff) {
-          batch.delete(doc(db, 'attendance', d.id));
-          deletedCount++;
-          opCount++;
-          if (state.allAttendance[data.date]) delete state.allAttendance[data.date][data.studentId];
-          if (opCount === 450) { await batch.commit(); batch = writeBatch(db); opCount = 0; }
-        }
-      }
-      if (opCount > 0) await batch.commit();
-    }
-    updateStats();
-    renderTodayList();
-    showToast(`✅ اتشال ${deletedCount} سجل حضور قديم من "${state.activeGrade}"`, 'success');
-    logActivity('تنظيف حضور قديم', `${state.activeGrade} قبل ${cutoff} (${deletedCount} سجل)`);
-
-    // سجّل إن الفصل ده اتنضف عشان الزرار يختفي ليه (محفوظ في Firestore فيبان لكل الأدمنية بنفس الشكل)
-    if (!CLEANED_ATTENDANCE_GRADES.includes(state.activeGrade)) {
-      CLEANED_ATTENDANCE_GRADES.push(state.activeGrade);
-      setDoc(doc(db, 'config', 'settings'), { [SECTION === 'girls' ? 'cleanedAttendanceGradesGirls' : 'cleanedAttendanceGrades']: CLEANED_ATTENDANCE_GRADES }, { merge: true }).catch(() => {});
-    }
-    updateAttendanceCleanupVisibility();
-  } catch (e) {
-    console.error(e);
-    showToast('حصل خطأ أثناء التنظيف، حاول تاني', 'error');
-  }
-};

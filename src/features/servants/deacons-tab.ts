@@ -57,7 +57,6 @@ window.buildDeaconChips = async function() {
       // Accounts that still carry the old flags keep working and show their badges here.
       let adminBtn = '';
       if (!u) adminBtn = `<span class="deacon-no-account">لسه ماسجلش حساب</span>`;
-      else if (isAdmin) adminBtn = `<button class="deacon-admin-btn not-admin" onclick="event.stopPropagation();openReactScreen('admin-roles')">👥 الأدوار</button>`;
       else if (isDeaconLead || isDeaconPhaseLead) adminBtn = `<span class="deacon-no-account">${isDeaconLead ? '⭐ مسؤول السنة' : ''}${isDeaconPhaseLead ? ' 🟣 مسؤول المرحلة' : ''}</span>`;
       return `
         <div class="deacon-row" data-deacon="${d}" onclick="setDeacon('${d}',this)">
@@ -137,12 +136,10 @@ window.setDeacon = (d, btn) => {
 window.showDeaconDetailView = (d) => {
   const addBtnWrap = document.getElementById('add-deacon-btn-wrap');
   const pickerWrap = document.getElementById('deacon-picker-wrap');
-  const pendingSection = document.getElementById('pending-deacons-section');
   const detailHeader = document.getElementById('deacon-detail-header');
   const detailName = document.getElementById('deacon-detail-name');
   if (addBtnWrap) addBtnWrap.style.display = 'none';
   if (pickerWrap) pickerWrap.style.display = 'none';
-  if (pendingSection) pendingSection.style.display = 'none';
   if (detailHeader) detailHeader.style.display = 'flex';
   if (detailName) detailName.textContent = '🙏 ' + d;
 };

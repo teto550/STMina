@@ -7,15 +7,7 @@ import { getDocFast } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { enterApp } from '@/features/shell/app-shell';
 
-// ===== بيانات الخادم الأساسية ناقصة؟ (بيتاخد منه مرة واحدة بس أول ما يدخل) =====
-export function isProfileIncomplete(data) {
-  if (!data) return true;
-  const hasPhone = (data.phones && data.phones.length) || data.phone;
-  if (!hasPhone || !data.dob || !data.address) return true;
-  if (typeof data.graduated !== 'boolean') return true;
-  if (data.graduated === false && (!data.college || !data.university)) return true;
-  return false;
-}
+// (the check "is the basic data missing?" is `isProfileIncomplete` in src/api/account.ts)
 
 let COMPLETE_PROFILE_UID = null;
 
@@ -77,7 +69,9 @@ window.saveCompleteProfile = async function() {
     btn.disabled = false; btn.textContent = '✅ حفظ ومتابعة';
     await enterApp(user, snapData);
   } catch(e) {
-    err.textContent = 'حدث خطأ، حاول تاني';
+    // show WHY (the code), so a report from a phone says what happened: e.g. permission-denied = the Firestore rules refused the save
+    console.error('saveCompleteProfile error:', e);
+    err.textContent = 'حدث خطأ، حاول تاني' + (e && e.code ? ` (${e.code})` : '');
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '✅ حفظ ومتابعة';
   }

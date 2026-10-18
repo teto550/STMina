@@ -16,13 +16,23 @@ service cloud.firestore {
       return isApproved() && myDoc().role == 'admin';
     }
     function isLead() {
-      return isApproved() && myDoc().role == 'deacon' && myDoc().isLead == true;
+      return isApproved() && myDoc().role == 'deacon' && myDoc().get('isLead', false) == true;
     }
     // 🆕 مسؤول مرحلة (نفس منطق التطبيق: isPhaseLead أو عنده phaseGrades)
     function isPhaseLead() {
       return isApproved()
         && (myDoc().get('isPhaseLead', false) == true
             || myDoc().get('phaseGrades', []).size() > 0);
+    }
+
+    // Servants block of a role (docs/ROLES-DESIGN.md): `users.access.servants` = ['male'] (خدام, the boys' section) and / or ['female']
+    // (خادمات, the girls' section), written by the admin screen. Whoever holds it manages the servants of that section: here, reading and
+    // deciding the pending join requests of that section.
+    function managesServantsOf(section) {
+      return isApproved() && (
+        isAdmin()
+        || (section == 'girls' ? 'female' : 'male') in myDoc().get('access', {}).get('servants', [])
+      );
     }
 
     // ===== users =====
@@ -33,7 +43,10 @@ service cloud.firestore {
         request.auth.uid == userId ||
         isAdmin() ||
         (isApproved() && resource.data.status == 'approved') ||
-        (isLead() && resource.data.status == 'pending')
+        (isLead() && resource.data.status == 'pending') ||
+        // NO `.get(..., default)` here on purpose: for a list query the rule is checked against the query's own constraints, and a default
+        // would let a query WITHOUT `where('section', '==', ...)` through and return the other section's requests too
+        (resource.data.status == 'pending' && managesServantsOf(resource.data.section))
       );
 
       // التسجيل: يقدر ينشئ ملفه هو بس، وإجباريًا status=pending و role=deacon —
@@ -57,7 +70,9 @@ service cloud.firestore {
         || (isSignedIn() && request.auth.uid == userId
             && request.resource.data.role   == resource.data.role
             && request.resource.data.status == resource.data.status
-            && request.resource.data.isLead == resource.data.isLead
+            // `isLead` is not on a new account (the create rule forbids it), and reading a missing field is an ERROR in rules, which
+            // denied EVERY self-edit of a servant who was never a lead (2026-10-16: the "complete your data" screen failed). `.get` with a default fixes that.
+            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false)
             && request.resource.data.get('isPhaseLead', false) == resource.data.get('isPhaseLead', false)
             && request.resource.data.get('phaseGrades', null)  == resource.data.get('phaseGrades', null)
             // roles design: the person link and the access snapshot are set by an admin only
@@ -65,7 +80,13 @@ service cloud.firestore {
             && request.resource.data.get('access', null)   == resource.data.get('access', null))
         || (isLead() && resource.data.grade == myDoc().grade
             && request.resource.data.role == resource.data.role
-            && request.resource.data.isLead == resource.data.isLead);
+            && request.resource.data.get('isLead', false) == resource.data.get('isLead', false))
+        // whoever manages the servants of this section may approve or reject a pending request of it: only the status, and the link to
+        // the person of the servants list; never the role, the access snapshot or anything else
+        || (resource.data.status == 'pending'
+            && managesServantsOf(resource.data.get('section', 'boys'))
+            && request.resource.data.status in ['approved', 'rejected']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'deaconId']));
 
       allow delete: if isAdmin();
     }
@@ -148,8 +169,24 @@ service cloud.firestore {
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       );
-      // only an admin, and only to rename the servant (admin screen: rename a servant)
-      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deaconName']);
+      // editing a part (give it its type / servant later, change the day, the title or the reference; the admin screen also renames the servant): the
+      // manager of the class (or an admin), and only these fields: never the class, the section or who created it
+      allow update: if isApproved() && (
+        isAdmin() ||
+        (isLead() && myDoc().grade == resource.data.grade) ||
+        (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'title', 'date', 'reference', 'deaconName', 'deaconId', 'updatedAt']);
+    }
+
+    // ===== occasions: the Christian occasions (feasts, fasts), ONE list for every class: { title, date } =====
+    // every approved account reads (a list query must be a range on `date`: one year at a time); only an admin writes
+    match /occasions/{occasionId} {
+      allow read: if isApproved();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'date'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+      allow delete: if isAdmin();
     }
 
     // أي حاجة تانية غير كده: ممنوعة
