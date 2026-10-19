@@ -8,6 +8,7 @@ export type ScreenProps = { close?: () => void };
 type Loader = () => Promise<{ default: ComponentType<any> }>;
 
 export const screens: Record<string, Loader> = {
+  'admin-home': () => import('./admin-home'),
   'admin-roles': () => import('./admin-roles'),
   'edit-servant': () => import('./edit-servant'),
   auth: () => import('./auth'),

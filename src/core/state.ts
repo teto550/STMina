@@ -14,6 +14,7 @@ export const state = {
   currentUserIsLead: false, // هل هو "مسؤول" السنة دي
   currentUserIsPhaseLead: false, // هل هو "مسؤول" مرحلة (فصلين/أكثر)
   activeGrade: null, // السنة الدراسية المعروضة/بيتم التعامل معاها دلوقتي
+  adminHomeOpen: false, // the admin home (cards الفصول | الخدام, or the list of classes) is showing instead of a class or the servants
   servantsDirectoryOpen: false, // هل خانة "🙏 الخدام" (جنب الفصول) مفتوحة دلوقتي بدل تابات الفصل العادية
   lastActiveMainTab: 'home', // آخر تاب رئيسي كان مفتوح قبل ما ندخل خانة الخدام
   allStudents: [],

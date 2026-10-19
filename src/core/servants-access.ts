@@ -20,3 +20,12 @@ export function canUseServantsTab(): boolean {
 export function isClasslessManager(): boolean {
   return state.currentUserRole !== 'admin' && canUseServantsTab() && getUserManagedGrades().length === 0;
 }
+
+/**
+ * Does this person start on the split home (cards "الفصول" and "الخدام") instead of straight inside one class? Everyone who can open
+ * both the classes and the servants section: admins, and people whose roles manage the servants and also have a class. A manager
+ * of servants with no class goes straight to الخدام (see above); everyone else is tied to their own class and sees no split.
+ */
+export function usesSplitHome(): boolean {
+  return canUseServantsTab() && !isClasslessManager();
+}
