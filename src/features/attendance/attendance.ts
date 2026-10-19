@@ -11,6 +11,7 @@ import { logActivity } from '@/core/presence';
 import { attFilteredStudents } from '@/features/students/students';
 import { avatarBox } from '@/features/students/photos';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
+import { canTakeAttendanceOn, getClassSetting, DAY_NAMES } from '@/core/class-settings';
 
 // ===== SYNC ATTENDANCE COUNTS =====
 // ===== ATTENDANCE =====
@@ -62,6 +63,12 @@ export async function markPresent(studentId) {
   if (state.todayAttendance[studentId]) return false;
   const key = todayKey();
   const stu = state.allStudents.find(s => s.id === studentId);
+
+  // the admin can fix the weekday of a class (الفصول → تعديل): attendance of that class is taken on that day only
+  if (stu && !canTakeAttendanceOn(stu.grade, key)) {
+    showToast(`حضور ${stu.grade} بيتسجل يوم ${DAY_NAMES[getClassSetting(stu.grade).serviceDay]} بس`, 'error');
+    return false;
+  }
 
   // تحديث فوري للواجهة (optimistic) — من غير ما ننتظر رد السيرفر.
   // ده اللي بيخلي التسجيل يحس إنه فوري حتى لو النت مقطوع؛ Firestore بيحفظ

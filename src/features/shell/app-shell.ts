@@ -12,6 +12,8 @@ import { applyActiveGradeDeacons } from '@/features/servants/deacons';
 import { reloadOpenTab } from '@/features/shell/tabs';
 import { canUseServantsTab, isClasslessManager, usesSplitHome } from '@/core/servants-access';
 import { AdminHomeView } from '@/react/screens/admin-home/view';
+import { ensureClassSettings, updateClassSettings } from '@/features/classes/class-settings';
+import { getKeptClassSettings } from '@/core/class-settings';
 
 // بعد التأكد إن الحساب معتمد وبياناته كاملة: يدخل التطبيق فعليًا
 export async function enterApp(user, snapData) {
@@ -236,7 +238,11 @@ function hideAdminHome() {
   }
 }
 
-export function showAdminHome(view) {
+export async function showAdminHome(view) {
+  // the list of classes shows each class's emoji and day: one small read, kept for a few minutes
+  if (view === AdminHomeView.Classes) {
+    await ensureClassSettings();
+  }
   state.adminHomeOpen = true;
   state.servantsDirectoryOpen = false;
   document.getElementById('main-tabs').style.display = 'none';
@@ -254,6 +260,9 @@ export function showAdminHome(view) {
     grades: state.currentUserRole === 'admin' ? GRADES.slice() : GRADES.filter(g => getUserManagedGrades().includes(g)),
     activeGrade: state.activeGrade,
     startView: view === AdminHomeView.Classes ? AdminHomeView.Classes : AdminHomeView.Home,
+    settings: getKeptClassSettings(),
+    canEditClasses: state.currentUserRole === 'admin',
+    onSaveSettings: updateClassSettings,
     onOpenClass: openClassFromAdminHome,
     onOpenServants: () => showServantsHome()
   });

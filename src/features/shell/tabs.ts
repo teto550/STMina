@@ -8,6 +8,8 @@ import { sectionTag } from '@/core/section';
 import { initStatsTab } from '@/features/dashboard/stats';
 import { initOnlineTab } from '@/features/servants/online';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
+import { classEmoji } from '@/core/class-settings';
+import { ensureClassSettings } from '@/features/classes/class-settings';
 import { ensureStudents, ensureDeacons, ensureAttendance, ensureTodayListener, refreshAllData } from '@/core/data';
 
 // ===== TABS =====
@@ -18,7 +20,7 @@ let loadToken = 0;
 async function loadTabData(tab) {
   const mine = ++loadToken;
   try {
-    if (tab === 'attendance')  { await ensureStudents(); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
+    if (tab === 'attendance')  { await Promise.all([ensureStudents(), ensureClassSettings()]); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
     else if (tab === 'students') { await Promise.all([ensureStudents(), ensureDeacons()]); }
     else if (tab === 'deacons')  { await Promise.all([ensureDeacons(), ensureStudents()]); }
     else if (tab === 'parts')    { await ensureDeacons(); }
@@ -61,7 +63,16 @@ window.switchTab = (tab, btn) => {
   ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
-  if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? '📚 ' + state.activeGrade : ''; }
+  // Hdour way: the class home is the cards; inside a section there is a 🏠 button and the title of the section (no row of tabs)
+  const bar = document.getElementById('main-tabs');
+  if (bar) { bar.style.display = tab === 'home' ? 'none' : ''; }
+  const title = document.getElementById('section-title');
+  if (title) {
+    const names = { attendance: '✅ الحضور', students: '👥 المخدومين', deacons: '🙏 الخدام', parts: '📖 توزيع الفقرات', stats: '📊 إحصائيات', online: '👁 متابعة' };
+    title.textContent = (state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade + ' — ' : '') + (names[tab] || '');
+    title.style.display = tab === 'home' ? 'none' : 'block';
+  }
+  if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade : ''; }
   else loadTabData(tab);
 };
 

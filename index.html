@@ -104,26 +104,28 @@
     <div id="no-access-screen" style="display:none"></div>
     <div id="admin-home-screen" style="display:none"></div>
     <div class="tabs" id="main-tabs">
-      <button class="tab active" id="tab-btn-home" onclick="switchTab('home',this)">🏠 الرئيسية</button>
-      <button class="tab" id="tab-btn-attendance" onclick="switchTab('attendance',this)">الحضور</button>
-      <button class="tab" id="tab-btn-students" onclick="switchTab('students',this)" style="display:none">المخدومين</button>
-      <button class="tab" id="tab-btn-deacons" onclick="switchTab('deacons',this)"><span id="deacons-tab-label">الخدام</span><span id="deacons-tab-badge"></span></button>
-      <button class="tab" id="tab-btn-parts" onclick="switchTab('parts',this)">توزيع الفقرات</button>
-      <button class="tab" id="tab-btn-stats" onclick="switchTab('stats',this)">إحصائيات</button>
-      <button class="tab" id="tab-btn-online" onclick="switchTab('online',this)" style="display:none">👁 متابعة</button>
+      <button class="tab active" id="tab-btn-home" onclick="switchTab('home',this)" aria-label="الرئيسية">🏠</button>
+      <button class="tab" id="tab-btn-attendance" data-tab="attendance" onclick="switchTab('attendance',this)">الحضور</button>
+      <button class="tab" id="tab-btn-students" data-tab="students" onclick="switchTab('students',this)" style="display:none">المخدومين</button>
+      <button class="tab" id="tab-btn-deacons" data-tab="deacons" onclick="switchTab('deacons',this)"><span id="deacons-tab-label">الخدام</span><span id="deacons-tab-badge"></span></button>
+      <button class="tab" id="tab-btn-parts" data-tab="parts" onclick="switchTab('parts',this)">توزيع الفقرات</button>
+      <button class="tab" id="tab-btn-stats" data-tab="stats" onclick="switchTab('stats',this)">إحصائيات</button>
+      <button class="tab" id="tab-btn-online" data-tab="online" onclick="switchTab('online',this)" style="display:none">👁 متابعة</button>
     </div>
+
+    <div class="page-title-box" id="section-title" style="display:none"></div>
 
     <!-- HOME: the app opens here and reads nothing; each screen loads its own data when it is opened -->
     <div id="tab-home">
       <div class="home-class" id="home-class"></div>
       <p class="home-hint">اختر الخانة اللي عايز تفتحها. البيانات بتتحمل لما تفتح الخانة بس.</p>
-      <div class="home-grid">
-        <button class="home-tile" onclick="openTab('attendance')"><span class="home-icon">✅</span><span>الحضور</span></button>
-        <button class="home-tile" id="home-tile-students" onclick="openTab('students')"><span class="home-icon">👥</span><span>المخدومين</span></button>
-        <button class="home-tile" onclick="openTab('deacons')"><span class="home-icon">🙏</span><span>الخدام</span></button>
-        <button class="home-tile" onclick="openTab('parts')"><span class="home-icon">📖</span><span>توزيع الفقرات</span></button>
-        <button class="home-tile" onclick="openTab('stats')"><span class="home-icon">📊</span><span>إحصائيات</span></button>
-        <button class="home-tile" id="home-tile-online" onclick="openTab('online')" style="display:none"><span class="home-icon">👁</span><span>متابعة</span></button>
+      <div class="home-grid admin-grid">
+        <button class="home-tile admin-card" onclick="openTab('attendance')"><span class="home-icon">✅</span><span>الحضور</span></button>
+        <button class="home-tile admin-card" id="home-tile-students" onclick="openTab('students')"><span class="home-icon">👥</span><span>المخدومين</span></button>
+        <button class="home-tile admin-card" onclick="openTab('deacons')"><span class="home-icon">🙏</span><span>الخدام</span></button>
+        <button class="home-tile admin-card" onclick="openTab('parts')"><span class="home-icon">📖</span><span>توزيع الفقرات</span></button>
+        <button class="home-tile admin-card" onclick="openTab('stats')"><span class="home-icon">📊</span><span>إحصائيات</span></button>
+        <button class="home-tile admin-card" id="home-tile-online" onclick="openTab('online')" style="display:none"><span class="home-icon">👁</span><span>متابعة</span></button>
       </div>
       <button class="home-refresh" onclick="refreshData()">🔄 تحديث البيانات</button>
     </div>
