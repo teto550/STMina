@@ -105,6 +105,7 @@
     <div id="admin-home-screen" style="display:none"></div>
     <div class="tabs" id="main-tabs">
       <button class="tab active" id="tab-btn-home" onclick="switchTab('home',this)" aria-label="الرئيسية">🏠</button>
+      <span class="bar-title" id="section-title" style="display:none"></span>
       <button class="tab" id="tab-btn-attendance" data-tab="attendance" onclick="switchTab('attendance',this)">الحضور</button>
       <button class="tab" id="tab-btn-students" data-tab="students" onclick="switchTab('students',this)" style="display:none">المخدومين</button>
       <button class="tab" id="tab-btn-deacons" data-tab="deacons" onclick="switchTab('deacons',this)"><span id="deacons-tab-label">الخدام</span><span id="deacons-tab-badge"></span></button>
@@ -113,12 +114,9 @@
       <button class="tab" id="tab-btn-online" data-tab="online" onclick="switchTab('online',this)" style="display:none">👁 متابعة</button>
     </div>
 
-    <div class="page-title-box" id="section-title" style="display:none"></div>
-
     <!-- HOME: the app opens here and reads nothing; each screen loads its own data when it is opened -->
     <div id="tab-home">
       <div class="home-class" id="home-class"></div>
-      <p class="home-hint">اختر الخانة اللي عايز تفتحها. البيانات بتتحمل لما تفتح الخانة بس.</p>
       <div class="home-grid admin-grid">
         <button class="home-tile admin-card" onclick="openTab('attendance')"><span class="home-icon">✅</span><span>الحضور</span></button>
         <button class="home-tile admin-card" id="home-tile-students" onclick="openTab('students')"><span class="home-icon">👥</span><span>المخدومين</span></button>

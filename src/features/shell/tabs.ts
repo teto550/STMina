@@ -70,7 +70,7 @@ window.switchTab = (tab, btn) => {
   if (title) {
     const names = { attendance: '✅ الحضور', students: '👥 المخدومين', deacons: '🙏 الخدام', parts: '📖 توزيع الفقرات', stats: '📊 إحصائيات', online: '👁 متابعة' };
     title.textContent = (state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade + ' — ' : '') + (names[tab] || '');
-    title.style.display = tab === 'home' ? 'none' : 'block';
+    title.style.display = tab === 'home' ? 'none' : '';
   }
   if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade : ''; }
   else loadTabData(tab);
