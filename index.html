@@ -105,7 +105,9 @@
     <div id="admin-home-screen" style="display:none"></div>
     <div class="tabs" id="main-tabs">
       <button class="tab active" id="tab-btn-home" onclick="switchTab('home',this)" aria-label="الرئيسية">🏠</button>
-      <span class="bar-title" id="section-title" style="display:none"></span>
+      <button type="button" class="crumb" id="crumb-class" onclick="switchTab('home', document.getElementById('tab-btn-home'))">الفصل</button>
+      <span class="crumb-sep" id="crumb-sep" aria-hidden="true">‹</span>
+      <span class="bar-title" id="section-title"></span>
       <button class="tab" id="tab-btn-attendance" data-tab="attendance" onclick="switchTab('attendance',this)">الحضور</button>
       <button class="tab" id="tab-btn-students" data-tab="students" onclick="switchTab('students',this)" style="display:none">المخدومين</button>
       <button class="tab" id="tab-btn-deacons" data-tab="deacons" onclick="switchTab('deacons',this)"><span id="deacons-tab-label">الخدام</span><span id="deacons-tab-badge"></span></button>

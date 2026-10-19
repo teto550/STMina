@@ -66,11 +66,11 @@ window.switchTab = (tab, btn) => {
   // Hdour way: the class home is the cards; inside a section there is a 🏠 button and the title of the section (no row of tabs)
   const bar = document.getElementById('main-tabs');
   if (bar) { bar.style.display = tab === 'home' ? 'none' : ''; }
+  // the bar reads "الفصل ‹ الحضور": the level before (the class, tap it to see the tabs) and the tab you are in
   const title = document.getElementById('section-title');
   if (title) {
     const names = { attendance: '✅ الحضور', students: '👥 المخدومين', deacons: '🙏 الخدام', parts: '📖 توزيع الفقرات', stats: '📊 إحصائيات', online: '👁 متابعة' };
-    title.textContent = (state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade + ' — ' : '') + (names[tab] || '');
-    title.style.display = tab === 'home' ? 'none' : '';
+    title.textContent = names[tab] || '';
   }
   if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade : ''; }
   else loadTabData(tab);
