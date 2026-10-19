@@ -10,7 +10,8 @@ import { setupPushBell } from '@/features/shell/push';
 import { auth } from '@/core/firebase';
 import { applyActiveGradeDeacons } from '@/features/servants/deacons';
 import { reloadOpenTab } from '@/features/shell/tabs';
-import { canUseServantsTab, isClasslessManager } from '@/core/servants-access';
+import { canUseServantsTab, isClasslessManager, usesSplitHome } from '@/core/servants-access';
+import { AdminHomeView } from '@/react/screens/admin-home/view';
 
 // بعد التأكد إن الحساب معتمد وبياناته كاملة: يدخل التطبيق فعليًا
 export async function enterApp(user, snapData) {
@@ -115,6 +116,20 @@ function applyRoleUI() {
 export function buildActiveGradeBar() {
   const bar = document.getElementById('active-grade-bar');
   if (!bar) return;
+  // the split home (cards الفصول | الخدام): no chip per class any more. Inside a class or the servants section the bar is a way back
+  // (🏠 the two cards, 🏫 the list of classes) plus a label of where you are; on the home itself there is nothing to show
+  if (usesSplitHome()) {
+    if (state.adminHomeOpen) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+    const here = state.servantsDirectoryOpen ? '🙏 الخدام' : '📚 ' + (state.activeGrade || '');
+    bar.innerHTML = `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Home}')">🏠 الرئيسية</button>`
+      + `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Classes}')">🏫 الفصول</button>`
+      + `<button class="grade-chip active" aria-current="page">${here}</button>`;
+    return;
+  }
   // a person with role-based access and several classes also switches between them
   const isManager = state.currentUserRole === 'admin' || state.currentUserIsLead || state.currentUserIsPhaseLead || canUseServantsTab() || (state.accessSource === 'roles' && getUserManagedGrades().length > 1);
   if (!isManager) { bar.style.display = 'none'; return; }
@@ -134,7 +149,7 @@ export function buildActiveGradeBar() {
 // "no access yet": hides every tab and class screen and shows the React panel 'no-access' instead
 export function showNoAccessScreen() {
   state.activeGrade = null;
-  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
+  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', 'admin-home-screen', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -147,6 +162,7 @@ export function showNoAccessScreen() {
 export function showMainAppTabs() {
   if (isClasslessManager()) return; // nothing but the الخدام tab for them
   document.getElementById('servants-directory-modal').style.display = 'none';
+  hideAdminHome();
   document.getElementById('main-tabs').style.display = '';
   const btn = document.getElementById('tab-btn-' + state.lastActiveMainTab) || document.getElementById('tab-btn-attendance');
   window.switchTab(btn.id.replace('tab-btn-', ''), btn);
@@ -154,12 +170,44 @@ export function showMainAppTabs() {
 
 // بيخفي تابات الفصل العادية ويظهر خانة "الخدام" بدالها، في نفس مكان الصفحة (مش أوفرلاي منفصل)
 export function showServantsDirectorySection() {
+  hideAdminHome();
   document.getElementById('main-tabs').style.display = 'none';
   ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.style.display = 'none';
   });
   document.getElementById('servants-directory-modal').style.display = 'block';
+}
+
+// makes `g` the class the app works on: remembers it, refreshes the labels and the servants of that class. Reads nothing by itself.
+function applyActiveGrade(g) {
+  state.activeGrade = g;
+  state.servantsDirectoryOpen = false;
+  try {
+    if (auth.currentUser) {
+      localStorage.setItem('activeGrade_' + auth.currentUser.uid, g);
+    }
+  } catch (e) {}
+  buildActiveGradeBar();
+  buildGradeFilters();
+  const gradeLabelEl = document.getElementById('deacon-tab-grade-label');
+  if (gradeLabelEl) {
+    gradeLabelEl.textContent = `📚 بتتعامل دلوقتي مع خدام: ${state.activeGrade}`;
+  }
+  document.getElementById('user-email-display').textContent =
+    `${state.currentUserRole === 'admin' ? '👑' : '🙏'} ${state.currentUserName} — ${state.activeGrade}`;
+  const homeClass = document.getElementById('home-class');
+  if (homeClass) {
+    homeClass.textContent = '📚 ' + state.activeGrade;
+  }
+  state.currentDeacon = null;
+  // Switching class reads nothing by itself. The servants of all classes are already in memory once loaded, and the
+  // students/parts of the new class are fetched only if a screen that shows them is open (otherwise when it opens).
+  if (state.ALL_DEACONS_RAW.length) {
+    applyActiveGradeDeacons();
+  }
+  backToDeaconList();
+  updateDeaconsTabLabel();
 }
 
 window.switchActiveGrade = async (g) => {
@@ -170,26 +218,61 @@ window.switchActiveGrade = async (g) => {
   }
   const cameFromServants = state.servantsDirectoryOpen;
   if (g === state.activeGrade && !cameFromServants) return;
-  state.activeGrade = g;
-  state.servantsDirectoryOpen = false;
   if (cameFromServants) showMainAppTabs();
-  try { if (auth.currentUser) localStorage.setItem('activeGrade_' + auth.currentUser.uid, g); } catch(e) {}
-  buildActiveGradeBar();
-  buildGradeFilters();
-  const gradeLabelEl = document.getElementById('deacon-tab-grade-label');
-  if (gradeLabelEl) gradeLabelEl.textContent = `📚 بتتعامل دلوقتي مع خدام: ${state.activeGrade}`;
-  document.getElementById('user-email-display').textContent =
-    `👑 ${state.currentUserName} — ${state.activeGrade}`;
-  const homeClass = document.getElementById('home-class'); if (homeClass) homeClass.textContent = '📚 ' + state.activeGrade;
-  state.currentDeacon = null;
-  // Switching class reads nothing by itself. The servants of all classes are already in memory once loaded, and the
-  // students/parts of the new class are fetched only if a screen that shows them is open (otherwise when it opens).
-  if (state.ALL_DEACONS_RAW.length) applyActiveGradeDeacons();
-  backToDeaconList();
-  updateDeaconsTabLabel();
+  applyActiveGrade(g);
   await reloadOpenTab();
   showToast('السنة الدراسية النشطة: ' + g, 'success');
 };
+
+// ===== الرئيسية المقسومة: 🏫 الفصول | 🙏 الخدام (للأدمن ولمسؤول الخدام اللي معاه فصول) =====
+// Same split as the Hdour app: the home has two cards. الفصول lists every class, picking one opens that class with its own tabs
+// (the home tiles + the tab bar); الخدام opens the servants section of the whole app. A bar above ("🏠 الرئيسية / 🏫 الفصول") leads back.
+function hideAdminHome() {
+  state.adminHomeOpen = false;
+  const host = document.getElementById('admin-home-screen');
+  if (host) {
+    host.style.display = 'none';
+  }
+}
+
+export function showAdminHome(view) {
+  state.adminHomeOpen = true;
+  state.servantsDirectoryOpen = false;
+  document.getElementById('main-tabs').style.display = 'none';
+  document.getElementById('servants-directory-modal').style.display = 'none';
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) {
+      el.style.display = 'none';
+    }
+  });
+  document.getElementById('user-email-display').textContent = `${state.currentUserRole === 'admin' ? '👑' : '🙏'} ${state.currentUserName}`;
+  const host = document.getElementById('admin-home-screen');
+  host.style.display = 'block';
+  window.openReactScreen('admin-home', host, {
+    grades: state.currentUserRole === 'admin' ? GRADES.slice() : GRADES.filter(g => getUserManagedGrades().includes(g)),
+    activeGrade: state.activeGrade,
+    startView: view === AdminHomeView.Classes ? AdminHomeView.Classes : AdminHomeView.Home,
+    onOpenClass: openClassFromAdminHome,
+    onOpenServants: () => window.openServantsDirectory()
+  });
+  buildActiveGradeBar();
+}
+window.showAdminHome = showAdminHome;
+
+function openClassFromAdminHome(g) {
+  if (!GRADES.includes(g)) {
+    return;
+  }
+  if (state.currentUserRole !== 'admin' && !canManageGrade(g)) {
+    showToast('ده الفصل مش مسموح لك التعامل فيه', 'error');
+    return;
+  }
+  hideAdminHome();
+  applyActiveGrade(g);
+  document.getElementById('main-tabs').style.display = '';
+  window.switchTab('home', document.getElementById('tab-btn-home'));
+}
 
 // ===== INIT =====
 async function initApp() {
@@ -201,6 +284,11 @@ async function initApp() {
   // someone with no class (only manages servants) lands on the الخدام tab; there is no home / class screen for them
   if (isClasslessManager()) {
     window.openServantsDirectory();
+    return;
+  }
+  // admins (and managers of servants who also have classes) start on the two cards الفصول | الخدام; everyone else goes into their class
+  if (usesSplitHome()) {
+    showAdminHome(AdminHomeView.Home);
     return;
   }
   window.switchTab('home', document.getElementById('tab-btn-home'));
