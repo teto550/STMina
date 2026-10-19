@@ -77,7 +77,8 @@ window.setDirFilterType = (type, btn) => {
   renderServantsDirectory();
 };
 
-window.openServantsDirectory = async () => {
+window.openServantsDirectory = async (section) => {
+  const startTab = section === 'list' ? 'list' : 'att'; // the servants cards pick the tab; any other caller (chip, home tile) lands on الحضور
   if (!canUseServantsTab()) { showToast('تاب الخدام مش متاح لك', 'error'); return; }
   state.servantsDirectoryOpen = true;
   resetDeaconAttDay(); // التحضير بيبدأ على اليوم اللي اتفتحت فيه الخانة
@@ -105,8 +106,8 @@ window.openServantsDirectory = async () => {
   loadPendingDeacons().then(updateServantsDashStats).catch(e => console.warn('join requests count:', e)); // all classes, not just the active one
   state.servantsGradeFilter = '';
   mountServantsClassFilter();
-  // كل مرة تتفتح الخانة: تابع الحضور → حضور مدارس الأحد (مهما كان اللي اتفتح قبل كده)
-  window.setServantsTab('att', document.getElementById('sd-tab-btn-att'));
+  // كل مرة تتفتح الخانة: التاب اللي اتختار من الكروت (الحضور افتراضيًا) → حضور مدارس الأحد (مهما كان اللي اتفتح قبل كده)
+  window.setServantsTab(startTab, document.getElementById('sd-tab-btn-' + startTab));
   window.setDeaconAttType('sunday', document.getElementById('sd-type-btn-sunday'));
   renderServantsDirectory();
 };

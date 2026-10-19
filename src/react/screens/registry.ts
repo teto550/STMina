@@ -10,6 +10,7 @@ type Loader = () => Promise<{ default: ComponentType<any> }>;
 export const screens: Record<string, Loader> = {
   'admin-home': () => import('./admin-home'),
   'admin-roles': () => import('./admin-roles'),
+  'servants-home': () => import('./servants-home'),
   'edit-servant': () => import('./edit-servant'),
   auth: () => import('./auth'),
   'join-requests': () => import('./join-requests'),

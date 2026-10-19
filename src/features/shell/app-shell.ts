@@ -127,6 +127,7 @@ export function buildActiveGradeBar() {
     const here = state.servantsDirectoryOpen ? '🙏 الخدام' : '📚 ' + (state.activeGrade || '');
     bar.innerHTML = `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Home}')">🏠 الرئيسية</button>`
       + `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Classes}')">🏫 الفصول</button>`
+      + (state.servantsDirectoryOpen ? `<button class="grade-chip" onclick="showServantsHome()">🙏 كروت الخدام</button>` : '')
       + `<button class="grade-chip active" aria-current="page">${here}</button>`;
     return;
   }
@@ -254,11 +255,35 @@ export function showAdminHome(view) {
     activeGrade: state.activeGrade,
     startView: view === AdminHomeView.Classes ? AdminHomeView.Classes : AdminHomeView.Home,
     onOpenClass: openClassFromAdminHome,
-    onOpenServants: () => window.openServantsDirectory()
+    onOpenServants: () => showServantsHome()
   });
   buildActiveGradeBar();
 }
 window.showAdminHome = showAdminHome;
+
+// the servants section opens on cards first (الحضور / الخدام / الأدوار), like Hdour; a card then opens that part of the servants section
+export function showServantsHome() {
+  state.adminHomeOpen = true;
+  state.servantsDirectoryOpen = false;
+  document.getElementById('main-tabs').style.display = 'none';
+  document.getElementById('servants-directory-modal').style.display = 'none';
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) {
+      el.style.display = 'none';
+    }
+  });
+  const host = document.getElementById('admin-home-screen');
+  host.style.display = 'block';
+  window.openReactScreen('servants-home', host, {
+    showRoles: state.currentUserRole === 'admin',
+    onOpenSection: (section) => window.openServantsDirectory(section),
+    onOpenRoles: () => window.openReactScreen('admin-roles'),
+    onBack: () => showAdminHome(AdminHomeView.Home)
+  });
+  buildActiveGradeBar();
+}
+window.showServantsHome = showServantsHome;
 
 function openClassFromAdminHome(g) {
   if (!GRADES.includes(g)) {
