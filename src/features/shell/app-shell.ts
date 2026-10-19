@@ -152,7 +152,7 @@ export function buildActiveGradeBar() {
 // "no access yet": hides every tab and class screen and shows the React panel 'no-access' instead
 export function showNoAccessScreen() {
   state.activeGrade = null;
-  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', 'admin-home-screen', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
+  ['active-grade-bar', 'main-tabs', 'section-title', 'servants-directory-modal', 'admin-home-screen', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -175,6 +175,7 @@ export function showMainAppTabs() {
 export function showServantsDirectorySection() {
   hideAdminHome();
   document.getElementById('main-tabs').style.display = 'none';
+  hideSectionTitle();
   ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.style.display = 'none';
@@ -238,22 +239,15 @@ function hideAdminHome() {
   }
 }
 
-export async function showAdminHome(view) {
-  // the list of classes shows each class's emoji and day: one small read, kept for a few minutes
-  if (view === AdminHomeView.Classes) {
-    await ensureClassSettings();
+// the title box of a class section ("🌟 الفصل — ✅ الحضور") belongs to the class screens only: every other screen hides it
+function hideSectionTitle() {
+  const title = document.getElementById('section-title');
+  if (title) {
+    title.style.display = 'none';
   }
-  state.adminHomeOpen = true;
-  state.servantsDirectoryOpen = false;
-  document.getElementById('main-tabs').style.display = 'none';
-  document.getElementById('servants-directory-modal').style.display = 'none';
-  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
-    const el = document.getElementById('tab-' + t);
-    if (el) {
-      el.style.display = 'none';
-    }
-  });
-  document.getElementById('user-email-display').textContent = `${state.currentUserRole === 'admin' ? '👑' : '🙏'} ${state.currentUserName}`;
+}
+
+function mountAdminHome(view) {
   const host = document.getElementById('admin-home-screen');
   host.style.display = 'block';
   window.openReactScreen('admin-home', host, {
@@ -266,7 +260,33 @@ export async function showAdminHome(view) {
     onOpenClass: openClassFromAdminHome,
     onOpenServants: () => showServantsHome()
   });
+}
+
+export function showAdminHome(view) {
+  state.adminHomeOpen = true;
+  state.servantsDirectoryOpen = false;
+  document.getElementById('main-tabs').style.display = 'none';
+  hideSectionTitle();
+  document.getElementById('servants-directory-modal').style.display = 'none';
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) {
+      el.style.display = 'none';
+    }
+  });
+  document.getElementById('user-email-display').textContent = `${state.currentUserRole === 'admin' ? '👑' : '🙏'} ${state.currentUserName}`;
+  const shownWith = JSON.stringify(getKeptClassSettings());
+  mountAdminHome(view);
   buildActiveGradeBar();
+  // the list of classes shows each class's emoji and day: one small read (kept for a few minutes), and the screen never waits for it
+  if (view === AdminHomeView.Classes) {
+    ensureClassSettings().then(() => {
+      const stillHere = state.adminHomeOpen && document.getElementById('admin-home-screen').style.display === 'block';
+      if (stillHere && JSON.stringify(getKeptClassSettings()) !== shownWith) {
+        mountAdminHome(AdminHomeView.Classes);
+      }
+    });
+  }
 }
 window.showAdminHome = showAdminHome;
 
@@ -275,6 +295,7 @@ export function showServantsHome() {
   state.adminHomeOpen = true;
   state.servantsDirectoryOpen = false;
   document.getElementById('main-tabs').style.display = 'none';
+  hideSectionTitle();
   document.getElementById('servants-directory-modal').style.display = 'none';
   ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     const el = document.getElementById('tab-' + t);

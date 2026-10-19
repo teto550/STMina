@@ -20,7 +20,7 @@ let loadToken = 0;
 async function loadTabData(tab) {
   const mine = ++loadToken;
   try {
-    if (tab === 'attendance')  { await Promise.all([ensureStudents(), ensureClassSettings()]); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
+    if (tab === 'attendance')  { ensureClassSettings(); /* in the background: a slow network must never hold the list */ await ensureStudents(); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
     else if (tab === 'students') { await Promise.all([ensureStudents(), ensureDeacons()]); }
     else if (tab === 'deacons')  { await Promise.all([ensureDeacons(), ensureStudents()]); }
     else if (tab === 'parts')    { await ensureDeacons(); }
