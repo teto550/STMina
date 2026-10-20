@@ -9,6 +9,8 @@ import { initStatsTab } from '@/features/dashboard/stats';
 import { initOnlineTab } from '@/features/servants/online';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { classEmoji } from '@/core/class-settings';
+import { TAB_NAMES } from '@/core/tab-names';
+import { usesSplitHome } from '@/core/servants-access';
 import { ensureClassSettings } from '@/features/classes/class-settings';
 import { ensureStudents, ensureDeacons, ensureAttendance, ensureTodayListener, refreshAllData } from '@/core/data';
 
@@ -63,15 +65,13 @@ window.switchTab = (tab, btn) => {
   ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
-  // Hdour way: the class home is the cards; inside a section there is a 🏠 button and the title of the section (no row of tabs)
+  // Hdour way: the class home is the cards; inside a section there is no row of tabs. Whoever has the chip bar on top (🏠 الرئيسية / 🏫 الفصول /
+  // الفصل ‹ the tab) reads the way back there; everyone else (one class, no chip bar) gets the small "الفصل ‹ الحضور" bar below it.
   const bar = document.getElementById('main-tabs');
-  if (bar) { bar.style.display = tab === 'home' ? 'none' : ''; }
-  // the bar reads "الفصل ‹ الحضور": the level before (the class, tap it to see the tabs) and the tab you are in
+  if (bar) { bar.style.display = (tab === 'home' || usesSplitHome()) ? 'none' : ''; }
   const title = document.getElementById('section-title');
-  if (title) {
-    const names = { attendance: '✅ الحضور', students: '👥 المخدومين', deacons: '🙏 الخدام', parts: '📖 توزيع الفقرات', stats: '📊 إحصائيات', online: '👁 متابعة' };
-    title.textContent = names[tab] || '';
-  }
+  if (title) { title.textContent = TAB_NAMES[tab] || ''; }
+  if (window.buildActiveGradeBar) { window.buildActiveGradeBar(); }
   if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade : ''; }
   else loadTabData(tab);
 };

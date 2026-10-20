@@ -14,6 +14,7 @@ import { canUseServantsTab, isClasslessManager, usesSplitHome } from '@/core/ser
 import { AdminHomeView } from '@/react/screens/admin-home/view';
 import { ensureClassSettings, updateClassSettings } from '@/features/classes/class-settings';
 import { getKeptClassSettings } from '@/core/class-settings';
+import { TAB_NAMES } from '@/core/tab-names';
 
 // بعد التأكد إن الحساب معتمد وبياناته كاملة: يدخل التطبيق فعليًا
 export async function enterApp(user, snapData) {
@@ -126,11 +127,15 @@ export function buildActiveGradeBar() {
       return;
     }
     bar.style.display = 'flex';
-    const here = state.servantsDirectoryOpen ? '🙏 الخدام' : '📚 ' + (state.activeGrade || '');
+    // inside a class the third chip says الفصل (tap it: the cards of the class), and when a tab is open it is followed by that tab's name
+    const inTab = !!state.lastActiveMainTab && state.lastActiveMainTab !== 'home';
+    const classChips = `<button class="grade-chip ${inTab ? '' : 'active'}" ${inTab ? '' : 'aria-current="page"'} onclick="switchTab('home', document.getElementById('tab-btn-home'))">الفصل</button>`
+      + (inTab ? `<button class="grade-chip active" aria-current="page">${TAB_NAMES[state.lastActiveMainTab] || ''}</button>` : '');
     bar.innerHTML = `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Home}')">🏠 الرئيسية</button>`
       + `<button class="grade-chip" onclick="showAdminHome('${AdminHomeView.Classes}')">🏫 الفصول</button>`
-      + (state.servantsDirectoryOpen ? `<button class="grade-chip" onclick="showServantsHome()">🙏 كروت الخدام</button>` : '')
-      + `<button class="grade-chip active" aria-current="page">${here}</button>`;
+      + (state.servantsDirectoryOpen
+        ? `<button class="grade-chip" onclick="showServantsHome()">🙏 كروت الخدام</button><button class="grade-chip active" aria-current="page">🙏 الخدام</button>`
+        : classChips);
     return;
   }
   // a person with role-based access and several classes also switches between them
@@ -148,6 +153,8 @@ export function buildActiveGradeBar() {
   if (canUseServantsTab()) html += `<button class="grade-chip ${state.servantsDirectoryOpen ? 'active' : ''}" style="border-color:rgba(46,204,113,0.4);color:var(--success)" onclick="openServantsDirectory()">🙏 الخدام</button>`;
   bar.innerHTML = html;
 }
+
+window.buildActiveGradeBar = buildActiveGradeBar;
 
 // "no access yet": hides every tab and class screen and shows the React panel 'no-access' instead
 export function showNoAccessScreen() {
