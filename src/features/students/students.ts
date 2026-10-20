@@ -204,10 +204,13 @@ window.renderStudentsList = () => {
   renderCredFilters();
   const list = currentStudentsList();
   const cont = document.getElementById('students-list');
+  const countEl = document.getElementById('stu-count'); // العدد بعد كل الفلاتر والبحث
   if (state.currentUserRole === 'admin' && state.stuPwFilter !== CredFilter.All && !state.stuPwIds) {
+    if (countEl) { countEl.textContent = '(…)'; }
     cont.innerHTML = `<div class="loading"><div class="spinner"></div>جاري التحميل…</div>`;
     return;
   }
+  if (countEl) { countEl.textContent = `(${list.length})`; }
   if (!list.length) {
     cont.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div>لا يوجد مخدومين</div>`;
     return;
