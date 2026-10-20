@@ -165,6 +165,8 @@ export function sortRegisteredFirst(names, getName = n => n) {
 
 // ===== the same attendance inside the متابعة tab of a class: only the servants of the class you are in (and that you may take attendance for), TODAY only =====
 // It reads and writes the very same data as خانة الخدام, so whatever is marked here shows there (and the other way round).
+const currentServantsTabIsAtt = () => document.getElementById('sd-tab-att')?.style.display !== 'none';
+
 window.renderOnlineAttPicker = () => {
   const cont = document.getElementById('online-att-picker');
   if (!cont) return;
@@ -241,6 +243,18 @@ window.renderDeaconAttPicker = () => {
   if (state.servantsGradeFilter) {
     const inGrade = new Set(getCurrentUserScopedDeaconRows().filter(r => (r.grade || '').trim() === state.servantsGradeFilter).map(r => r.name));
     list = list.filter(n => inGrade.has(n));
+  }
+  // the dashboard on top: how many of these servants were present / absent / excused on this day (before the search box narrows the list)
+  const present = list.filter(n => todayMap[n]).length;
+  const excused = list.filter(n => excuseMap[n]).length;
+  const setStat = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+  setStat('sd-stat-present', present);
+  setStat('sd-stat-excuse', excused);
+  setStat('sd-stat-absent', list.length - present - excused);
+  setStat('sd-stat-total', list.length);
+  const dashSub = document.getElementById('sd-dash-subtitle');
+  if (dashSub && currentServantsTabIsAtt()) {
+    dashSub.textContent = `${info.short} — ${new Date(dayKey + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}`;
   }
   if (q) list = list.filter(n => nameMatchesSearch(n, q));
 

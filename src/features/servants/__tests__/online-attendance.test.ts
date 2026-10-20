@@ -27,7 +27,9 @@ const DOM = `
   <div id="sd-att-picker"></div><span id="sd-att-today-count"></span><span id="sd-att-count-label"></span>
   <div id="sd-type-tabs"><button class="tab active" id="sd-type-btn-sunday"></button><button class="tab" id="sd-type-btn-meeting"></button></div>
   <div id="online-type-tabs"><button class="tab active" id="online-type-btn-sunday"></button><button class="tab" id="online-type-btn-meeting"></button></div>
-  <div id="deacon-att-dates-list"></div>`;
+  <div id="deacon-att-dates-list"></div>
+  <div id="sd-tab-att"></div><div id="sd-dash-subtitle"></div>
+  <span id="sd-stat-present"></span><span id="sd-stat-absent"></span><span id="sd-stat-excuse"></span><span id="sd-stat-total"></span>`;
 
 describe('attendance of the servants inside the متابعة tab', () => {
   beforeEach(async () => {
@@ -66,5 +68,25 @@ describe('attendance of the servants inside the متابعة tab', () => {
     expect(document.getElementById('online-type-btn-meeting').classList.contains('active')).toBe(true);
     expect(document.getElementById('sd-type-btn-meeting').classList.contains('active')).toBe(true);
     expect(document.getElementById('online-type-btn-sunday').classList.contains('active')).toBe(false);
+  });
+
+  it('the dashboard of خانة الخدام counts حاضر / غايب / معتذر / الإجمالي', async () => {
+    state.servantsGradeFilter = '';
+    window.renderDeaconAttPicker();
+    const nums = () => ['present', 'absent', 'excuse', 'total'].map(k => document.getElementById('sd-stat-' + k).textContent);
+    expect(nums()).toEqual(['0', '3', '0', '3']);
+    await window.deaconToggleAttendance('مينا');
+    await window.deaconToggleExcuse('بيتر');
+    expect(nums()).toEqual(['1', '1', '1', '3']);
+    // an excuse and a present never count together: marking the excused one present moves him
+    await window.deaconToggleAttendance('بيتر');
+    expect(nums()).toEqual(['2', '1', '0', '3']);
+  });
+
+  it('the dashboard follows the class filter', () => {
+    state.servantsGradeFilter = 'فصل أ';
+    window.renderDeaconAttPicker();
+    expect(document.getElementById('sd-stat-total').textContent).toBe('2');
+    state.servantsGradeFilter = '';
   });
 });

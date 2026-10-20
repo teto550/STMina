@@ -84,6 +84,9 @@ window.openServantsDirectory = async (section) => {
   resetDeaconAttDay(); // التحضير بيبدأ على اليوم اللي اتفتحت فيه الخانة
   showServantsDirectorySection();
   buildActiveGradeBar();
+  // opened from a card (الحضور / الخدام): only that part, so no tabs to the other one; any other way in keeps the two tabs
+  const dirTabs = document.getElementById('sd-main-tabs');
+  if (dirTabs) { dirTabs.style.display = section ? 'none' : ''; }
   const searchEl = document.getElementById('servants-directory-search');
   if (searchEl) searchEl.value = '';
   const attSearchEl = document.getElementById('sd-att-search');
@@ -133,6 +136,13 @@ window.setServantsTab = (tab, btn) => {
   if (btn) btn.classList.add('active');
   document.getElementById('sd-tab-att').style.display  = tab === 'att'  ? 'block' : 'none';
   document.getElementById('sd-tab-list').style.display = tab === 'list' ? 'block' : 'none';
+  // the dashboard on top counts the day on الحضور, and the servants / join requests on الخدام
+  const attStats = document.getElementById('sd-dash-att-stats');
+  const listStats = document.getElementById('sd-dash-list-stats');
+  if (attStats) { attStats.style.display = tab === 'att' ? 'grid' : 'none'; }
+  if (listStats) { listStats.style.display = tab === 'att' ? 'none' : 'grid'; }
+  const subtitle = document.getElementById('sd-dash-subtitle');
+  if (subtitle && tab !== 'att') { subtitle.textContent = 'إدارة الخدام وطلبات الانضمام'; }
   if (tab === 'att') renderDeaconAttPicker();
   else renderServantsDirectory();
 };

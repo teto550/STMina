@@ -532,12 +532,31 @@
             <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 6px 18px rgba(var(--accent-rgb),0.35)">👥</div>
             <div style="min-width:0">
               <div style="font-size:20px;font-weight:900;line-height:1.2">الخدام</div>
-              <div style="font-size:12px;color:var(--text-dim);margin-top:2px">إدارة الخدام وطلبات الانضمام</div>
+              <div id="sd-dash-subtitle" style="font-size:12px;color:var(--text-dim);margin-top:2px">إدارة الخدام وطلبات الانضمام</div>
             </div>
           </div>
           <button onclick="openDashModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;flex-shrink:0;white-space:nowrap">📊 الداشبورد</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <!-- on the الحضور part of the servants section the dashboard counts the day: حاضر / غايب / معتذر / الإجمالي -->
+        <div id="sd-dash-att-stats" style="display:none;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 4px;text-align:center">
+            <div id="sd-stat-present" style="font-size:22px;font-weight:900;color:var(--success)">0</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">حاضر</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 4px;text-align:center">
+            <div id="sd-stat-absent" style="font-size:22px;font-weight:900;color:var(--danger)">0</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">غايب</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 4px;text-align:center">
+            <div id="sd-stat-excuse" style="font-size:22px;font-weight:900;color:var(--warning)">0</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">معتذر</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 4px;text-align:center">
+            <div id="sd-stat-total" style="font-size:22px;font-weight:900;color:var(--text)">0</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">الإجمالي</div>
+          </div>
+        </div>
+        <div id="sd-dash-list-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 10px;text-align:center">
             <div id="sd-stat-servants" style="font-size:24px;font-weight:900;color:var(--text)">0</div>
             <div style="font-size:12px;color:var(--text-dim);margin-top:2px">خادم</div>
