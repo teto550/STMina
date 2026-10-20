@@ -18,7 +18,6 @@
     "src/features/servants/deacon-attendance.ts",
     "src/features/servants/deacons-tab.ts",
     "src/features/servants/deacons.ts",
-    "src/features/servants/import-deacon-attendance.ts",
     "src/features/servants/online.ts",
     "src/features/servants/servants.ts",
     "src/features/shell/app-shell.ts",
