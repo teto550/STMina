@@ -1,7 +1,6 @@
 // Matching the photo-link sheet (SERIAL_NUMBER + AVATAR_FULL_URL) to the kids, without touching the backend (pure, tested).
 // The link is written once to `students/{id}.photoLink` and never changes (firestore.rules). Anything doubtful is reported, never guessed.
 
-export type PhotoSheetRow = { kidId: string; url: string };
 export type PhotoKid = { id: string; name?: string; kidId?: unknown; photoLink?: unknown };
 
 export type PhotoDoubt = { kidId: string; url: string; reason: 'sharedUrl' | 'unknownHost' | 'sameIdTwoUrls'; detail: string; approvable: boolean };
