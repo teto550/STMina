@@ -104,8 +104,9 @@ export async function loadDeaconAttendance() {
 
 window.setDeaconAttType = (type, btn) => {
   currentDeaconAttType = normAttType(type);
-  document.querySelectorAll('#sd-type-tabs .tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+  // the type buttons exist twice (خانة الخدام and the متابعة tab of a class): both always show the same type
+  document.querySelectorAll('#sd-type-tabs .tab, #online-type-tabs .tab').forEach(b => b.classList.remove('active'));
+  ['sd-type-btn-', 'online-type-btn-'].forEach(prefix => document.getElementById(prefix + currentDeaconAttType)?.classList.add('active'));
   selectedDeaconAttDate = null;
   const detail = document.getElementById('deacon-att-day-detail');
   if (detail) detail.style.display = 'none';
@@ -162,7 +163,58 @@ export function sortRegisteredFirst(names, getName = n => n) {
   });
 }
 
+// ===== the same attendance inside the متابعة tab of a class: only the servants of the class you are in (and that you may take attendance for), TODAY only =====
+// It reads and writes the very same data as خانة الخدام, so whatever is marked here shows there (and the other way round).
+window.renderOnlineAttPicker = () => {
+  const cont = document.getElementById('online-att-picker');
+  if (!cont) return;
+  const type = currentDeaconAttType;
+  const dayKey = todayKey();
+  const todayMap = attMap(type)[dayKey] || {};
+  const excuseMap = excMap(type)[dayKey] || {};
+  const grade = (state.activeGrade || '').trim();
+  const rows = getCurrentUserScopedDeaconRows().filter(r => !grade || (r.grade || '').trim() === grade);
+  const names = rows.map(r => r.name);
+
+  const typeLbl = document.getElementById('online-att-type-label');
+  if (typeLbl) typeLbl.textContent = DEACON_ATT_TYPES[type].label;
+  const dayLbl = document.getElementById('online-att-today-label');
+  if (dayLbl) dayLbl.textContent = new Date(dayKey + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const excCount = names.filter(n => excuseMap[n]).length;
+  const cntLbl = document.getElementById('online-att-count-label');
+  if (cntLbl) cntLbl.textContent = 'حاضر النهاردة' + (excCount ? ` · ${excCount} اعتذار` : '');
+  const cntEl = document.getElementById('online-att-count');
+  if (cntEl) cntEl.textContent = names.filter(n => todayMap[n]).length;
+
+  const q = (document.getElementById('online-att-search')?.value || '').trim();
+  let list = sortRegisteredFirst(names);
+  if (q) list = list.filter(n => nameMatchesSearch(n, q));
+  if (!list.length) {
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:10px 4px;text-align:center">${names.length ? 'مفيش خادم بالاسم ده' : 'مفيش خدام متسجلين في الفصل ده'}</div>`;
+    return;
+  }
+  const boxStyle = (on, color, rgb) =>
+    `min-width:68px;height:34px;padding:0 8px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;` +
+    `border:1px solid ${on ? color : 'var(--border)'};background:${on ? `rgba(${rgb},0.15)` : 'var(--surface2)'};color:${on ? color : 'var(--text-dim)'}`;
+  cont.innerHTML = list.map(name => {
+    const already = !!todayMap[name];
+    const excused = !!excuseMap[name];
+    const safe = name.replace(/'/g, "\\'");
+    return `<div class="manual-result-item ${already ? 'already' : ''}" onclick="onlineDeaconToggleAttendance('${safe}')">
+      <div style="flex:1"><div class="manual-result-name">${name}</div></div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <div style="${boxStyle(already, 'var(--success)', '46,204,113')}">${already ? '✓ ' : ''}حضور</div>
+        <div style="${boxStyle(excused, 'var(--warning)', '243,156,18')}" onclick="event.stopPropagation();onlineDeaconToggleExcuse('${safe}')">${excused ? '✓ ' : ''}اعتذار</div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.onlineDeaconToggleAttendance = (name) => window.deaconToggleAttendance(name, todayKey());
+window.onlineDeaconToggleExcuse = (name) => window.deaconToggleExcuse(name, todayKey());
+
 window.renderDeaconAttPicker = () => {
+  renderOnlineAttPicker(); // every change (from either place) redraws both lists
   const cont = document.getElementById('sd-att-picker');
   if (!cont) return;
   const type = currentDeaconAttType;
@@ -218,9 +270,9 @@ window.renderDeaconAttPicker = () => {
   }).join('');
 };
 
-window.deaconToggleAttendance = async (name) => {
+window.deaconToggleAttendance = async (name, dayKey) => {
   const type = currentDeaconAttType;
-  const key = attDay();
+  const key = dayKey || attDay();
   if (attMap(type)[key] && attMap(type)[key][name]) {
     await doRemoveDeaconAttendance(name, key, type);
     showToast(`تم إلغاء تسجيل ${name}`, 'info');
@@ -229,9 +281,9 @@ window.deaconToggleAttendance = async (name) => {
   }
 };
 
-window.deaconToggleExcuse = async (name) => {
+window.deaconToggleExcuse = async (name, dayKey) => {
   const type = currentDeaconAttType;
-  const key = attDay();
+  const key = dayKey || attDay();
   if (excMap(type)[key] && excMap(type)[key][name]) {
     await doRemoveDeaconExcuse(name, key, type);
     showToast(`تم إلغاء اعتذار ${name}`, 'info');
@@ -271,6 +323,8 @@ window.markDeaconAttendance = async (name, type, dateKey) => {
   const goBackToSearch = getPreferences().focusSearchAfterMark;
   const searchEl = document.getElementById('sd-att-search');
   if (searchEl && goBackToSearch) searchEl.value = '';
+  const onlineSearchEl = document.getElementById('online-att-search');
+  if (onlineSearchEl && goBackToSearch) onlineSearchEl.value = '';
   renderDeaconAttPicker();
   renderDeaconAttDatesList();
   if (selectedDeaconAttDate === key) renderDeaconAttDayDetail();

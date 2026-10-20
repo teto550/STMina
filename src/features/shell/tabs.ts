@@ -12,7 +12,7 @@ import { classEmoji } from '@/core/class-settings';
 import { TAB_NAMES } from '@/core/tab-names';
 import { usesSplitHome } from '@/core/servants-access';
 import { ensureClassSettings } from '@/features/classes/class-settings';
-import { ensureStudents, ensureDeacons, ensureAttendance, ensureTodayListener, refreshAllData } from '@/core/data';
+import { ensureStudents, ensureDeacons, ensureDeaconAttendance, ensureAttendance, ensureTodayListener, refreshAllData } from '@/core/data';
 
 // ===== TABS =====
 // The app opens on the HOME screen and reads nothing. Each screen loads only what it needs, when it is opened.
@@ -27,7 +27,7 @@ async function loadTabData(tab) {
     else if (tab === 'deacons')  { await Promise.all([ensureDeacons(), ensureStudents()]); }
     else if (tab === 'parts')    { await ensureDeacons(); }
     else if (tab === 'stats')    { await Promise.all([ensureStudents(), ensureDeacons(), ensureAttendance('recent')]); }
-    else if (tab === 'online')   { await ensureDeacons(); }
+    else if (tab === 'online')   { await Promise.all([ensureDeacons(), ensureDeaconAttendance()]); }
   } catch (e) { console.error('loading data for', tab, e); }
   if (mine !== loadToken || state.lastActiveMainTab !== tab) return; // the user already went somewhere else
   if (tab === 'attendance') { updateStats(); renderTodayList(); }
@@ -35,7 +35,7 @@ async function loadTabData(tab) {
   else if (tab === 'deacons') { window.buildDeaconChips(); if (isManager()) loadPendingDeacons(); }
   else if (tab === 'parts') showParts();
   else if (tab === 'stats') initStatsTab();
-  else if (tab === 'online' && isManager()) initOnlineTab();
+  else if (tab === 'online') { window.renderOnlineAttPicker(); if (isManager()) initOnlineTab(); }
 }
 
 // "توزيع الفقرات" is the React screen 'parts' (src/react/screens/parts); it loads its own data and is drawn again each time the tab opens
@@ -73,7 +73,11 @@ window.switchTab = (tab, btn) => {
   if (title) { title.textContent = TAB_NAMES[tab] || ''; }
   if (window.buildActiveGradeBar) { window.buildActiveGradeBar(); }
   if (tab === 'home') { const c = document.getElementById('home-class'); if (c) c.textContent = state.activeGrade ? classEmoji(state.activeGrade) + ' ' + state.activeGrade : ''; }
-  else loadTabData(tab);
+  else {
+    // متابعة always opens on الحضور (the servants of this class), not on the activity feed
+    if (tab === 'online') { window.switchOnlineSubTab('attendance', document.getElementById('online-subtab-btn-attendance')); }
+    loadTabData(tab);
+  }
 };
 
 // "refresh data" button on the home screen: forget the short-lived cache so the next screen reads from the server

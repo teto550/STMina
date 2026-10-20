@@ -164,7 +164,12 @@ export function initOnlineTab() {
     observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: '200px' });
     observer.observe(document.getElementById('activity-sentinel'));
   }
-  // the class can change between visits: start again when it did (or on the first visit)
+  // the tab opens on الحضور: the activity feed is only read when its sub-tab is opened (see switchOnlineSubTab)
+  if (document.getElementById('online-subpanel-activity').style.display !== 'none') startFeedIfNeeded();
+}
+
+// the class can change between visits: start again when it did (or on the first visit)
+function startFeedIfNeeded() {
   if (!feed.started || feed.error || (feed.filters && feed.filters.grade !== classForUser())) startFeed();
 }
 
@@ -173,6 +178,7 @@ window.switchOnlineSubTab = (name, btn) => {
   btn.classList.add('active');
   document.getElementById('online-subpanel-activity').style.display = name === 'activity' ? 'block' : 'none';
   document.getElementById('online-subpanel-attendance').style.display = name === 'attendance' ? 'block' : 'none';
+  if (name === 'activity') { initOnlineTab(); }
 };
 
 // "apply" button: read the filters and start again (this is the only thing that triggers a new server query)

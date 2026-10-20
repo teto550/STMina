@@ -468,12 +468,12 @@
     <div id="tab-online" style="display:none">
 
       <div class="tabs" style="margin-bottom:16px" id="online-sub-tabs">
-        <button class="tab active" id="online-subtab-btn-activity" onclick="switchOnlineSubTab('activity',this)">📜 الأنشطة</button>
-        <button class="tab" id="online-subtab-btn-attendance" onclick="switchOnlineSubTab('attendance',this)">✅ الحضور</button>
+        <button class="tab" id="online-subtab-btn-activity" onclick="switchOnlineSubTab('activity',this)">📜 الأنشطة</button>
+        <button class="tab active" id="online-subtab-btn-attendance" onclick="switchOnlineSubTab('attendance',this)">✅ الحضور</button>
       </div>
 
       <!-- ACTIVITY SUB-PANEL: on demand, 20 at a time, next page on scroll, filters applied by the server when "apply" is pressed -->
-      <div id="online-subpanel-activity">
+      <div id="online-subpanel-activity" style="display:none">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px">
           <label class="field-label">🙏 الخادم</label>
           <select id="online-deacon-filter" class="field-select">
@@ -500,12 +500,24 @@
       </div>
 
       <!-- ATTENDANCE SUB-PANEL -->
-      <div id="online-subpanel-attendance" style="display:none">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;text-align:center">
-          <div style="font-size:34px;margin-bottom:8px">🙏</div>
-          <p class="section-title" style="margin:0 0 6px 0">حضور الخدام اتنقل</p>
-          <div style="font-size:13px;color:var(--text-dim);margin-bottom:14px">بقى في خانة "🙏 الخدام" جنب الفصول — فيها تسجيل حضور مدارس الأحد واجتماع الخدام وملفات الخدام</div>
-          <button class="btn-primary" onclick="openServantsDirectory()">🙏 افتح خانة الخدام</button>
+      <div id="online-subpanel-attendance">
+        <div class="tabs" id="online-type-tabs" style="margin-bottom:14px">
+          <button class="tab active" id="online-type-btn-sunday" onclick="setDeaconAttType('sunday',this)">⛪ مدارس الأحد</button>
+          <button class="tab" id="online-type-btn-meeting" onclick="setDeaconAttType('meeting',this)">👥 اجتماع الخدام</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <div>
+              <div style="font-size:14px;font-weight:800" id="online-att-type-label">⛪ مدارس الأحد</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px" id="online-att-today-label"></div>
+            </div>
+            <div style="text-align:center;flex-shrink:0">
+              <div id="online-att-count" style="font-size:24px;font-weight:900;color:var(--success)">0</div>
+              <div id="online-att-count-label" style="font-size:10px;color:var(--text-dim)">حاضر النهاردة</div>
+            </div>
+          </div>
+          <input type="text" id="online-att-search" class="search-input" style="margin-bottom:10px" placeholder="🔍 دوّر على اسم خادم…" oninput="renderOnlineAttPicker()" autocomplete="off">
+          <div id="online-att-picker"><div class="loading"><div class="spinner"></div>جاري التحميل…</div></div>
         </div>
       </div>
 
