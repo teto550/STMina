@@ -1,10 +1,9 @@
 // @ts-nocheck
 import { state } from '@/core/state';
-import { inCurrentSection } from '@/core/section';
 import { ensureXLSXLoaded } from '@/features/import-export/import-attendance';
 import { logActivity } from '@/core/presence';
 import { loadStudents } from '@/features/students/students';
-import { findKidsByKidIds, saveKidPhotoLinks } from '@/api/student-photo-links';
+import { saveKidPhotoLinks } from '@/api/student-photo-links';
 import { isPermissionDenied } from '@/api/errors';
 import { buildPhotoPlan, parsePhotoSheet } from '@/core/photo-links';
 
@@ -64,7 +63,7 @@ function reportText(p) {
     p.duplicateKids.slice(0, 15).forEach((d) => L.push(`   • ID ${d.kidId}: ${d.names.join(' / ')}`));
   }
   L.push('');
-  L.push(p.notFound.length ? `❌ IDs في الشيت ومالهاش مخدوم في البرنامج: ${p.notFound.length}\n   ${p.notFound.slice(0, 40).join('، ')}${p.notFound.length > 40 ? ' …' : ''}` : '❌ IDs في الشيت ومالهاش مخدوم: مفيش ✔');
+  L.push(p.notFound.length ? `ℹ️ IDs في الشيت مش في الفصل ده (غالبًا فصول تانية): ${p.notFound.length}\n   ${p.notFound.slice(0, 40).join('، ')}${p.notFound.length > 40 ? ' …' : ''}` : 'ℹ️ IDs في الشيت مش في الفصل ده: مفيش');
   if (p.badRows.length) {
     L.push('');
     L.push(`🚫 صفوف غلط في الشيت (اتتجاهلت): ${p.badRows.length}`);
@@ -96,7 +95,7 @@ function recompute() {
   plan = buildPhotoPlan(rows, kids, approved);
   const st = $('plinks-status'), btn = $('plinks-commit-btn');
   st.style.display = 'block';
-  st.textContent = '🔍 معاينة (لسه مفيش حاجة اتكتبت):\n\n' + reportText(plan);
+  st.textContent = `🎯 الفصل: ${state.activeGrade || 'كل المخدومين المحمّلين'} — ${kids.length} مخدوم عندهم ID\n🔍 معاينة (لسه مفيش حاجة اتكتبت):\n\n` + reportText(plan);
   const cnt = $('plinks-review-count');
   if (cnt) {
     cnt.textContent = `مقبول: ${[...approved].length} مخدوم من ${(window.__plinksDoubts || []).length}`;
@@ -122,8 +121,10 @@ window.onPhotoLinksFileChange = async () => {
     const parsed = parsePhotoSheet(wb.SheetNames.map((n) => XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null })));
     if (!parsed || !parsed.rows.length) { st.textContent = '❌ مالقيتش عمود SERIAL_NUMBER وعمود AVATAR_FULL_URL في الملف ده.'; return; }
     rows = parsed.rows;
-    const ids = [...new Set(rows.map((r) => r.kidId).filter(Boolean))];
-    kids = (await findKidsByKidIds(ids)).filter(inCurrentSection);
+    // الفصل المفتوح بس: المخدومين اللي اتحمّلوا أصلاً في البرنامج، من غير أي قراءة زيادة من Firestore
+    await loadStudents();
+    kids = (state.allStudents || []).filter((s) => s.kidId != null && String(s.kidId).trim() !== '');
+    st.textContent = `🎯 الفصل: ${state.activeGrade || 'كل المخدومين المحمّلين'} — ${kids.length} مخدوم عندهم ID`;
     window.__plinksDoubts = buildPhotoPlan(rows, kids, new Set()).doubtful.filter((d) => d.approvable);
     renderReview();
     recompute();
