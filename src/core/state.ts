@@ -25,6 +25,7 @@ export const state = {
   currentAttGrade: 'الكل',
   currentStuGrade: 'الكل',
   stuIdFilter: 'all',   // admin's ID filter in the students tab: 'all' | 'has' | 'missing' (CredFilter)
+  stuPhotoFilter: 'all', // admin's photo-link filter in the students tab: same values
   stuPwFilter: 'all',   // admin's password filter in the students tab: same values
   stuPwIds: null,       // Set of the ids of the open class's kids that have a password; null = not loaded yet
   selectedDates: [],

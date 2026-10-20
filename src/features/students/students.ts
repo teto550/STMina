@@ -155,13 +155,15 @@ function renderCredFilters() {
         `<button class="grade-chip ${current === o.value ? 'active' : ''}" onclick="setStuCredFilter('${kind}','${o.value}')">${o.label}</button>`
       ).join('')}</div>
     </div>`;
-  wrap.innerHTML = row('🆔 ID', 'id', state.stuIdFilter) + row('🔑 Password', 'pw', state.stuPwFilter);
+  wrap.innerHTML = row('🆔 ID', 'id', state.stuIdFilter) + row('🔑 Password', 'pw', state.stuPwFilter) + row('📷 لينك الصورة', 'photo', state.stuPhotoFilter);
   wrap.style.display = 'block';
 }
 
 window.setStuCredFilter = async (kind, value) => {
   if (kind === 'id') {
     state.stuIdFilter = value;
+  } else if (kind === 'photo') {
+    state.stuPhotoFilter = value;
   } else {
     state.stuPwFilter = value;
   }
@@ -186,7 +188,7 @@ function currentStudentsList() {
   const q    = document.getElementById('student-search').value.trim();
   let list   = filteredStudents(state.currentStuGrade);
   if (state.currentUserRole === 'admin') {
-    list = filterByCreds(list, state.stuIdFilter, state.stuPwFilter, state.stuPwIds);
+    list = filterByCreds(list, state.stuIdFilter, state.stuPwFilter, state.stuPwIds, state.stuPhotoFilter);
   }
   if (q) {
     const qDigits = q.replace(/[^0-9]/g, '');

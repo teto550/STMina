@@ -1,4 +1,4 @@
-import { CredFilter, filterByCreds, hasKidId } from '@/core/creds-filter';
+import { CredFilter, filterByCreds, hasKidId, hasPhotoLink } from '@/core/creds-filter';
 
 describe('hasKidId', () => {
   it('is true only for a non-empty ID', () => {
@@ -45,5 +45,17 @@ describe('filterByCreds (admin ID / password filters of the students tab)', () =
   it('ignores the password filter while the passwords are not loaded', () => {
     expect(ids(filterByCreds(kids, CredFilter.All, CredFilter.Has, null))).toEqual(['both', 'idOnly', 'pwOnly', 'neither']);
     expect(ids(filterByCreds(kids, CredFilter.Has, CredFilter.Has, null))).toEqual(['both', 'idOnly']);
+  });
+});
+
+describe('photo-link filter', () => {
+  const kids = [{ id: 'a', photoLink: 'https://x/a.jpg' }, { id: 'b', photoLink: '' }, { id: 'c' }];
+  it('hasPhotoLink is true only for a non-empty link', () => {
+    expect(kids.map(hasPhotoLink)).toEqual([true, false, false]);
+  });
+  it('keeps who has / who lacks a link, and combines with the other filters', () => {
+    expect(filterByCreds(kids, CredFilter.All, CredFilter.All, null, CredFilter.Has).map((k) => k.id)).toEqual(['a']);
+    expect(filterByCreds(kids, CredFilter.All, CredFilter.All, null, CredFilter.Missing).map((k) => k.id)).toEqual(['b', 'c']);
+    expect(filterByCreds(kids, CredFilter.All, CredFilter.All, null).length).toBe(3);
   });
 });
