@@ -12,6 +12,8 @@ import { logActivity } from '@/core/presence';
 import { avatarBox } from '@/features/students/photos';
 import { todayKey } from '@/core/utils';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
+import { CredFilter, filterByCreds } from '@/core/creds-filter';
+import { fetchStudentIdsWithPassword } from '@/api/student-secrets';
 
 // ===== STUDENTS =====
 export async function loadStudents({ force = false } = {}) {
@@ -25,8 +27,10 @@ export async function loadStudents({ force = false } = {}) {
   const all  = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(inCurrentSection);
   if (grade) all.sort((a, b) => ((a.name || '') < (b.name || '') ? -1 : (a.name || '') > (b.name || '') ? 1 : 0));
   state.allStudents = grade ? all.filter(s => s.grade === grade) : all;
+  state.stuPwIds = null; // who has a password belongs to the list just replaced: read again if the password filter is on
   updateStats();
   renderStudentsList();
+  if (state.stuPwFilter !== CredFilter.All && state.currentUserRole === 'admin') { window.setStuCredFilter('pw', state.stuPwFilter); }
 }
 
 window.toggleAddStudentForm = () => {
@@ -129,10 +133,61 @@ export function attFilteredStudents(filter) {
   return state.allStudents; // 'الكل'
 }
 
-// المخدومين المعروضين دلوقتي (حسب فلتر السنة/الخادم + البحث)
+// ===== فلاتر ID و Password (أدمن بس) =====
+// ID = students/{id}.kidId (موجود في كل ملف مخدوم)، Password = وجود student_secrets/{id} (الأدمن بس يقدر يقراها، فبنقرا بس الموجود ومش بنعرض الباسورد).
+const CRED_OPTIONS = [
+  { value: CredFilter.All, label: 'الكل' },
+  { value: CredFilter.Has, label: 'عنده' },
+  { value: CredFilter.Missing, label: 'مالوش' },
+];
+
+function renderCredFilters() {
+  const wrap = document.getElementById('stu-cred-filters');
+  if (!wrap) { return; }
+  if (state.currentUserRole !== 'admin') {
+    wrap.style.display = 'none';
+    return;
+  }
+  const row = (title, kind, current) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;min-width:70px">${title}</span>
+      <div class="grade-filter" style="margin:0">${CRED_OPTIONS.map(o =>
+        `<button class="grade-chip ${current === o.value ? 'active' : ''}" onclick="setStuCredFilter('${kind}','${o.value}')">${o.label}</button>`
+      ).join('')}</div>
+    </div>`;
+  wrap.innerHTML = row('🆔 ID', 'id', state.stuIdFilter) + row('🔑 Password', 'pw', state.stuPwFilter);
+  wrap.style.display = 'block';
+}
+
+window.setStuCredFilter = async (kind, value) => {
+  if (kind === 'id') {
+    state.stuIdFilter = value;
+  } else {
+    state.stuPwFilter = value;
+  }
+  renderStudentsList();
+  if (state.stuPwFilter === CredFilter.All || state.stuPwIds) { return; }
+  // the password filter needs to know who has a password: read it once for the open class, then draw again
+  const students = state.allStudents;
+  try {
+    const ids = await fetchStudentIdsWithPassword(students.map(s => s.id));
+    if (students !== state.allStudents) { return; } // the class was switched meanwhile
+    state.stuPwIds = ids;
+  } catch (e) {
+    console.error(e);
+    state.stuPwFilter = CredFilter.All;
+    showToast('مقدرتش أقرا الباسوردات (للأدمن بس) — اتأكد من النت والقواعد', 'error');
+  }
+  renderStudentsList();
+};
+
+// المخدومين المعروضين دلوقتي (حسب فلتر السنة/الخادم + ID/Password + البحث)
 function currentStudentsList() {
   const q    = document.getElementById('student-search').value.trim();
   let list   = filteredStudents(state.currentStuGrade);
+  if (state.currentUserRole === 'admin') {
+    list = filterByCreds(list, state.stuIdFilter, state.stuPwFilter, state.stuPwIds);
+  }
   if (q) {
     const qDigits = q.replace(/[^0-9]/g, '');
     list = list.filter(s =>
@@ -146,8 +201,13 @@ function currentStudentsList() {
 window.renderStudentsList = () => {
   const bulkWrap = document.getElementById('bulk-delete-wrap');
   if (bulkWrap) bulkWrap.style.display = state.currentUserRole === 'admin' ? 'block' : 'none';
+  renderCredFilters();
   const list = currentStudentsList();
   const cont = document.getElementById('students-list');
+  if (state.currentUserRole === 'admin' && state.stuPwFilter !== CredFilter.All && !state.stuPwIds) {
+    cont.innerHTML = `<div class="loading"><div class="spinner"></div>جاري التحميل…</div>`;
+    return;
+  }
   if (!list.length) {
     cont.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div>لا يوجد مخدومين</div>`;
     return;

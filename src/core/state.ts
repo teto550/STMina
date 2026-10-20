@@ -24,6 +24,9 @@ export const state = {
   todayAttendanceUnsub: null, // realtime listener لحضور النهارده — بيخلي أي خادم تاني يشوف الحضور لحظياً
   currentAttGrade: 'الكل',
   currentStuGrade: 'الكل',
+  stuIdFilter: 'all',   // admin's ID filter in the students tab: 'all' | 'has' | 'missing' (CredFilter)
+  stuPwFilter: 'all',   // admin's password filter in the students tab: same values
+  stuPwIds: null,       // Set of the ids of the open class's kids that have a password; null = not loaded yet
   selectedDates: [],
   newPhotoData: '', // base64 data-url للصورة أثناء إضافة مخدوم جديد
   editPhotoData: '', // base64 data-url للصورة أثناء تعديل مخدوم
