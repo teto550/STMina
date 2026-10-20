@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استيراد صور الأطفال - STMina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:system-ui,Tahoma,sans-serif;max-width:720px;margin:20px auto;padding:0 14px;line-height:1.7}
+fieldset{border:1px solid #ccc;border-radius:8px;margin:12px 0}
+button{padding:8px 16px;border-radius:6px;border:0;background:#1a5fb4;color:#fff;cursor:pointer;margin:4px 0}
+button:disabled{background:#999}
+input{padding:6px;width:220px}
+#log{white-space:pre-wrap;background:#f4f4f4;padding:10px;border-radius:6px;max-height:300px;overflow:auto;font-size:13px}
+</style>
+</head>
+<body>
+<h2>استيراد لينكات الصور (مرة واحدة - مش بتتعدل)</h2>
+
+<fieldset><legend>1) الإعدادات</legend>
+<p>اسم كوليكشن الطلاب: <input id="col" value="students"></p>
+<p>اسم حقل الـ ID في ملف الطالب: <input id="idField" value="serial"></p>
+<p>اسم حقل الصورة اللي هيتكتب: <input id="photoField" value="photoURL"></p>
+<p><label><input type="checkbox" id="useDocId"> الـ ID هو اسم الدوكيومنت نفسه (Doc ID)</label></p>
+</fieldset>
+
+<fieldset><legend>2) دخول الأدمن</legend>
+<button id="loginBtn">دخول بحساب Google</button> <span id="who"></span>
+</fieldset>
+
+<fieldset><legend>3) الشيت</legend>
+<input type="file" id="file" accept=".xlsx,.xls">
+<br><button id="previewBtn" disabled>معاينة (من غير كتابة)</button>
+<button id="runBtn" disabled>تنفيذ الاستيراد</button>
+</fieldset>
+
+<div id="log">جاهز.</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, writeBatch, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// === الصق firebaseConfig بتاع مشروع STMina هنا ===
+const firebaseConfig = {
+  apiKey: "PASTE", authDomain: "PASTE", projectId: "PASTE",
+  storageBucket: "PASTE", messagingSenderId: "PASTE", appId: "PASTE"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app), db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const log = m => { $('log').textContent += '\n' + m; $('log').scrollTop = 1e9; };
+const norm = v => String(v ?? '').trim().toLowerCase();
+
+let rows = [], user = null;
+
+$('loginBtn').onclick = async () => {
+  try {
+    const r = await signInWithPopup(auth, new GoogleAuthProvider());
+    user = r.user; $('who').textContent = user.email;
+    refresh();
+  } catch (e) { log('فشل الدخول: ' + e.message); }
+};
+
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const wb = XLSX.read(await f.arrayBuffer());
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  rows = XLSX.utils.sheet_to_json(ws).map(r => ({ id: norm(r.SERIAL_NUMBER), url: String(r.AVATAR_FULL_URL || '').trim() }))
+    .filter(r => r.id && /^https?:\/\//.test(r.url));
+  log('اتقرا من الشيت: ' + rows.length + ' صف صالح');
+  refresh();
+};
+
+function refresh() { $('previewBtn').disabled = $('runBtn').disabled = !(user && rows.length); }
+
+async function plan() {
+  const pf = $('photoField').value.trim(), idf = $('idField').value.trim();
+  const snap = await getDocs(collection(db, $('col').value.trim()));
+  const map = new Map(rows.map(r => [r.id, r.url]));
+  const out = { write: [], already: 0, noPhoto: 0, seen: new Set() };
+  snap.forEach(d => {
+    const data = d.data();
+    const key = norm($('useDocId').checked ? d.id : data[idf]);
+    if (!map.has(key)) { out.noPhoto++; return; }
+    out.seen.add(key);
+    if (data[pf]) { out.already++; return; }          // مش بنكتب فوق صورة موجودة
+    out.write.push({ ref: d.ref, url: map.get(key) });
+  });
+  out.unmatchedSheet = rows.filter(r => !out.seen.has(r.id)).map(r => r.id);
+  out.total = snap.size;
+  return out;
+}
+
+function report(p) {
+  log(`طلاب في البرنامج: ${p.total}
+هتتكتبلهم صورة: ${p.write.length}
+عندهم صورة أصلاً (هيتسابوا زي ما هما): ${p.already}
+طلاب مالهمش ID في الشيت: ${p.noPhoto}
+IDs في الشيت ملهاش طالب: ${p.unmatchedSheet.length}${p.unmatchedSheet.length ? '\n  ' + p.unmatchedSheet.slice(0, 40).join(', ') + (p.unmatchedSheet.length > 40 ? ' ...' : '') : ''}`);
+}
+
+$('previewBtn').onclick = async () => {
+  try { report(await plan()); } catch (e) { log('خطأ: ' + e.message); }
+};
+
+$('runBtn').onclick = async () => {
+  try {
+    const p = await plan(); report(p);
+    if (!p.write.length) return log('مفيش حاجة تتكتب.');
+    if (!confirm(`هتتكتب ${p.write.length} صورة ومش هتتعدل بعد كده. متأكد؟`)) return;
+    const pf = $('photoField').value.trim();
+    for (let i = 0; i < p.write.length; i += 400) {
+      const b = writeBatch(db);
+      p.write.slice(i, i + 400).forEach(w => b.update(w.ref, { [pf]: w.url, photoLocked: true }));
+      await b.commit();
+      log(`اتكتب ${Math.min(i + 400, p.write.length)} / ${p.write.length}`);
+    }
+    log('خلص ✅');
+  } catch (e) { log('خطأ: ' + e.message); }
+};
+</script>
+</body>
+</html>
