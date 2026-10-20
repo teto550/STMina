@@ -176,6 +176,7 @@
       </div>
       <div id="creds-import-wrap" style="display:none;margin:-6px 0 16px">
         <button onclick="openCredsImportModal()" style="width:100%;background:rgba(243,156,18,0.10);border:1px solid rgba(243,156,18,0.35);border-radius:var(--radius-sm);color:var(--warning);font-family:Cairo,sans-serif;font-size:14px;font-weight:700;padding:12px;cursor:pointer">🔑 رفع ID والباسورد من الشيت</button>
+        <button onclick="openPhotoLinksModal()" style="width:100%;margin-top:8px;background:rgba(var(--accent-rgb),0.10);border:1px solid rgba(var(--accent-rgb),0.35);border-radius:var(--radius-sm);color:var(--accent);font-family:Cairo,sans-serif;font-size:14px;font-weight:700;padding:12px;cursor:pointer">📷 رفع لينكات الصور من الشيت</button>
       </div>
       <div class="add-student-form" id="add-student-fields" style="display:none">
         <p class="section-title">إضافة مخدوم جديد</p>
@@ -790,6 +791,41 @@
       <button class="btn-primary" id="creds-commit-btn" onclick="commitCredsImport()" disabled>🔒 تثبيت نهائي</button>
     </div>
   </div>
+</div>
+
+<!-- PHOTO LINKS IMPORT MODAL (admin) -->
+<div id="plinks-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;overflow-y:auto;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:560px;margin:0 auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:700">📷 رفع لينكات الصور</div>
+      <button onclick="closePhotoLinksModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:18px;width:36px;height:36px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:14px">
+      ارفع شيت الصور (عمود <b>SERIAL_NUMBER</b> وعمود <b>AVATAR_FULL_URL</b>). البرنامج بيطابق بالـ <b>ID بالظبط</b> ويكتب لينك الصورة في ملف المخدوم اللي ليه نفس الـ ID. أي شك (لينك متكرر على أكتر من ID، موقع غريب، ID مكرر، لينك مختلف متسجل قبل كده…) بيتعرضلك <b>قبل أي كتابة</b>.
+      <br>⚠️ اللينك بيتثبت <b>مرة واحدة بس</b> ومحدش (حتى الأدمن) يقدر يغيره بعد كده، وبيتفتح جوه البرنامج بس.
+    </div>
+    <label class="field-label">ملف الإكسيل *</label>
+    <input type="file" id="plinks-file-input" class="field-input" accept=".xlsx,.xls" onchange="onPhotoLinksFileChange()">
+    <div id="plinks-status" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:6px;font-size:13px;line-height:1.8;max-height:320px;overflow-y:auto;white-space:pre-wrap"></div>
+    <div id="plinks-review" style="display:none;margin-top:12px;border:1px solid rgba(243,156,18,0.35);border-radius:var(--radius-sm);padding:12px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">⚠️ حالات فيها شك</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:8px">مش هتتكتب غير اللي تعلّم عليها ✔.</div>
+      <div id="plinks-review-count" style="font-size:12px;color:var(--warning);margin-bottom:6px"></div>
+      <div id="plinks-review-list" style="max-height:360px;overflow-y:auto"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-secondary" onclick="closePhotoLinksModal()">إلغاء</button>
+      <button class="btn-primary" id="plinks-commit-btn" onclick="commitPhotoLinks()" disabled>🔒 تثبيت نهائي</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT PHOTO VIEWER (inside the app only) -->
+<div id="plink-view-modal" onclick="closeStudentPhotoLink()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px">
+  <div id="plink-view-name" style="color:#fff;font-weight:700"></div>
+  <img id="plink-view-img" alt="" style="max-width:94%;max-height:76vh;border-radius:12px;object-fit:contain">
+  <div id="plink-view-msg" style="color:#ddd;font-size:13px"></div>
+  <button style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 22px;font-family:Cairo,sans-serif;cursor:pointer">إغلاق</button>
 </div>
 
 <!-- EXPORT MODAL -->

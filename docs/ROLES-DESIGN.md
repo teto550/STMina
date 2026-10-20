@@ -153,3 +153,8 @@ Admins already need no class. Now a manager of servants (a role with only خدا
 
 ## 10. Still open
 Nothing that blocks the start. Cross-class actions are postponed (see the to-do list).
+
+## students/{id}.photoLink (imported photo link, write-once)
+Same rule as `kidId`: only an admin may write it, only when the kid has none (the photo-link sheet import, `src/features/import-export/import-photos.ts`),
+and afterwards nobody (admin included) can change or remove it. `create` by a non-admin may not carry it. Separate from `photo` (the small JPEG data URL a
+servant can edit). The link opens inside the app only (`openStudentPhotoLink`). For Supabase: an RLS update policy with `photo_link is null` in USING.

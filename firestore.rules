@@ -109,14 +109,19 @@ service cloud.firestore {
 
       // 🆕 إنشاء مخدوم: ممنوع حد غير الأدمن يحط kidId
       allow create: if isApproved()
-        && (isAdmin() || !('kidId' in request.resource.data));
+        && (isAdmin() || (!('kidId' in request.resource.data) && !('photoLink' in request.resource.data)));
 
       // 🆕 تعديل: لو المخدوم عنده kidId ممنوع يتغير أو يتشال نهائيًا.
       // ولو معندوش، الأدمن بس هو اللي يضيفه (وقت رفع الشيت).
+      // 🆕 photoLink (لينك الصورة من الشيت): نفس القاعدة — الأدمن بس يكتبه مرة واحدة، وبعدها ثابت لأي حد (أدمن أو خادم).
       allow update: if isApproved() && (
         ('kidId' in resource.data)
           ? request.resource.data.get('kidId', null) == resource.data.kidId
           : (isAdmin() || !('kidId' in request.resource.data))
+      ) && (
+        ('photoLink' in resource.data)
+          ? request.resource.data.get('photoLink', null) == resource.data.photoLink
+          : (isAdmin() || !('photoLink' in request.resource.data))
       );
     }
 

@@ -31,6 +31,7 @@ import '@/features/servants/servants';
 import '@/features/import-export/import-attendance';
 import '@/features/import-export/import-students';
 import '@/features/import-export/import-creds';
+import '@/features/import-export/import-photos';
 import '@/features/servants/deacons-tab';
 import '@/features/students/student-edit';
 import '@/features/shell/tabs';

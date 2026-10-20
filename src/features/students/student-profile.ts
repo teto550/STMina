@@ -99,11 +99,14 @@ window.openProfile = (id) => {
   }
   // ===== ID (لكل الخدام) + الباسورد (أدمن/مسؤول المرحلة بس) =====
   const idRowHtml = s.kidId ? `<div class="prof-row"><div class="prof-icon">🆔</div><div style="flex:1;min-width:0"><div class="prof-key">ID</div><div class="prof-val" dir="ltr" style="text-align:right;user-select:all">${credsEsc(s.kidId)}</div></div></div>` : '';
+  // لينك الصورة اللي اتثبّت من الشيت: بيتفتح جوه البرنامج بس، ومفيش زرار تعديل
+  const photoLinkRowHtml = s.photoLink ? `<div class="prof-row"><div class="prof-icon">📷</div><div style="flex:1;min-width:0"><div class="prof-key">لينك الصورة (ثابت)</div><a href="#" class="prof-val" dir="ltr" style="text-align:right;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)" onclick="openStudentPhotoLink('${credsEsc(id)}');return false">${credsEsc(String(s.photoLink).length > 48 ? String(s.photoLink).slice(0, 45) + '…' : s.photoLink)}</a></div></div>` : '';
   const showPw = !!s.kidId && canSeeStudentPassword(s);
   const pwRowHtml = showPw ? `<div class="prof-row"><div class="prof-icon">🔑</div><div style="flex:1;min-width:0"><div class="prof-key">الباسورد <span style="font-size:10px;color:var(--warning)">(للأدمن ومسؤول المرحلة بس)</span></div><div id="prof-pw-val" class="prof-val" style="color:var(--text-dim);font-weight:400">…</div></div><div id="prof-pw-actions" style="display:flex;gap:6px"></div></div>` : '';
   const fields = [
     { icon:'🆔', key:'ID', val:'', html: idRowHtml, phone:false },
     { icon:'🔑', key:'الباسورد', val:'', html: pwRowHtml, phone:false },
+    { icon:'📷', key:'لينك الصورة', val:'', html: photoLinkRowHtml, phone:false },
     { icon:'🎂', key:'تاريخ الميلاد', val: s.dob ? new Date(s.dob).toLocaleDateString('ar-EG') : '', phone: false },
     { icon:'📍', key:'العنوان', val: '', html: geoRowHtml, phone: false },
     ...phones.map(p => ({ ...p, phone: true })),

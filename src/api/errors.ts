@@ -42,3 +42,8 @@ export function registerErrorMessage(error: unknown): string {
   }
   return MESSAGES.general;
 }
+
+/** True when Firestore refused the write because of the security rules. */
+export function isPermissionDenied(error: unknown): boolean {
+  return errorCode(error) === 'permission-denied';
+}
