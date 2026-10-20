@@ -121,15 +121,15 @@ service cloud.firestore {
     }
 
     // 🆕 ===== student_secrets (باسوردات المخدومين) =====
-    // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش.
-    // بيتمسح بس لما الأدمن يحذف المخدوم نفسه (حذف المخدومين من تاب المخدومين).
-    // أدمن بس (قرار الأدوار: مسؤول المرحلة مبقاش يشوف الباسوردات).
+    // نفس id مستند المخدوم. الباسورد بيتسجل مرة واحدة من الأدمن ومبيتعدلش: ولا تعديل ولا حذف-وإعادة-كتابة، حتى من الأدمن.
+    // بيتمسح بس مع المخدوم نفسه في نفس الدفعة (حذف المخدومين من تاب المخدومين): existsAfter بتقول إن ملف المخدوم اختفى بعد الدفعة.
+    // أدمن بس يقراه (قرار الأدوار: مسؤول المرحلة مبقاش يشوف الباسوردات).
     match /student_secrets/{docId} {
       allow get: if isAdmin();
       allow list: if isAdmin();
       allow create: if isAdmin() && request.resource.data.password is string;
       allow update: if false;
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() && !existsAfter(/databases/$(database)/documents/students/$(docId));
     }
 
     // ===== attendance / deaconAttendance =====

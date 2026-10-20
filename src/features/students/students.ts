@@ -172,21 +172,15 @@ window.renderStudentsList = () => {
 
 // ===== DELETE STUDENT(S) =====
 // حذف نهائي (أدمن بس): ملف المخدوم + باسورده (student_secrets) + كل سجلات حضوره من Firestore.
-// بيشتغل على دفعات من 30 مخدوم، والترتيب جوه كل دفعة (الباسورد -> الحضور -> ملف المخدوم) بيخلي أي توقف في النص
-// آمن: المخدوم اللي ماخلّصش لسه موجود وتقدر تعيد الحذف تاني ويكمل من حيث وقف.
+// بيشتغل على دفعات من 30 مخدوم. الباسورد ثابت حتى على الأدمن: قواعد Firestore بتسمح بمسحه بس لو ملف المخدوم بيتمسح في نفس الدفعة،
+// فبنمسح الحضور الأول، وبعدين ملف المخدوم + باسورده مع بعض. أي توقف في النص آمن: المخدوم اللي ماخلّصش لسه موجود وتقدر تعيد الحذف.
 const PURGE_CHUNK = 30; // حد "in" في Firestore
 async function purgeStudents(ids, backup, onProgress) {
   let attDeleted = 0, done = 0;
   for (let i = 0; i < ids.length; i += PURGE_CHUNK) {
     const chunk = ids.slice(i, i + PURGE_CHUNK);
 
-    // 1) باسوردات المخدومين (لو القواعد لسه ماتنشرتش هيفشل هنا قبل ما يتمسح أي حاجة)
-    const sb = writeBatch(db);
-    chunk.forEach(id => sb.delete(doc(db, 'student_secrets', id)));
-    try { await sb.commit(); }
-    catch (e) { if (e && e.code === 'permission-denied') throw new Error('RULES'); throw e; }
-
-    // 2) سجلات الحضور
+    // 1) سجلات الحضور
     const snap = await getDocs(query(collection(db, 'attendance'), where('studentId', 'in', chunk)));
     for (let j = 0; j < snap.docs.length; j += 450) {
       const ab = writeBatch(db);
@@ -196,12 +190,13 @@ async function purgeStudents(ids, backup, onProgress) {
     snap.docs.forEach(d => { const x = d.data(); backup.attendance.push({ studentId: x.studentId, date: x.date, section: x.section || '' }); });
     attDeleted += snap.docs.length;
 
-    // 3) ملفات المخدومين نفسها
+    // 2) ملفات المخدومين + باسوردهم في دفعة واحدة (لو القواعد اتغيّرت ومنعتها هنرجّع RULES)
     const kb = writeBatch(db);
-    chunk.forEach(id => kb.delete(doc(db, 'students', id)));
-    await kb.commit();
+    chunk.forEach(id => { kb.delete(doc(db, 'student_secrets', id)); kb.delete(doc(db, 'students', id)); });
+    try { await kb.commit(); }
+    catch (e) { if (e && e.code === 'permission-denied') throw new Error('RULES'); throw e; }
 
-    // 4) نضّف اللي في الذاكرة
+    // 3) نضّف اللي في الذاكرة
     const gone = new Set(chunk);
     state.allStudents = state.allStudents.filter(s => !gone.has(s.id));
     chunk.forEach(id => {

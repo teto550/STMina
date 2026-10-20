@@ -3,7 +3,8 @@ import { getDocs, collection, writeBatch, doc, serverTimestamp } from 'firebase/
 import { state } from '@/core/state';
 import { ensureXLSXLoaded, normalizeName } from '@/features/import-export/import-attendance';
 import { db } from '@/core/firebase';
-import { inCurrentSection } from '@/core/section';
+import { inCurrentSection, SECTION } from '@/core/section';
+import { gradeNum, scopeSheetRows } from '@/core/creds-scope';
 import { logActivity } from '@/core/presence';
 import { loadStudents } from '@/features/students/students';
 
@@ -89,7 +90,7 @@ function credsParseWorkbook(wb) {
     const hi = rows.findIndex(r => (r || []).some(c => typeof c === 'string' && c.trim().toLowerCase() === 'password'));
     if (hi === -1) continue;
     const head = rows[hi].map(c => String(c ?? '').trim().toLowerCase());
-    const cId = head.indexOf('id'), cName = head.indexOf('name'), cPw = head.indexOf('password'), cGrade = head.indexOf('grade');
+    const cId = head.indexOf('id'), cName = head.indexOf('name'), cPw = head.indexOf('password'), cGrade = head.indexOf('grade'), cGender = head.indexOf('gender');
     const cPhones = ['phone', 'phone_parents', 'whatsapp'].map(h => head.indexOf(h)).filter(i => i !== -1);
     if (cId === -1 || cName === -1) continue;
     const out = [];
@@ -105,7 +106,7 @@ function credsParseWorkbook(wb) {
       else if (typeof pv === 'number')                 pw = { kind: 'numeric', value: String(pv) };
       else if (typeof pv === 'string' && pv.trim())    pw = /^HMAC_/i.test(pv.trim()) ? { kind: 'hashed' } : { kind: 'ok', value: pv.trim() };
       const phones = credsPhoneKeys(...cPhones.map(ci => r[ci]));
-      out.push({ kidId, name, grade: cGrade === -1 ? '' : r[cGrade], pw, phones });
+      out.push({ kidId, name, grade: cGrade === -1 ? '' : r[cGrade], gender: cGender === -1 ? '' : r[cGender], pw, phones });
     }
     return { sheetName, rows: out };
   }
@@ -113,17 +114,7 @@ function credsParseWorkbook(wb) {
 }
 
 // ===== الصفوف: رقم السنة (الشيت قديم: سنة 3 في الشيت = سنة 4 في البرنامج) =====
-function credsGradeNum(g) {
-  const str = String(g ?? '');
-  const d = str.match(/\d+/); if (d) return +d[0];
-  if (/(اول|أول)/.test(str)) return 1;
-  if (/(تاني|ثاني)/.test(str)) return 2;
-  if (/(تالت|ثالث)/.test(str)) return 3;
-  if (/رابع/.test(str)) return 4;
-  if (/خامس/.test(str)) return 5;
-  if (/سادس/.test(str)) return 6;
-  return null;
-}
+const credsGradeNum = gradeNum;
 
 // الفرق بين صف التطبيق وصف الشيت (المتوقع +1 لأن الشيت قديم، و0 لو الشيت اتحدّث)
 function credsGradeDelta(sheetG, appG) {
@@ -457,7 +448,16 @@ window.onCredsFileChange = async () => {
       st.textContent = '⛔ مش قادر أقرا student_secrets. لازم تضيف قواعد Firestore الخاصة بيها الأول (ادّيتك الكود في الرد)، وبعدها جرب تاني.';
       return;
     }
-    credsCache = { rows: parsed.rows, students: stSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(inCurrentSection), secretIds };
+    // the open class only: the ID and password written here are permanent, so nothing outside the class (and outside its sheet rows) is even looked at
+    const scopeGrade = state.activeGrade || '';
+    let students = stSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(inCurrentSection);
+    let rows = parsed.rows;
+    if (scopeGrade) {
+      students = students.filter(s => (s.grade || '') === scopeGrade);
+      rows = scopeSheetRows(rows, scopeGrade, SECTION);
+      st.textContent = `🎯 الفصل: ${scopeGrade} — ${students.length} مخدوم في البرنامج، و${rows.length} صف في الشيت (من ${parsed.rows.length})`;
+    }
+    credsCache = { rows, students, secretIds };
     credsAnalyze();
   } catch (e) {
     console.error(e);

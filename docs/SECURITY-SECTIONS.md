@@ -50,3 +50,9 @@ Not started; needs the user's go-ahead. The same applies to the other Firebase p
 Decision (2026-09-25, revised): the import screen and the display stay, but only admins may use them. Rules: keep `create`/`list`/`get` for
 admins only and remove the "phase lead may read one document" exception once roles exist (the code path `canSeeStudentPassword` follows the same
 change). No new UI work.
+
+Permanent (2026-10-20): a kid's ID (`students.kidId`) and password (`student_secrets`) are written once and never change, not even by an admin.
+`kidId` cannot be changed or removed once set; `student_secrets` has no `update`, and its `delete` is allowed only when the kid's own file is deleted
+in the same batch (`existsAfter`), so "delete the password and write another" is impossible. The delete flow (`purgeStudents`) therefore deletes the
+file and the password in ONE batch. DEPLOY ORDER: publish the app first, then the rules (an old app deletes the password first and would be refused).
+The import screen (`import-creds.ts`) only looks at the open class and at the sheet rows of the same gender and year (`core/creds-scope.ts`).
