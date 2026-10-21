@@ -49,6 +49,9 @@ Revisit this file regularly (at the start of a session, together with `docs/TEST
 - [ ] Approve the mobile-first mockups of the roles screens (shown 2026-09-25) and the "no access yet" wording.
 
 ## Done
+- [x] Orphan account documents (found 2026-10-22 with `tools/firestore/audit-account-links.cjs`): the 3 dead duplicates of one servant were removed with `tools/firestore/remove-orphan-accounts.cjs` (backup in `backups/`); a servant whose login had been made again was relinked by copying his profile to the new uid. The audit now shows 46 logins = 46 account documents.
+- [x] "نسيت كلمة المرور" on the login screen (Firebase `sendPasswordResetEmail`, Arabic; the same email as "Reset password" in the Firebase console) so nobody has to re-create their login (2026-10-22).
+- [x] Sign-up self-heal: an email that is already a login but has no account document is finished with the typed password instead of "الإيميل ده مسجل بالفعل" (2026-10-22).
 - [x] `loadConfig` and the `config` collection are no longer used: admins come only from roles; the one-time legacy-data migration button and the manual old-attendance cleanup tool (whose "done" marks lived in `config/settings`) were removed; the email settings moved to env variables (2026-10-10).
 - [x] Unused code removed (2026-10-10, C41 in `docs/PORTING.md`): only what nothing used and was never visible (duplicate root `app-shell.ts`, `lucide-react`, unused imports and trivial dead helpers); anything reusable was kept.
 - [x] Old admin / lead / phase-lead toggle buttons removed from the servants tab (roles are the only way to give access).

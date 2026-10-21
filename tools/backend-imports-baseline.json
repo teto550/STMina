@@ -8,7 +8,6 @@
     "src/features/assistant/assistant.ts",
     "src/features/attendance/attendance.ts",
     "src/features/auth/auth.ts",
-    "src/features/auth/profile-complete.ts",
     "src/features/dashboard/dashboard.ts",
     "src/features/dashboard/stats.ts",
     "src/features/import-export/export.ts",

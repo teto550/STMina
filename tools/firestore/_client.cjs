@@ -4,7 +4,7 @@ const { spawn } = require('child_process'); const fs = require('fs'), path = req
 const ROOT = path.resolve(__dirname, '..', '..');
 const PROJECT = JSON.parse(fs.readFileSync(path.join(ROOT, '.firebaserc'), 'utf8')).projects.default;
 const P = `projects/${PROJECT}/databases/(default)/documents`;
-const p = spawn('npx', ['-y', 'firebase-tools@latest', 'mcp', '--dir', ROOT, '--only', 'core,firestore'], { stdio: ['pipe', 'pipe', 'pipe'] });
+const p = spawn('npx', ['-y', 'firebase-tools@latest', 'mcp', '--dir', ROOT, '--only', process.env.MCP_FEATURES || 'core,firestore'], { stdio: ['pipe', 'pipe', 'pipe'] });
 let buf = '', id = 0; const pending = new Map();
 p.stdout.setEncoding('utf8'); // decode multi-byte characters across chunk boundaries (otherwise Arabic text can get U+FFFD)
 p.stdout.on('data', d => { buf += d; let i; while ((i = buf.indexOf('\n')) >= 0) { const l = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!l) continue; try { const m = JSON.parse(l); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } } catch {} } });

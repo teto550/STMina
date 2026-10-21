@@ -1,4 +1,4 @@
-import { errorCode, loginErrorMessage, MESSAGES, registerErrorMessage } from '@/api/errors';
+import { errorCode, loginErrorMessage, MESSAGES, passwordResetErrorMessage, profileSaveErrorMessage, registerErrorMessage } from '@/api/errors';
 
 const fb = (code: string) => Object.assign(new Error(code), { code });
 
@@ -27,5 +27,26 @@ describe('registerErrorMessage', () => {
     expect(registerErrorMessage(fb('auth/weak-password'))).toBe(MESSAGES.weakPassword);
     expect(registerErrorMessage(fb('auth/network-request-failed'))).toBe(MESSAGES.network);
     expect(registerErrorMessage(new Error('x'))).toBe(MESSAGES.general);
+  });
+});
+
+describe('profileSaveErrorMessage ("complete your data")', () => {
+  it('a login with no account document is told to register or ask the admin', () => {
+    expect(profileSaveErrorMessage(fb('not-found'))).toBe(MESSAGES.accountMissing);
+    expect(MESSAGES.accountMissing).toContain('كلّم المسؤول');
+  });
+  it('refused by the rules, no connection, anything else', () => {
+    expect(profileSaveErrorMessage(fb('permission-denied'))).toBe(MESSAGES.profileDenied);
+    expect(profileSaveErrorMessage(fb('unavailable'))).toBe(MESSAGES.network);
+    expect(profileSaveErrorMessage(new Error('x'))).toBe(MESSAGES.general);
+  });
+});
+
+describe('passwordResetErrorMessage ("نسيت كلمة المرور")', () => {
+  it('says what is wrong with the email, the connection, or the number of attempts', () => {
+    expect(passwordResetErrorMessage(fb('auth/invalid-email'))).toBe(MESSAGES.invalidEmail);
+    expect(passwordResetErrorMessage(fb('auth/network-request-failed'))).toBe(MESSAGES.network);
+    expect(passwordResetErrorMessage(fb('auth/too-many-requests'))).toBe(MESSAGES.tooMany);
+    expect(passwordResetErrorMessage(new Error('x'))).toBe(MESSAGES.general);
   });
 });

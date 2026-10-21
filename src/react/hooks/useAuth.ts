@@ -7,7 +7,7 @@ import {useEffect, useState} from 'react';
 import {useIsMutating, useMutation, useQuery} from '@tanstack/react-query';
 import type {User} from 'firebase/auth';
 import {loadAccountDecision} from '@/api/account';
-import {registerServant, signIn, signOutUser, subscribeAuth, type RegisterInput} from '@/api/auth';
+import {registerServant, sendPasswordReset, signIn, signOutUser, subscribeAuth, type RegisterInput} from '@/api/auth';
 import type {Section} from '@/types/access';
 import type {LoginValues} from '@/schemas/auth';
 
@@ -49,6 +49,11 @@ export function useAccount(user: User | null, enabled = true) {
 
 export function useLogin() {
     return useMutation({mutationFn: ({email, password}: LoginValues) => signIn(email, password)});
+}
+
+/** "نسيت كلمة المرور": sends the reset email. */
+export function useSendPasswordReset() {
+    return useMutation({mutationFn: (email: string) => sendPasswordReset(email)});
 }
 
 export function useLogout() {

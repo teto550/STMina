@@ -4,7 +4,7 @@
 //   loadAccountDecision()  reads the account (Firestore, or the cached copy when offline) and evaluates it
 // What to DO with a decision (show a notice, sign out, enter the app) is the sign-in screen's job (src/react/screens/auth/).
 import type { User } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { resolveAccess, type AccountData } from '@/core/access';
 import { gradeNamesOfAccess, hasNoAccess } from '@/core/access-config';
 import { checkAccountSection } from '@/core/account-section';
@@ -121,7 +121,7 @@ export function evaluateAccount({ user, profile, deviceSection, redirectedTo, on
   return { kind: 'enter', session, profile };
 }
 
-type DocSnapshot = { exists?: () => boolean; data: () => UserDoc } | null;
+type DocSnapshot = { exists?: () => boolean; data: () => UserDoc; metadata?: { fromCache: boolean } } | null;
 
 /**
  * Reads the account of a signed-in person and checks it (one Firestore document). Two things belong to the check itself, so they happen
@@ -132,7 +132,11 @@ type DocSnapshot = { exists?: () => boolean; data: () => UserDoc } | null;
 export async function loadAccountDecision(user: User): Promise<AccountDecision> {
   const snap = (await getDocFast(doc(db, 'users', user.uid))) as DocSnapshot;
   let profile: UserDoc | null = snap?.exists?.() ? snap.data() : null;
-  if (!profile) {
+  // The copy kept on this device is only for when the server could not be asked (offline, slow). When the SERVER itself answered "there is no
+  // account document for this login" the copy is stale (the account was removed, or never made under this login): using it would let the person
+  // in as "approved" and show the "complete your data" page, whose save can never work. They get the "not registered" notice instead.
+  const serverSaysNoAccount = !profile && !!snap && snap.metadata?.fromCache === false;
+  if (!profile && !serverSaysNoAccount) {
     profile = (loadProfileCache(user.uid) as UserDoc | null) ?? null;
   } // offline fallback
   let redirectedTo: string | null = null;
@@ -154,4 +158,27 @@ export async function loadAccountDecision(user: User): Promise<AccountDecision> 
     sendUnauthorizedAlert(user.email || '(بدون إيميل)', user.uid).catch((e) => console.warn('security alert not sent:', e));
   }
   return decision;
+}
+
+/** The basic data asked once at the first sign-in ("كمّل بياناتك"). */
+export interface BasicProfileInput {
+  phones: string[];
+  address: string;
+  dob: string;
+  graduated: boolean;
+  college: string;
+  university: string;
+}
+
+/**
+ * Saves the basic data onto the signed-in person's OWN account document and returns the account as it is now. It only UPDATES: a login that
+ * has no account document gets a `not-found` error (see `profileSaveErrorMessage`) instead of quietly trying to create one, which the security
+ * rules refuse (an account is created only by the sign-up form, as pending).
+ */
+export async function saveBasicProfile(uid: string, input: BasicProfileInput): Promise<UserDoc> {
+  const ref = doc(db, 'users', uid);
+  const data = { ...input, phone: input.phones[0] ?? '' };
+  await updateDoc(ref, data);
+  const snap = (await getDocFast(ref)) as DocSnapshot;
+  return snap?.exists?.() ? snap.data() : data;
 }
