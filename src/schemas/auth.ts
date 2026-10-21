@@ -1,5 +1,4 @@
-// Validation of the login and the "new servant" (registration) forms.
-// Password reset / change are done through Firebase's own emails, so they need no schema here yet.
+// Validation of the login, the "forgot my password" and the "new servant" (registration) forms.
 import { z } from 'zod';
 import { emailSchema, hasPhone, phoneListSchema, studyStatusSchema } from './common';
 
@@ -8,6 +7,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'اكتب كلمة المرور'),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
+
+/** "نسيت كلمة المرور": only the email the reset link is sent to. */
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
 export const MIN_PASSWORD_LENGTH = 6;
 

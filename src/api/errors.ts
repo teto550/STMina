@@ -16,6 +16,9 @@ export const MESSAGES = {
   weakPassword: 'كلمة المرور ضعيفة، اختار كلمة أقوى',
   general: 'حدث خطأ، حاول تاني',
   loadFailed: 'مقدرناش نحمّل البيانات',
+  invalidEmail: 'الإيميل مش صحيح',
+  accountMissing: 'حسابك مش مسجل عندنا. اخرج وسجّل من "خادم جديد"، أو كلّم المسؤول.',
+  profileDenied: 'مش مسموح تحفظ بيانات الحساب ده. كلّم المسؤول.',
 } as const;
 
 export function loginErrorMessage(error: unknown): string {
@@ -46,4 +49,34 @@ export function registerErrorMessage(error: unknown): string {
 /** True when Firestore refused the write because of the security rules. */
 export function isPermissionDenied(error: unknown): boolean {
   return errorCode(error) === 'permission-denied';
+}
+
+/** What "كمّل بياناتك" says when the save failed. A login with no account document (`not-found`) is told to register or ask the admin. */
+export function profileSaveErrorMessage(error: unknown): string {
+  const code = errorCode(error);
+  if (code === 'not-found') {
+    return MESSAGES.accountMissing;
+  }
+  if (code === 'permission-denied') {
+    return MESSAGES.profileDenied;
+  }
+  if (isNetwork(code)) {
+    return MESSAGES.network;
+  }
+  return MESSAGES.general;
+}
+
+/** What "نسيت كلمة المرور" says when the email could not be sent (an unknown email is NOT an error: it looks like success). */
+export function passwordResetErrorMessage(error: unknown): string {
+  const code = errorCode(error);
+  if (code === 'auth/invalid-email') {
+    return MESSAGES.invalidEmail;
+  }
+  if (code === 'auth/too-many-requests') {
+    return MESSAGES.tooMany;
+  }
+  if (isNetwork(code)) {
+    return MESSAGES.network;
+  }
+  return MESSAGES.general;
 }

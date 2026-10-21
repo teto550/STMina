@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { setDoc, doc } from 'firebase/firestore';
+import { saveBasicProfile } from '@/api/account';
+import { currentUser } from '@/api/auth';
+import { errorCode, profileSaveErrorMessage } from '@/api/errors';
 import { state } from '@/core/state';
 import { populateUniversitySelect } from '@/features/servants/servants';
-import { auth, db } from '@/core/firebase';
-import { getDocFast } from '@/core/firestore-helpers';
 import { getPhaseGradesForGrade, normalizePhaseGrades } from '@/core/session';
 import { enterApp } from '@/features/shell/app-shell';
 
@@ -48,17 +48,16 @@ window.saveCompleteProfile = async function() {
   const uid = COMPLETE_PROFILE_UID;
   if (!uid) { err.textContent = 'حدث خطأ، حاول تسجل دخول تاني'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'جاري الحفظ…';
-  const data = {
-    phones, phone: phones[0], address, dob,
+  const input = {
+    phones, address, dob,
     graduated: gradStatus === 'graduated',
     college: gradStatus === 'student' ? college : '',
     university: gradStatus === 'student' ? university : ''
   };
   try {
-    await setDoc(doc(db, 'users', uid), data, { merge: true });
-    const user = auth.currentUser;
-    const snap = await getDocFast(doc(db, 'users', uid));
-    const snapData = (snap && snap.exists && snap.exists()) ? snap.data() : data;
+    // only ever updates the person's own account document (a login without one is told so, see profileSaveErrorMessage)
+    const snapData = await saveBasicProfile(uid, input);
+    const user = currentUser();
     state.currentUserRole   = snapData.role || 'deacon';
     state.currentUserName   = snapData.name || (user ? user.email : '');
     state.currentUserEmail  = user ? user.email : state.currentUserEmail;
@@ -71,7 +70,8 @@ window.saveCompleteProfile = async function() {
   } catch(e) {
     // show WHY (the code), so a report from a phone says what happened: e.g. permission-denied = the Firestore rules refused the save
     console.error('saveCompleteProfile error:', e);
-    err.textContent = 'حدث خطأ، حاول تاني' + (e && e.code ? ` (${e.code})` : '');
+    const code = errorCode(e);
+    err.textContent = profileSaveErrorMessage(e) + (code ? ` (${code})` : '');
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '✅ حفظ ومتابعة';
   }

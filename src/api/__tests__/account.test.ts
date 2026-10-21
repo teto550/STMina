@@ -3,14 +3,15 @@ vi.mock('@/core/firebase', () => ({ db: {} }));
 vi.mock('@/core/section', () => ({ SECTION: 'boys', switchDeviceToSection: vi.fn(() => true) }));
 vi.mock('@/api/email', () => ({ sendUnauthorizedAlert: vi.fn(async () => undefined) }));
 vi.mock('@/core/firestore-helpers', () => ({ getDocFast: vi.fn(), loadProfileCache: vi.fn() }));
-vi.mock('firebase/firestore', () => ({ doc: vi.fn() }));
+vi.mock('firebase/firestore', () => ({ doc: vi.fn(() => 'ref'), updateDoc: vi.fn(async () => undefined) }));
 vi.mock('@/core/session', () => ({
   normalizePhaseGrades: (v: unknown) => (Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').filter(Boolean) : []),
   getPhaseGradesForGrade: (g: string) => [g],
 }));
 
 import type { User } from 'firebase/auth';
-import { evaluateAccount, isProfileIncomplete, loadAccountDecision, type EvaluateInput } from '@/api/account';
+import { updateDoc } from 'firebase/firestore';
+import { evaluateAccount, isProfileIncomplete, loadAccountDecision, saveBasicProfile, type EvaluateInput } from '@/api/account';
 import { sendUnauthorizedAlert } from '@/api/email';
 import { getDocFast, loadProfileCache } from '@/core/firestore-helpers';
 import { switchDeviceToSection } from '@/core/section';
@@ -194,6 +195,20 @@ describe('loadAccountDecision (reads the account, and does the two things that b
     expect((await loadAccountDecision(person)).kind).toBe('enter');
   });
 
+  it('the cached copy is ignored when the SERVER says there is no account (a removed or never-made account must not get in)', async () => {
+    vi.mocked(getDocFast).mockResolvedValue({ ...found(null), metadata: { fromCache: false } });
+    vi.mocked(loadProfileCache).mockReturnValue({ ...complete, phones: [], address: '' }); // what an earlier visit left on the phone
+    expect(await loadAccountDecision(person)).toEqual({ kind: 'blocked', reason: 'unregistered' });
+    expect(loadProfileCache).not.toHaveBeenCalled();
+    expect(sendUnauthorizedAlert).toHaveBeenCalledWith('m@x.com', 'u1');
+  });
+
+  it('...but a "no document" that only came from the device cache (offline) still falls back to the cached copy', async () => {
+    vi.mocked(getDocFast).mockResolvedValue({ ...found(null), metadata: { fromCache: true } });
+    vi.mocked(loadProfileCache).mockReturnValue(complete);
+    expect((await loadAccountDecision(person)).kind).toBe('enter');
+  });
+
   it('an account with no record alerts the admin by email, and is blocked', async () => {
     vi.mocked(getDocFast).mockResolvedValue(found(null));
     vi.mocked(loadProfileCache).mockReturnValue(null);
@@ -233,5 +248,28 @@ describe('loadAccountDecision (reads the account, and does the two things that b
     vi.mocked(getDocFast).mockResolvedValue(found({ ...complete, gender: 'female' }));
     expect(await loadAccountDecision(person)).toEqual({ kind: 'blocked', reason: 'wrong-section' });
     expect(switchDeviceToSection).not.toHaveBeenCalled();
+  });
+});
+
+describe('saveBasicProfile (the "complete your data" save)', () => {
+  const input = { phones: ['0100', '0111'], address: 'الفيوم', dob: '2003-01-10', graduated: true, college: '', university: '' };
+
+  beforeEach(() => {
+    vi.mocked(updateDoc).mockReset().mockResolvedValue(undefined);
+    vi.mocked(getDocFast).mockReset();
+  });
+
+  it('only UPDATES the own account document (never creates one) and returns the account as saved', async () => {
+    vi.mocked(getDocFast).mockResolvedValue({ exists: () => true, data: () => ({ ...complete, ...input, phone: '0100' }) });
+    const saved = await saveBasicProfile('u1', input);
+    expect(updateDoc).toHaveBeenCalledWith('ref', { ...input, phone: '0100' });
+    expect(saved.role).toBe('deacon');
+    expect(saved.address).toBe('الفيوم');
+  });
+
+  it('a login with no account document is rejected with the Firestore code, not created', async () => {
+    vi.mocked(updateDoc).mockRejectedValue(Object.assign(new Error('no doc'), { code: 'not-found' }));
+    await expect(saveBasicProfile('u1', input)).rejects.toMatchObject({ code: 'not-found' });
+    expect(getDocFast).not.toHaveBeenCalled();
   });
 });
