@@ -211,3 +211,10 @@ Cause found for a servant who got `permission-denied` on "كمّل بيانات�
 - [ ] `MCP_FEATURES=core,firestore,auth node tools/firestore/audit-account-links.cjs` lists any login without a document (should be none) and orphan documents.
 - [ ] **"نسيت كلمة المرور؟"** under the sign-in form (2026-10-22): opens a form with the email typed so far; "ابعتلي اللينك" sends Firebase's reset email (Arabic; the same one as "Reset password" in the Firebase console, from noreply@attends-39e5b.firebaseapp.com; check the Spam folder). The notice does not say whether the email is registered. A badly typed email, no connection or too many attempts show their own message. "رجوع لتسجيل الدخول" goes back. Open the link in the email, choose a new password, sign in with it. (Optional: Firebase console -> Authentication -> Templates -> Password reset to edit the sender name / text.)
 - [ ] **Sign-up with an email that is already a login but has no account** (2026-10-22): "خادم جديد" with that email and the login's own password finishes the registration (pending account, admin email/push as usual) instead of "الإيميل ده مسجل بالفعل". A login that already has an account, or a wrong password, still says "الإيميل ده مسجل بالفعل".
+
+## Parts and occasions: who may do what (2026-10-23) - needs the rules deployed
+- [ ] As an ORDINARY servant (not a lead) with a role that gives them a class: توزيع الفقرات shows "إضافة فقرة", the "+" on every day, ✏️ and 🗑 on the parts of THEIR class. Add, edit (type / servant / reference) and delete a part: all work.
+- [ ] The same servant cannot touch another class (they cannot even open it); an admin can work on any class.
+- [ ] المناسبات: that servant sees the list and the "next occasion" card and can tap an occasion -> "add as a part" (opens the part form with the title filled in, the day left empty). They do NOT see add / edit / delete of the occasions themselves.
+- [ ] As an ADMIN: المناسبات shows add / edit / delete for occasions.
+- [ ] `npm run test:rules` passes (9 + 16 + 33 + 13 checks).

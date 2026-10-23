@@ -35,6 +35,35 @@ service cloud.firestore {
       );
     }
 
+    // The number of a class from its name; the cells of the roles are 'male:4' = gender:number (docs/ROLES-DESIGN.md). 0 = not a class name.
+    function gradeNo(grade) {
+      return {
+        'سنة أولى ابتدائي': 1, 'سنة تانية ابتدائي': 2, 'سنة ثانية ابتدائي': 2, 'سنة تالتة ابتدائي': 3, 'سنة ثالثة ابتدائي': 3,
+        'سنة رابعة ابتدائي': 4, 'سنة خامسة ابتدائي': 5, 'سنة سادسة ابتدائي': 6
+      }.get(grade, 0);
+    }
+
+    // Do the roles of the signed-in servant (users.access.cells, written by the admin screen) give them this class? The boys' section is the
+    // 'male' cell; the girls' section the 'female' cell, and in grades 1-2 (boys and girls together, served by women) either of the two.
+    function rolesGiveClass(grade, section) {
+      let n = gradeNo(grade);
+      let cells = myDoc().access.get('cells', []);
+      return n > 0 && (section == 'girls'
+        ? (('female:' + string(n)) in cells || (n <= 2 && ('male:' + string(n)) in cells))
+        : ('male:' + string(n)) in cells);
+    }
+
+    // May the signed-in person work on the things of a class (its parts of the programme)? An admin any class; a servant whose roles give them
+    // the class; a servant with no roles yet (an old account) the class in their own `grade` field. Mirrors `canManageGrade` of the app.
+    function worksOnClass(grade, section) {
+      return isApproved() && (
+        isAdmin()
+        || ('cells' in myDoc().get('access', {})
+            ? rolesGiveClass(grade, section)
+            : myDoc().get('grade', '') == grade)
+      );
+    }
+
     // ===== users =====
     // كل واحد بيقرا ملفه بس، أو الأدمن يقرا الكل، أو أي معتمد يقرا حسابات المعتمدين
     // التانيين (محتاجينها لدليل الخدام)، أو مسؤول سنة يقرا طلبات "pending" بتاعة سنته
@@ -159,25 +188,24 @@ service cloud.firestore {
     }
 
     // 🆕 ===== parts_distribution (توزيع الفقرات) =====
-    // كل خادم معتمد يقرا فقرات فصله، وبس مسؤول السنة/المرحلة بتاعة الفصل ده (أو الأدمن)
-    // يقدر يضيف أو يمسح — نفس منطق الأدمن في التطبيق، اتطبّق هنا كمان عشان محدّش
-    // يقدر يتحايل على التطبيق نفسه.
+    // كل خادم معتمد يقرا الفقرات. وأي خادم على الفصل ده (دوره بيديله الفصل، أو فصله هو لو لسه معندوش دور)، أو الأدمن، يقدر
+    // يضيف ويعدّل ويمسح فقرات الفصل ده (worksOnClass): نفس منطق canManageGrade في التطبيق، اتطبّق هنا كمان عشان محدّش يتحايل على التطبيق.
     match /parts_distribution/{docId} {
       allow read: if isApproved();
       allow create: if isApproved() && (
-        isAdmin() ||
+        worksOnClass(request.resource.data.grade, request.resource.data.get('section', 'boys')) ||
         (isLead() && myDoc().grade == request.resource.data.grade) ||
         (isPhaseLead() && request.resource.data.grade in myDoc().get('phaseGrades', []))
       ) && request.resource.data.createdByUid == request.auth.uid;
       allow delete: if isApproved() && (
-        isAdmin() ||
+        worksOnClass(resource.data.grade, resource.data.get('section', 'boys')) ||
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       );
       // editing a part (give it its type / servant later, change the day, the title or the reference; the admin screen also renames the servant): the
       // manager of the class (or an admin), and only these fields: never the class, the section or who created it
       allow update: if isApproved() && (
-        isAdmin() ||
+        worksOnClass(resource.data.grade, resource.data.get('section', 'boys')) ||
         (isLead() && myDoc().grade == resource.data.grade) ||
         (isPhaseLead() && resource.data.grade in myDoc().get('phaseGrades', []))
       ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'title', 'date', 'reference', 'deaconName', 'deaconId', 'updatedAt']);

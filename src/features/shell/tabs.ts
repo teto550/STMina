@@ -3,7 +3,7 @@ import { state } from '@/core/state';
 import { loadPendingDeacons } from '@/features/servants/approvals';
 import { DEACONS } from '@/features/servants/deacons';
 import { auth } from '@/core/firebase';
-import { isGradeManagerOf } from '@/core/session';
+import { canManageGrade } from '@/core/session';
 import { sectionTag } from '@/core/section';
 import { initStatsTab } from '@/features/dashboard/stats';
 import { initOnlineTab } from '@/features/servants/online';
@@ -43,7 +43,7 @@ function showParts() {
   window.openReactScreen('parts', document.getElementById('parts-screen'), {
     grade: state.activeGrade,
     section: sectionTag(),
-    canManage: isGradeManagerOf(state.activeGrade),
+    canManage: canManageGrade(state.activeGrade), // any servant of the open class (admins any class): add, edit, delete parts
     servants: DEACONS.slice(),
     isAdmin: state.currentUserRole === 'admin',
     user: { uid: auth.currentUser ? auth.currentUser.uid : '', name: state.currentUserName }

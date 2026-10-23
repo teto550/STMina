@@ -158,3 +158,11 @@ Nothing that blocks the start. Cross-class actions are postponed (see the to-do 
 Same rule as `kidId`: only an admin may write it, only when the kid has none (the photo-link sheet import, `src/features/import-export/import-photos.ts`),
 and afterwards nobody (admin included) can change or remove it. `create` by a non-admin may not carry it. Separate from `photo` (the small JPEG data URL a
 servant can edit). The link opens inside the app only (`openStudentPhotoLink`). For Supabase: an RLS update policy with `photo_link is null` in USING.
+
+
+## Parts of the programme and occasions: who may do what (2026-10-23)
+Rules in `firestore.rules`, tested in `tools/rules-tests/parts-edit.mjs` (33 checks) and `occasions.mjs`; the app side is `canManageGrade` (`src/core/session.ts`).
+- **Occasions (المناسبات, `occasions`):** every approved account READS them and can use one: "add as a part" on any occasion creates a part of the class they work on. Only an ADMIN adds, edits or deletes an occasion.
+- **Parts (`parts_distribution`):** every approved account reads them. ANY servant of a class (not only its lead) adds, edits and deletes the parts of THAT class; an admin any class. "Of a class" = the cells of their roles (`users.access.cells`: `male:4` = boys class 4; `female:4` = girls class 4; grades 1-2 are one class for girls and boys, either cell works), the section of the part included. A servant without roles yet (an old account) is tied to the class in their own `grade` field; once an account has roles, the old `grade` field is ignored. A servant whose roles give no class can change nothing.
+- An edit can only change `type`, `title`, `date`, `reference`, `deaconName`, `deaconId`, `updatedAt`: never the class, the section or who created the part. A new part must carry the creator's own uid.
+- For a migration (Supabase): this is "row's class in my cells, or I am an admin" as an RLS policy on a `parts` table; `occasions` is "read: any approved, write: admin".
