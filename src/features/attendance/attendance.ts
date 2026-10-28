@@ -12,6 +12,7 @@ import { attFilteredStudents } from '@/features/students/students';
 import { avatarBox } from '@/features/students/photos';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 import { canTakeAttendanceOn, getClassSetting, DAY_NAMES } from '@/core/class-settings';
+import { badLabelsOf, hasBadData } from '@/core/bad-data';
 
 // ===== SYNC ATTENDANCE COUNTS =====
 // ===== ATTENDANCE =====
@@ -137,10 +138,12 @@ export function renderTodayList() {
     const subLine = isBirthdayFilter
       ? `${deaconNameOf(s) || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• 🎂 ${bdayStr || 'بدون تاريخ ميلاد'}</span>`
       : `${deaconNameOf(s) || 'بدون خادم'} <span style="font-size:10px;opacity:0.8">• حضر ${s.attendanceCount || 0} مرة</span>`;
-    return `<div class="student-item ${present?'present':''}">
+    const bad = hasBadData(s);
+    return `<div class="student-item ${present?'present':''}${bad ? ' bad-data' : ''}">
       ${avatarBox(s, 42)}
       <div class="student-info">
-        <div class="student-name">${s.name}</div>
+        <div class="student-name${bad ? ' bad-click' : ''}"${bad ? ` onclick="openBadFix('${s.id}')" title="بيانات خاطئة — اضغط للتصحيح"` : ''}>${s.name}</div>
+        ${bad ? `<div class="bad-tag">🚩 ${badLabelsOf(s).join('، ')}</div>` : ''}
         <div class="student-id">${subLine}</div>
       </div>
       <div class="manual-check-box ${present ? 'checked' : ''}" onclick="manualToggleAttendance('${s.id}')">✓</div>
@@ -172,10 +175,12 @@ window.onManualSearch = () => {
 
   cont.innerHTML = list.map(s => {
     const already = !!state.todayAttendance[s.id];
-    return `<div class="manual-result-item ${already ? 'already' : ''}" onclick="manualToggleAttendance('${s.id}')">
+    const bad = hasBadData(s);
+    return `<div class="manual-result-item ${already ? 'already' : ''}${bad ? ' bad-data' : ''}" onclick="manualToggleAttendance('${s.id}')">
       ${avatarBox(s, 36)}
       <div style="flex:1">
-        <div class="manual-result-name">${s.name}</div>
+        <div class="manual-result-name${bad ? ' bad-click' : ''}"${bad ? ` onclick="event.stopPropagation();openBadFix('${s.id}')" title="بيانات خاطئة — اضغط للتصحيح"` : ''}>${s.name}</div>
+        ${bad ? `<div class="bad-tag">🚩 ${badLabelsOf(s).join('، ')}</div>` : ''}
         <div class="manual-result-grade">${s.grade||''}</div>
       </div>
       <div class="manual-check-box ${already ? 'checked' : ''}">✓</div>

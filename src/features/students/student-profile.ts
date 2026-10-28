@@ -8,6 +8,10 @@ import { inCurrentSection } from '@/core/section';
 import { db } from '@/core/firebase';
 import { avatarPlaceholder } from '@/features/students/photos';
 import { logActivity } from '@/core/presence';
+import { badKeysOf, badLabelsOf } from '@/core/bad-data';
+
+// the phone rows of the file and the "wrong data" key each one answers to
+const PHONE_BAD_KEY = { 'تليفون الأب': 'father', 'تليفون الأم': 'mother', 'تليفون المخدوم': 'student' };
 
 // ===== STUDENT PROFILE =====
 window.openProfile = (id) => {
@@ -103,32 +107,38 @@ window.openProfile = (id) => {
   const photoLinkRowHtml = s.photoLink ? `<div class="prof-row"><div class="prof-icon">📷</div><div style="flex:1;min-width:0"><div class="prof-key">لينك الصورة (ثابت)</div><a href="#" class="prof-val" dir="ltr" style="text-align:right;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)" onclick="openStudentPhotoLink('${credsEsc(id)}');return false">${credsEsc(String(s.photoLink).length > 48 ? String(s.photoLink).slice(0, 45) + '…' : s.photoLink)}</a></div></div>` : '';
   const showPw = !!s.kidId && canSeeStudentPassword(s);
   const pwRowHtml = showPw ? `<div class="prof-row"><div class="prof-icon">🔑</div><div style="flex:1;min-width:0"><div class="prof-key">الباسورد <span style="font-size:10px;color:var(--warning)">(للأدمن ومسؤول المرحلة بس)</span></div><div id="prof-pw-val" class="prof-val" style="color:var(--text-dim);font-weight:400">…</div></div><div id="prof-pw-actions" style="display:flex;gap:6px"></div></div>` : '';
+  // بيانات خاطئة: الخانات الغلط بتتلوّن بالأحمر (الاسم فوق، والباقي صفوف)
+  const bk = new Set(badKeysOf(s));
+  document.getElementById('prof-name').classList.toggle('bad-name', bk.has('name'));
+  if (bk.has('address') && geoRowHtml) { geoRowHtml = geoRowHtml.replace('class="prof-row"', 'class="prof-row bad"'); }
   const fields = [
     { icon:'🆔', key:'ID', val:'', html: idRowHtml, phone:false },
     { icon:'🔑', key:'الباسورد', val:'', html: pwRowHtml, phone:false },
     { icon:'📷', key:'لينك الصورة', val:'', html: photoLinkRowHtml, phone:false },
-    { icon:'🎂', key:'تاريخ الميلاد', val: s.dob ? new Date(s.dob).toLocaleDateString('ar-EG') : '', phone: false },
+    { icon:'🎂', key:'تاريخ الميلاد', val: s.dob ? new Date(s.dob).toLocaleDateString('ar-EG') : '', phone: false, bad: bk.has('dob') },
     { icon:'📍', key:'العنوان', val: '', html: geoRowHtml, phone: false },
-    ...phones.map(p => ({ ...p, phone: true })),
-    { icon:'✝️', key:'أب الاعتراف',   val: s.confessor || '',   phone: false },
+    ...phones.map(p => ({ ...p, phone: true, bad: bk.has(PHONE_BAD_KEY[p.key]) })),
+    { icon:'✝️', key:'أب الاعتراف',   val: s.confessor || '',   phone: false, bad: bk.has('confessor') },
     { icon:'🙏', key:'خادم الافتقاد', val: deaconNameOf(s) || '',      phone: false },
     { icon:'📞', key:'آخر افتقاد تليفوني', val: s.lastVisitPhone ? (() => { const d=new Date(s.lastVisitPhone); const m=(new Date().getFullYear()-d.getFullYear())*12+(new Date().getMonth()-d.getMonth()); return d.toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) + (m===0?' (هذا الشهر)':' · منذ '+m+' شهر'); })() : '', phone: false },
     { icon:'🏠', key:'آخر افتقاد منزلي',   val: s.lastVisitHome  ? (() => { const d=new Date(s.lastVisitHome);  const m=(new Date().getFullYear()-d.getFullYear())*12+(new Date().getMonth()-d.getMonth()); return d.toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) + (m===0?' (هذا الشهر)':' · منذ '+m+' شهر'); })() : '', phone: false },
     { icon:'📝', key:'ملاحظات',          val: s.notes || '',         phone: false },
   ];
 
-  document.getElementById('prof-details').innerHTML = fields
-    .filter(f => f.val || f.html)
-    .map(f => f.html ? f.html : `<div class="prof-row">
+  // الخانة الغلط لازم تظهر حتى لو فاضية (عشان الخادم يشوفها ويصلّحها)
+  const badBanner = bk.size ? `<div class="bad-banner">🚩 بيانات خاطئة: ${badLabelsOf(s).join('، ')}</div>` : '';
+  document.getElementById('prof-details').innerHTML = badBanner + fields
+    .filter(f => f.val || f.html || f.bad)
+    .map(f => f.html ? f.html : `<div class="prof-row${f.bad ? ' bad' : ''}">
       <div class="prof-icon">${f.icon}</div>
       <div style="flex:1">
         <div class="prof-key">${f.key}</div>
-        ${f.phone
+        ${f.phone && f.val
           ? `<a href="tel:${f.val}" class="prof-val phone-link">${f.val}</a>`
-          : `<div class="prof-val">${f.val}</div>`
+          : `<div class="prof-val">${f.val || '—'}</div>`
         }
       </div>
-      ${f.phone ? `<a href="tel:${f.val}" style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);border-radius:10px;color:var(--success);padding:8px 14px;font-size:13px;font-weight:700;text-decoration:none">📲 اتصل</a>` : ''}
+      ${f.phone && f.val ? `<a href="tel:${f.val}" style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);border-radius:10px;color:var(--success);padding:8px 14px;font-size:13px;font-weight:700;text-decoration:none">📲 اتصل</a>` : ''}
     </div>`)
     .join('') || '<div style="color:var(--text-dim);text-align:center;padding:20px">لا توجد بيانات إضافية</div>';
 
