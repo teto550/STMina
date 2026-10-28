@@ -69,7 +69,7 @@ let badFixId = null;
 function renderBadFix() {
   const s = state.allStudents.find((x) => x.id === badFixId);
   if (!s) { return; }
-  document.getElementById('bad-fix-name').textContent = s.name;
+  document.getElementById('bad-fix-title').textContent = s.name;
   document.getElementById('bad-fix-list').innerHTML = badKeysOf(s).map((k) => {
     const f = fieldOf(k);
     const id = 'bad-fix-' + k;
