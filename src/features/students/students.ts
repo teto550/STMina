@@ -14,6 +14,7 @@ import { todayKey } from '@/core/utils';
 import { nameMatchesSearch } from '@/features/import-export/import-attendance';
 import { CredFilter, filterByCreds } from '@/core/creds-filter';
 import { fetchStudentIdsWithPassword } from '@/api/student-secrets';
+import { badLabelsOf, hasBadData } from '@/core/bad-data';
 
 // ===== STUDENTS =====
 export async function loadStudents({ force = false } = {}) {
@@ -218,11 +219,12 @@ window.renderStudentsList = () => {
     return;
   }
   cont.innerHTML = list.map(s =>
-    `<div class="stu-card"${selectMode ? ` onclick="toggleSel('${s.id}')" style="cursor:pointer"` : ''}>
+    `<div class="stu-card${hasBadData(s) ? ' bad-data' : ''}"${selectMode ? ` onclick="toggleSel('${s.id}')" style="cursor:pointer"` : ''}>
       ${selectMode ? `<input type="checkbox" data-sid="${s.id}" ${selectedIds.has(s.id) ? 'checked' : ''} style="width:22px;height:22px;flex-shrink:0;pointer-events:none">` : ''}
       ${avatarBox(s, 64)}
       <div class="stu-info">
         <div class="stu-name">${s.name}</div>
+        ${hasBadData(s) ? `<div class="bad-tag">🚩 ${badLabelsOf(s).join('، ')}</div>` : ''}
         <div class="stu-grade">${deaconNameOf(s) || 'بدون خادم'}</div>
         <div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:700">✅ حضر ${s.attendanceCount || 0} مرة</div>
       </div>

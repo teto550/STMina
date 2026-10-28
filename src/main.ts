@@ -34,6 +34,7 @@ import '@/features/import-export/import-creds';
 import '@/features/import-export/import-photos';
 import '@/features/servants/deacons-tab';
 import '@/features/students/student-edit';
+import '@/features/students/bad-data';
 import '@/features/shell/tabs';
 import '@/features/dashboard/stats';
 import '@/features/servants/online';
