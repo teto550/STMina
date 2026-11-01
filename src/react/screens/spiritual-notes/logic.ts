@@ -21,6 +21,23 @@ export function lastDays(count: number, from: Date): string[] {
   return out;
 }
 
+/** `day` moved by `n` days (negative = earlier). */
+export function addDays(day: string, n: number): string {
+  const d = parse(day);
+  return dateToStr(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n));
+}
+
+/** The week of the programme runs from Friday to Thursday: this is the Friday on or before `day`. */
+export function weekStart(day: string): string {
+  return addDays(day, -((parse(day).getDay() - 5 + 7) % 7));
+}
+
+/** The 7 days of the week of `day`, Friday first and Thursday last. */
+export function weekDays(day: string): string[] {
+  const start = weekStart(day);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
 export function monthOf(day: string): string {
   return day.slice(0, 7);
 }

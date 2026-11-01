@@ -5,7 +5,7 @@ A tab next to الحضور / المخدومين for ONE class of the boys' secti
 
 ## What it does
 - The tab lists the kids of the open class with a search box (spelling variants of the same name match).
-- Opening a kid opens his file: pick a day (the last 7 days, or any earlier date), tick الصبح / بليل, write the gospel, tick القداس,
+- Opening a kid opens his file: pick a day (the week runs from Friday to Thursday, with "الأسبوع اللي فات / الأسبوع الجاي" to move between weeks, or any date), tick الصبح / بليل, write the gospel, tick القداس,
   الصوم (shown on Wednesday and Friday only) and the month's الاعتراف, then "حفظ اليوم". Below: the last 30 days he has something in.
 - Any servant of the class (and admins) can write, like the other class tabs (`canManageGrade`).
 

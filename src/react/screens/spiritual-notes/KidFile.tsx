@@ -8,7 +8,7 @@ import { Button } from '@/react/components/ui/button';
 import { Input } from '@/react/components/ui/input';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useConfession, useKidDay, useKidHistory, useSaveNote } from '@/react/hooks/useSpiritualNotes';
-import { dateToStr, dayLabel, didAnything, isFastDay, lastDays, monthOf, summaryOf } from './logic';
+import { addDays, dateToStr, dayLabel, didAnything, isFastDay, lastDays, monthOf, summaryOf, weekDays } from './logic';
 
 export type KidRef = { id: string; name: string };
 
@@ -27,7 +27,6 @@ type KidFileProps = {
   onBack: () => void;
 };
 
-const WEEK = 7;
 const HISTORY_DAYS = 30;
 
 const Toggle: FC<{ label: string; on: boolean; disabled: boolean; onToggle: () => void }> = ({ label, on, disabled, onToggle }) => {
@@ -130,9 +129,9 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
 /** The file of one kid: pick a day, tick what he did (prayers, gospel, mass, fasting, the month's confession) and save. Below: the last days. */
 export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
   const today = useMemo(() => dateToStr(new Date()), []);
-  const week = useMemo(() => lastDays(WEEK, new Date()), []);
   const since = useMemo(() => lastDays(HISTORY_DAYS, new Date()).at(-1) ?? today, [today]);
   const [day, setDay] = useState(today);
+  const week = weekDays(day); // the week runs from Friday to Thursday
   const dayData = useKidDay(kid.id, day);
   const confession = useConfession(kid.id, monthOf(day));
   const history = useKidHistory(kid.id, since);
@@ -153,10 +152,15 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
         </Button>
         <h2 className="tw:text-base tw:font-bold">{kid.name} — النوتة الروحية</h2>
       </div>
-      <p className="tw:text-xs tw:text-dim">اختار اليوم اللي عايز تسجله:</p>
+      <p className="tw:text-xs tw:text-dim">اختار اليوم اللي عايز تسجله (الأسبوع من الجمعة للخميس):</p>
+      <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">
+        <Button size="sm" variant="secondary" onClick={() => setDay(addDays(day, -7))}>الأسبوع اللي فات</Button>
+        <span className="tw:text-center tw:text-xs tw:text-dim">من {dayLabel(week[0] ?? day)} لـ {dayLabel(week[6] ?? day)}</span>
+        <Button size="sm" variant="secondary" disabled={addDays(day, 7) > today} onClick={() => setDay(addDays(day, 7))}>الأسبوع الجاي</Button>
+      </div>
       <div className="tw:flex tw:flex-wrap tw:gap-2">
         {week.map((d) => (
-          <button key={d} type="button" aria-pressed={d === day} onClick={() => setDay(d)} className={`tw:cursor-pointer tw:rounded-full tw:px-3 tw:py-2 tw:text-xs tw:font-bold ${d === day ? 'tw:bg-accent tw:text-white' : 'tw:bg-surface-2 tw:text-dim'}`}>
+          <button key={d} type="button" aria-pressed={d === day} disabled={d > today} onClick={() => setDay(d)} className={`tw:cursor-pointer tw:rounded-full tw:px-3 tw:py-2 tw:text-xs tw:font-bold tw:disabled:cursor-default tw:disabled:opacity-40 ${d === day ? 'tw:bg-accent tw:text-white' : 'tw:bg-surface-2 tw:text-dim'}`}>
             {dayLabel(d)}
           </button>
         ))}

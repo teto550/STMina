@@ -1,4 +1,4 @@
-import { dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, summaryOf } from '@/react/screens/spiritual-notes/logic';
+import { addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, summaryOf } from '@/react/screens/spiritual-notes/logic';
 
 describe('spiritual notes: the days', () => {
   it('lastDays gives today first and the days before it, across a month change', () => {
@@ -12,6 +12,20 @@ describe('spiritual notes: the days', () => {
     expect(isFastDay('2030-10-16')).toBe(true); // Wednesday
     expect(isFastDay('2030-10-18')).toBe(true); // Friday
     expect(isFastDay('2030-10-17')).toBe(false); // Thursday
+  });
+});
+
+describe('spiritual notes: the week runs from Friday to Thursday', () => {
+  it('the week starts on the Friday on or before the day', () => {
+    expect(weekStart('2030-10-18')).toBe('2030-10-18'); // Friday
+    expect(weekStart('2030-10-20')).toBe('2030-10-18'); // Sunday
+    expect(weekStart('2030-10-24')).toBe('2030-10-18'); // Thursday: the last day of that week
+    expect(weekStart('2030-10-17')).toBe('2030-10-11'); // the Thursday before belongs to the week before
+  });
+  it('has 7 days, Friday first and Thursday last, across a month change', () => {
+    expect(weekDays('2030-10-30')).toEqual(['2030-10-25', '2030-10-26', '2030-10-27', '2030-10-28', '2030-10-29', '2030-10-30', '2030-10-31']);
+    expect(weekDays('2030-11-01')).toEqual(['2030-11-01', '2030-11-02', '2030-11-03', '2030-11-04', '2030-11-05', '2030-11-06', '2030-11-07']);
+    expect(addDays('2030-11-01', -1)).toBe('2030-10-31');
   });
 });
 

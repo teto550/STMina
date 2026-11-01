@@ -68,10 +68,23 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     expect(screen.getByText('3 مخدوم')).toBeInTheDocument();
   });
 
+  it('shows the week from Friday to Thursday; the days after today and the next week cannot be picked', async () => {
+    const { user } = setup();
+    await openKid(user);
+    expect(screen.getByText(/من الجمعة 18-10 لـ الخميس 24-10/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'الجمعة 18-10' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'السبت 19-10' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'الأسبوع الجاي' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'الأسبوع اللي فات' }));
+    expect(await screen.findByText(/من الجمعة 11-10 لـ الخميس 17-10/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'الأسبوع الجاي' })).toBeEnabled();
+  });
+
   it('the fasting box is hidden on a day that is not Wednesday or Friday', async () => {
     const { user } = setup();
     await openKid(user);
-    await user.click(screen.getByRole('button', { name: 'الخميس 17-10' }));
+    await user.click(screen.getByRole('button', { name: 'الأسبوع اللي فات' })); // Thursday 17 is the last day of the week before
+    await user.click(await screen.findByRole('button', { name: 'الخميس 17-10' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'الخميس 17-10' })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'صام' })).not.toBeInTheDocument();
   });
