@@ -11,6 +11,7 @@ import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { classEmoji } from '@/core/class-settings';
 import { TAB_NAMES } from '@/core/tab-names';
 import { usesSplitHome } from '@/core/servants-access';
+import { hasSpiritualNotes } from '@/core/notes-access';
 import { ensureClassSettings } from '@/features/classes/class-settings';
 import { ensureStudents, ensureDeacons, ensureDeaconAttendance, ensureAttendance, ensureTodayListener, refreshAllData } from '@/core/data';
 
@@ -21,6 +22,7 @@ let loadToken = 0;
 
 async function loadTabData(tab) {
   const mine = ++loadToken;
+  if (tab === 'notes' && !hasSpiritualNotes(state.activeGrade, sectionTag())) { window.openTab('home'); return; } // the tab belongs to some classes only
   try {
     if (tab === 'attendance')  { ensureClassSettings(); /* in the background: a slow network must never hold the list */ await ensureStudents(); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
     else if (tab === 'students') { await Promise.all([ensureStudents(), ensureDeacons()]); }
@@ -28,6 +30,7 @@ async function loadTabData(tab) {
     else if (tab === 'parts')    { await ensureDeacons(); }
     else if (tab === 'stats')    { await Promise.all([ensureStudents(), ensureDeacons(), ensureAttendance('recent')]); }
     else if (tab === 'online')   { await Promise.all([ensureDeacons(), ensureDeaconAttendance()]); }
+    else if (tab === 'notes')    { await ensureStudents(); }
   } catch (e) { console.error('loading data for', tab, e); }
   if (mine !== loadToken || state.lastActiveMainTab !== tab) return; // the user already went somewhere else
   if (tab === 'attendance') { updateStats(); renderTodayList(); }
@@ -36,6 +39,7 @@ async function loadTabData(tab) {
   else if (tab === 'parts') showParts();
   else if (tab === 'stats') initStatsTab();
   else if (tab === 'online') { window.renderOnlineAttPicker(); if (isManager()) initOnlineTab(); }
+  else if (tab === 'notes') showNotes();
 }
 
 // "توزيع الفقرات" is the React screen 'parts' (src/react/screens/parts); it loads its own data and is drawn again each time the tab opens
@@ -50,6 +54,24 @@ function showParts() {
   });
 }
 
+// "نوتة روحية" is the React screen 'spiritual-notes' (src/react/screens/spiritual-notes): the kids of the class, and in each file what he did each day.
+// It exists only for the boys' classes in SPIRITUAL_NOTES_GRADES (src/core/notes-access.ts); it reads a kid's notes only when his file opens.
+function showNotes() {
+  window.openReactScreen('spiritual-notes', document.getElementById('notes-screen'), {
+    grade: state.activeGrade,
+    kids: state.allStudents.map(s => ({ id: s.id, name: s.name || '' })),
+    canEdit: canManageGrade(state.activeGrade), // any servant of the open class (admins any class)
+    user: { name: state.currentUserName }
+  });
+}
+
+// the tab button and the home tile of the notes show only in the classes that have them
+export function applyNotesAvailability() {
+  const on = hasSpiritualNotes(state.activeGrade, sectionTag());
+  const btn = document.getElementById('tab-btn-notes'); if (btn) { btn.style.display = on ? '' : 'none'; }
+  const tile = document.getElementById('home-tile-notes'); if (tile) { tile.style.display = on ? '' : 'none'; }
+}
+
 // after the active class changed: reload the screen that is open (nothing on the home screen)
 export async function reloadOpenTab() {
   const tab = state.lastActiveMainTab;
@@ -62,7 +84,8 @@ window.switchTab = (tab, btn) => {
   state.lastActiveMainTab = tab;
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+  applyNotesAvailability();
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online', 'notes'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   // Hdour way: the class home is the cards; inside a section there is no row of tabs. Whoever has the chip bar on top (🏠 الرئيسية / 🏫 الفصول /

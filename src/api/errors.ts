@@ -19,6 +19,7 @@ export const MESSAGES = {
   invalidEmail: 'الإيميل مش صحيح',
   accountMissing: 'حسابك مش مسجل عندنا. اخرج وسجّل من "خادم جديد"، أو كلّم المسؤول.',
   profileDenied: 'مش مسموح تحفظ بيانات الحساب ده. كلّم المسؤول.',
+  notesDenied: 'مش مسموح بالنوتة الروحية. اتأكد إن قواعدها اتنشرت في Firebase.',
 } as const;
 
 export function loginErrorMessage(error: unknown): string {
@@ -79,4 +80,16 @@ export function passwordResetErrorMessage(error: unknown): string {
     return MESSAGES.network;
   }
   return MESSAGES.general;
+}
+
+/** What the spiritual notes screen says when reading the notes or making a code failed. */
+export function notesErrorMessage(error: unknown): string {
+  const code = errorCode(error);
+  if (code === 'permission-denied') {
+    return MESSAGES.notesDenied;
+  }
+  if (isNetwork(code)) {
+    return MESSAGES.network;
+  }
+  return MESSAGES.loadFailed;
 }

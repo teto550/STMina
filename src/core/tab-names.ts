@@ -6,4 +6,5 @@ export const TAB_NAMES: Record<string, string> = {
   parts: '📖 توزيع الفقرات',
   stats: '📊 إحصائيات',
   online: '👁 متابعة',
+  notes: '📓 نوتة روحية',
 };

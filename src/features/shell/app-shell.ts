@@ -9,7 +9,7 @@ import { approveDeacon, loadPendingDeacons } from '@/features/servants/approvals
 import { setupPushBell } from '@/features/shell/push';
 import { auth } from '@/core/firebase';
 import { applyActiveGradeDeacons } from '@/features/servants/deacons';
-import { reloadOpenTab } from '@/features/shell/tabs';
+import { reloadOpenTab, applyNotesAvailability } from '@/features/shell/tabs';
 import { canUseServantsTab, isClasslessManager, usesSplitHome } from '@/core/servants-access';
 import { AdminHomeView } from '@/react/screens/admin-home/view';
 import { ensureClassSettings, updateClassSettings } from '@/features/classes/class-settings';
@@ -103,6 +103,7 @@ function applyRoleUI() {
   document.getElementById('tab-btn-online').style.display = isGradeManager ? '' : 'none';
   const onlineTile = document.getElementById('home-tile-online'); if (onlineTile) onlineTile.style.display = isGradeManager ? '' : 'none';
   const studentsTile = document.getElementById('home-tile-students'); if (studentsTile) studentsTile.style.display = '';
+  applyNotesAvailability();
   // top bar subtitle: شارة حسب الدور + السنة الدراسية النشطة أو فصول المرحلة
   const roleIcon = isAdmin ? '👑' : (state.currentUserIsPhaseLead ? '🟣' : (state.currentUserIsLead ? '⭐' : '🙏'));
   const gradeText = state.currentUserIsPhaseLead && state.currentUserPhaseGrades.length
@@ -159,7 +160,7 @@ window.buildActiveGradeBar = buildActiveGradeBar;
 // "no access yet": hides every tab and class screen and shows the React panel 'no-access' instead
 export function showNoAccessScreen() {
   state.activeGrade = null;
-  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', 'admin-home-screen', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].map(t => 'tab-' + t)].forEach(id => {
+  ['active-grade-bar', 'main-tabs', 'servants-directory-modal', 'admin-home-screen', ...['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online', 'notes'].map(t => 'tab-' + t)].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -182,7 +183,7 @@ export function showMainAppTabs() {
 export function showServantsDirectorySection() {
   hideAdminHome();
   document.getElementById('main-tabs').style.display = 'none';
-  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online', 'notes'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.style.display = 'none';
   });
@@ -200,6 +201,7 @@ function applyActiveGrade(g) {
   } catch (e) {}
   buildActiveGradeBar();
   buildGradeFilters();
+  applyNotesAvailability();
   const gradeLabelEl = document.getElementById('deacon-tab-grade-label');
   if (gradeLabelEl) {
     gradeLabelEl.textContent = `📚 بتتعامل دلوقتي مع خدام: ${state.activeGrade}`;
@@ -265,7 +267,7 @@ export function showAdminHome(view) {
   state.servantsDirectoryOpen = false;
   document.getElementById('main-tabs').style.display = 'none';
   document.getElementById('servants-directory-modal').style.display = 'none';
-  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online', 'notes'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) {
       el.style.display = 'none';
@@ -293,7 +295,7 @@ export function showServantsHome() {
   state.servantsDirectoryOpen = false;
   document.getElementById('main-tabs').style.display = 'none';
   document.getElementById('servants-directory-modal').style.display = 'none';
-  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online'].forEach(t => {
+  ['home', 'attendance', 'students', 'deacons', 'parts', 'stats', 'online', 'notes'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) {
       el.style.display = 'none';

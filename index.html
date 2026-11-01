@@ -114,6 +114,7 @@
       <button class="tab" id="tab-btn-parts" data-tab="parts" onclick="switchTab('parts',this)">توزيع الفقرات</button>
       <button class="tab" id="tab-btn-stats" data-tab="stats" onclick="switchTab('stats',this)">إحصائيات</button>
       <button class="tab" id="tab-btn-online" data-tab="online" onclick="switchTab('online',this)" style="display:none">👁 متابعة</button>
+      <button class="tab" id="tab-btn-notes" data-tab="notes" onclick="switchTab('notes',this)" style="display:none">📓 نوتة روحية</button>
     </div>
 
     <!-- HOME: the app opens here and reads nothing; each screen loads its own data when it is opened -->
@@ -126,6 +127,7 @@
         <button class="home-tile admin-card" onclick="openTab('parts')"><span class="home-icon">📖</span><span>توزيع الفقرات</span></button>
         <button class="home-tile admin-card" onclick="openTab('stats')"><span class="home-icon">📊</span><span>إحصائيات</span></button>
         <button class="home-tile admin-card" id="home-tile-online" onclick="openTab('online')" style="display:none"><span class="home-icon">👁</span><span>متابعة</span></button>
+        <button class="home-tile admin-card" id="home-tile-notes" onclick="openTab('notes')" style="display:none"><span class="home-icon">📓</span><span>نوتة روحية</span></button>
       </div>
       <button class="home-refresh" onclick="refreshData()">🔄 تحديث البيانات</button>
     </div>
@@ -373,6 +375,7 @@
 
     <!-- PARTS DISTRIBUTION TAB (توزيع الفقرات): the React screen 'parts' draws everything in here -->
     <div id="tab-parts" style="display:none"><div id="parts-screen"></div></div>
+    <div id="tab-notes" style="display:none"><div id="notes-screen"></div></div>
 
     <!-- STATS TAB -->
     <div id="tab-stats" style="display:none">

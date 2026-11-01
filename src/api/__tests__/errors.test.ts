@@ -50,3 +50,12 @@ describe('passwordResetErrorMessage ("نسيت كلمة المرور")', () => {
     expect(passwordResetErrorMessage(new Error('x'))).toBe(MESSAGES.general);
   });
 });
+
+describe('notesErrorMessage', () => {
+  it('says the rules are the problem when Firestore refuses, and the network when it is down', async () => {
+    const { notesErrorMessage } = await import('@/api/errors');
+    expect(notesErrorMessage(fb('permission-denied'))).toBe(MESSAGES.notesDenied);
+    expect(notesErrorMessage(fb('unavailable'))).toBe(MESSAGES.network);
+    expect(notesErrorMessage(new Error('x'))).toBe(MESSAGES.loadFailed);
+  });
+});

@@ -222,6 +222,28 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // النوتة الروحية: the servants write, day by day, what each kid did (docs/SPIRITUAL-NOTES.md). Any approved servant reads and writes, like the students.
+    // spiritualNotes/{studentId}/days/{YYYY-MM-DD}  and  spiritualNotes/{studentId}/months/{YYYY-MM}. Nothing is ever deleted.
+    match /spiritualNotes/{childId}/days/{day} {
+      allow read: if isApproved();
+      allow create, update: if isApproved()
+        && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['day', 'prayerMorning', 'prayerNight', 'gospel', 'mass', 'fast', 'updatedAt', 'updatedBy'])
+        && request.resource.data.day == day
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 80
+        && (!('gospel' in request.resource.data) || (request.resource.data.gospel is string && request.resource.data.gospel.size() <= 300));
+    }
+    match /spiritualNotes/{childId}/months/{month} {
+      allow read: if isApproved();
+      allow create, update: if isApproved()
+        && month.matches('^[0-9]{4}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['confession', 'updatedAt', 'updatedBy'])
+        && request.resource.data.confession is bool
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 80;
+    }
+
     // أي حاجة تانية غير كده: ممنوعة
     match /{document=**} {
       allow read, write: if false;
