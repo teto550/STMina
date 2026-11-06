@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 
-const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn() }));
-vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession }));
+const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchKidDaysBetween: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn() }));
+vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchKidDaysBetween: h.fetchKidDaysBetween, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession }));
 
 import SpiritualNotesScreen from '@/react/screens/spiritual-notes';
 
@@ -22,6 +22,7 @@ beforeEach(() => {
   Object.values(h).forEach((m) => m.mockReset());
   h.fetchKidDay.mockResolvedValue(null);
   h.fetchKidDays.mockResolvedValue([]);
+  h.fetchKidDaysBetween.mockResolvedValue([]);
   h.fetchConfession.mockResolvedValue(false);
   h.saveNoteDay.mockImplementation(async ({ day, values }: { day: string; values: object }) => ({ day, ...values }));
   h.saveConfession.mockResolvedValue(undefined);
@@ -95,13 +96,13 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     await user.click(screen.getByRole('button', { name: 'الصبح' }));
     await user.click(screen.getByRole('button', { name: 'حضر' }));
     await user.click(screen.getByRole('button', { name: 'صام' }));
-    await user.type(screen.getByRole('textbox', { name: 'الإنجيل' }), 'لوقا 15');
+    await user.click(screen.getByRole('button', { name: 'قرأ' }));
     await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
     expect(await screen.findByText('اتحفظ ✓')).toBeInTheDocument();
     expect(h.saveNoteDay).toHaveBeenCalledWith({
       childId: 'k2',
       day: '2030-10-18',
-      values: { prayerMorning: true, prayerNight: false, mass: true, gospel: 'لوقا 15', fast: true },
+      values: { prayerMorning: true, prayerNight: false, mass: true, gospel: true, fast: true },
       by: 'الخادم',
     });
     expect(h.saveConfession).not.toHaveBeenCalled(); // the confession did not change
@@ -122,8 +123,26 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     const { user } = setup();
     await openKid(user);
     expect(screen.getByRole('button', { name: 'بليل' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('textbox', { name: 'الإنجيل' })).toHaveValue('متى 5');
+    expect(screen.getByRole('button', { name: 'قرأ' })).toHaveAttribute('aria-pressed', 'true'); // an old note holding text counts as read
     expect(await screen.findByText('الصبح · القداس')).toBeInTheDocument();
+  });
+
+  it('shows the points of the day, the week and the month above the file', async () => {
+    // Friday 18/10/2030 (today): morning 5 + night 5 + gospel 15 + mass 20 + fast 10 = 55. Thursday 24 is in the same week. Earlier in the month: 20. Confession: 25.
+    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true });
+    h.fetchKidDaysBetween.mockResolvedValue([
+      { day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true },
+      { day: '2030-10-20', mass: true },
+      { day: '2030-10-05', mass: true },
+    ]);
+    h.fetchConfession.mockResolvedValue(true);
+    const { user } = setup();
+    await openKid(user);
+    const box = (label: string) => screen.getByText(label).parentElement as HTMLElement;
+    await waitFor(() => expect(box('نقط الأسبوع')).toHaveTextContent('75'));
+    expect(box('نقط اليوم')).toHaveTextContent('55');
+    expect(box('نقط الشهر')).toHaveTextContent('120'); // 55 + 20 + 20 + the confession 25
+    expect(h.fetchKidDaysBetween).toHaveBeenCalledWith('k2', '2030-10-01', '2030-10-31');
   });
 
   it('a failed save shows a message and keeps what was ticked', async () => {

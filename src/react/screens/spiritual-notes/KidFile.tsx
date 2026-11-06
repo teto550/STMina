@@ -7,8 +7,8 @@ import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Input } from '@/react/components/ui/input';
 import { Spinner } from '@/react/components/ui/spinner';
-import { useConfession, useKidDay, useKidHistory, useSaveNote } from '@/react/hooks/useSpiritualNotes';
-import { addDays, dateToStr, dayLabel, didAnything, isFastDay, lastDays, monthOf, summaryOf, weekDays } from './logic';
+import { useConfession, useKidDay, useKidHistory, useKidRange, useSaveNote } from '@/react/hooks/useSpiritualNotes';
+import { addDays, dateToStr, dayLabel, dayPoints, didAnything, isFastDay, lastDays, monthOf, monthPoints, rangeFor, readGospel, summaryOf, weekDays, weekPoints } from './logic';
 
 export type KidRef = { id: string; name: string };
 
@@ -44,15 +44,26 @@ const Toggle: FC<{ label: string; on: boolean; disabled: boolean; onToggle: () =
   );
 };
 
-type DayFormProps = { kid: KidRef; day: string; initial: NoteDay | null; initialConfession: boolean; canEdit: boolean; by: string; since: string };
+type PointsBoxProps = { label: string; points: number | null };
+
+const PointsBox: FC<PointsBoxProps> = ({ label, points }) => {
+  return (
+    <div className="tw:flex tw:flex-1 tw:flex-col tw:items-center tw:rounded-card tw:border tw:border-line tw:bg-surface tw:px-2 tw:py-2">
+      <span className="tw:text-xs tw:text-dim">{label}</span>
+      <span className="tw:text-lg tw:font-bold">{points === null ? '…' : points}</span>
+    </div>
+  );
+};
+
+type DayFormProps = { kid: KidRef; day: string; initial: NoteDay | null; initialConfession: boolean; canEdit: boolean; by: string; since: string; from: string; to: string };
 
 /** The tick boxes of one day of one kid, and the month's confession. Mounted again for each day (the `key`), so it starts from what is saved. */
-const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEdit, by, since }) => {
+const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEdit, by, since, from, to }) => {
   const [morning, setMorning] = useState(!!initial?.prayerMorning);
   const [night, setNight] = useState(!!initial?.prayerNight);
   const [mass, setMass] = useState(!!initial?.mass);
   const [fast, setFast] = useState(!!initial?.fast);
-  const [gospel, setGospel] = useState(initial?.gospel ?? '');
+  const [gospel, setGospel] = useState(initial ? readGospel(initial) : false);
   const [confession, setConfession] = useState(initialConfession);
   const [saved, setSaved] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -72,11 +83,13 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
         childId: kid.id,
         day,
         month,
-        values: { prayerMorning: morning, prayerNight: night, mass, gospel: gospel.trim(), ...(fastDay ? { fast } : {}) },
+        values: { prayerMorning: morning, prayerNight: night, mass, gospel, ...(fastDay ? { fast } : {}) },
         confession,
         confessionChanged: confession !== initialConfession,
         by,
         since,
+        from,
+        to,
       });
       setSaved(true);
     } catch (e) {
@@ -94,10 +107,10 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
           <Toggle label="بليل" on={night} disabled={!canEdit} onToggle={() => change(() => setNight(!night))} />
         </div>
       </div>
-      <label className="tw:flex tw:flex-col tw:gap-2 tw:text-sm tw:font-bold">
-        الإنجيل
-        <Input value={gospel} maxLength={300} placeholder="كتب إيه؟" disabled={!canEdit} onChange={(e) => change(() => setGospel(e.target.value))} />
-      </label>
+      <div className="tw:flex tw:items-center tw:gap-2">
+        <span className="tw:w-16 tw:text-sm tw:font-bold">الإنجيل</span>
+        <Toggle label="قرأ" on={gospel} disabled={!canEdit} onToggle={() => change(() => setGospel(!gospel))} />
+      </div>
       <div className="tw:flex tw:items-center tw:gap-2">
         <span className="tw:w-16 tw:text-sm tw:font-bold">القداس</span>
         <Toggle label="حضر" on={mass} disabled={!canEdit} onToggle={() => change(() => setMass(!mass))} />
@@ -135,7 +148,15 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
   const dayData = useKidDay(kid.id, day);
   const confession = useConfession(kid.id, monthOf(day));
   const history = useKidHistory(kid.id, since);
+  const { from, to } = rangeFor(day);
+  const range = useKidRange(kid.id, from, to);
   const written = (history.data ?? []).filter(didAnything);
+
+  // the points: the day from the saved day, the week and the month from the days read around it (the month also has the confession)
+  const rangeReady = range.isSuccess && !confession.isPending && !confession.isError;
+  const dayTotal = dayData.isSuccess ? dayPoints(dayData.data) : null;
+  const weekTotal = rangeReady ? weekPoints(range.data, day) : null;
+  const monthTotal = rangeReady ? monthPoints(range.data, day, confession.data === true) : null;
 
   let view = FileView.Data;
   if (dayData.isPending || confession.isPending) {
@@ -152,6 +173,12 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
         </Button>
         <h2 className="tw:text-base tw:font-bold">{kid.name} — النوتة الروحية</h2>
       </div>
+      <div className="tw:flex tw:gap-2" aria-label="النقط">
+        <PointsBox label="نقط اليوم" points={dayTotal} />
+        <PointsBox label="نقط الأسبوع" points={weekTotal} />
+        <PointsBox label="نقط الشهر" points={monthTotal} />
+      </div>
+      {range.isError && <p className="tw:text-xs tw:text-dim">{notesErrorMessage(range.error)}</p>}
       <p className="tw:text-xs tw:text-dim">اختار اليوم اللي عايز تسجله (الأسبوع من الجمعة للخميس):</p>
       <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">
         <Button size="sm" variant="secondary" onClick={() => setDay(addDays(day, -7))}>الأسبوع اللي فات</Button>
@@ -177,7 +204,7 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
           <Alert action={<Button size="sm" onClick={() => { void dayData.refetch(); void confession.refetch(); }}>حاول تاني</Button>}>{notesErrorMessage(dayData.error ?? confession.error)}</Alert>
         </Case>
         <Case condition={view === FileView.Data}>
-          <DayForm key={day} kid={kid} day={day} initial={dayData.data ?? null} initialConfession={confession.data === true} canEdit={canEdit} by={by} since={since} />
+          <DayForm key={day} kid={kid} day={day} initial={dayData.data ?? null} initialConfession={confession.data === true} canEdit={canEdit} by={by} since={since} from={from} to={to} />
         </Case>
       </Switch>
       <h3 className="tw:text-sm tw:font-bold">آخر الأيام</h3>

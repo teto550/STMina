@@ -71,9 +71,57 @@ export function filterKids<T extends { name: string }>(kids: T[], search: string
   return q ? kids.filter((k) => normalizeName(k.name).includes(q)) : kids;
 }
 
-/** Did the kid do or write anything that day? */
+/** Did he read the gospel? (older notes hold the text he wrote: any non-empty text counts) */
+export function readGospel(note: NoteDay): boolean {
+  return typeof note.gospel === 'string' ? note.gospel.trim() !== '' : note.gospel === true;
+}
+
+/** Did the kid do anything that day? */
 export function didAnything(note: NoteDay): boolean {
-  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || (note.gospel && note.gospel.trim()));
+  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note));
+}
+
+/** The points of each thing (set by the user): prayer 5 + 5, gospel 15, confession 25 (once a month), fasting 10 (Wednesday and Friday), mass 20. */
+export const POINTS = { prayerMorning: 5, prayerNight: 5, gospel: 15, confession: 25, fast: 10, mass: 20 } as const;
+
+/** The points of one day: prayers, gospel, mass and fasting (the fasting counts on Wednesday and Friday only). The confession is a month thing, see monthPoints. */
+export function dayPoints(note: NoteDay | null | undefined): number {
+  if (!note) {
+    return 0;
+  }
+  return (
+    (note.prayerMorning ? POINTS.prayerMorning : 0) +
+    (note.prayerNight ? POINTS.prayerNight : 0) +
+    (readGospel(note) ? POINTS.gospel : 0) +
+    (note.mass ? POINTS.mass : 0) +
+    (note.fast && isFastDay(note.day) ? POINTS.fast : 0)
+  );
+}
+
+/** The points of the days of `notes` that fall from `from` to `to` (YYYY-MM-DD, included). */
+export function pointsBetween(notes: NoteDay[], from: string, to: string): number {
+  return notes.filter((n) => n.day >= from && n.day <= to).reduce((sum, n) => sum + dayPoints(n), 0);
+}
+
+/** The points of the week of `day` (Friday to Thursday), from the days written. The confession is not in it (it belongs to the month). */
+export function weekPoints(notes: NoteDay[], day: string): number {
+  const days = weekDays(day);
+  return pointsBetween(notes, days[0] ?? day, days[6] ?? day);
+}
+
+/** The points of the month of `day`: every day of the month, plus the confession of that month when he confessed. */
+export function monthPoints(notes: NoteDay[], day: string, confessed: boolean): number {
+  const month = monthOf(day);
+  return pointsBetween(notes, `${month}-01`, `${month}-31`) + (confessed ? POINTS.confession : 0);
+}
+
+/** The first and the last day to read so that both the week and the month of `day` are covered (a week can cross two months). */
+export function rangeFor(day: string): { from: string; to: string } {
+  const week = weekDays(day);
+  const month = monthOf(day);
+  const from = [week[0] ?? day, `${month}-01`].sort()[0] ?? day;
+  const to = [week[6] ?? day, `${month}-31`].sort().at(-1) ?? day;
+  return { from, to };
 }
 
 /** "الصبح · بليل · القداس · صام" (what was done that day) */
@@ -91,7 +139,7 @@ export function summaryOf(note: NoteDay): string {
   if (note.fast) {
     parts.push('صام');
   }
-  if (note.gospel && note.gospel.trim()) {
+  if (readGospel(note)) {
     parts.push('الإنجيل');
   }
   return parts.join(' · ');
