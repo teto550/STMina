@@ -10,18 +10,20 @@ export interface NoteValues {
   prayerMorning: boolean;
   prayerNight: boolean;
   mass: boolean;
-  /** what he wrote from the gospel, '' = nothing */
-  gospel: string;
+  /** did he read the gospel that day (older notes may still hold the text he wrote: any non-empty text counts as read) */
+  gospel: boolean;
   /** only on the fasting days (Wednesday and Friday); left out on the other days */
   fast?: boolean;
 }
 
-export interface NoteDay extends Partial<NoteValues> {
+export interface NoteDay extends Omit<Partial<NoteValues>, 'gospel'> {
+  /** true, or (old notes) the text that was written */
+  gospel?: boolean | string;
   /** YYYY-MM-DD */
   day: string;
 }
 
-type Raw = { id: string; data: () => Partial<NoteValues> };
+type Raw = { id: string; data: () => Omit<Partial<NoteValues>, 'gospel'> & { gospel?: boolean | string } };
 
 /** The days written since `since` (YYYY-MM-DD) for one kid, newest first. */
 export async function fetchKidDays(childId: string, since: string): Promise<NoteDay[]> {
@@ -29,10 +31,16 @@ export async function fetchKidDays(childId: string, since: string): Promise<Note
   return (snap.docs as unknown as Raw[]).map((d) => ({ ...d.data(), day: d.id })).sort((a, b) => (a.day < b.day ? 1 : -1));
 }
 
+/** The days written from `from` to `to` (both YYYY-MM-DD, included) for one kid, newest first: one query for the week and the month totals. */
+export async function fetchKidDaysBetween(childId: string, from: string, to: string): Promise<NoteDay[]> {
+  const snap = await getDocs(query(collection(db, 'spiritualNotes', childId, 'days'), where(documentId(), '>=', from), where(documentId(), '<=', to)));
+  return (snap.docs as unknown as Raw[]).map((d) => ({ ...d.data(), day: d.id })).sort((a, b) => (a.day < b.day ? 1 : -1));
+}
+
 /** One day of one kid; null when nothing was written that day. */
 export async function fetchKidDay(childId: string, day: string): Promise<NoteDay | null> {
   const snap = await getDoc(doc(db, 'spiritualNotes', childId, 'days', day));
-  return snap.exists() ? { ...(snap.data() as Partial<NoteValues>), day } : null;
+  return snap.exists() ? { ...(snap.data() as Omit<NoteDay, 'day'>), day } : null;
 }
 
 /** Did the kid confess in `month` (YYYY-MM)? */

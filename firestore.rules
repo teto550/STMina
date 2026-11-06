@@ -232,7 +232,7 @@ service cloud.firestore {
         && request.resource.data.day == day
         && request.resource.data.updatedAt == request.time
         && request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 80
-        && (!('gospel' in request.resource.data) || (request.resource.data.gospel is string && request.resource.data.gospel.size() <= 300));
+        && (!('gospel' in request.resource.data) || request.resource.data.gospel is bool || (request.resource.data.gospel is string && request.resource.data.gospel.size() <= 300));
     }
     match /spiritualNotes/{childId}/months/{month} {
       allow read: if isApproved();

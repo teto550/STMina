@@ -1,6 +1,6 @@
 // The spiritual notes (النوتة الروحية) of one kid, as React Query hooks. Saving updates what is already held (no second read).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchConfession, fetchKidDay, fetchKidDays, saveConfession, saveNoteDay, type NoteDay, type NoteValues } from '@/api/spiritual-notes';
+import { fetchConfession, fetchKidDay, fetchKidDays, fetchKidDaysBetween, saveConfession, saveNoteDay, type NoteDay, type NoteValues } from '@/api/spiritual-notes';
 
 const MINUTE = 60 * 1000;
 
@@ -8,6 +8,7 @@ export const notesKeys = {
   day: (id: string, day: string) => ['spiritual-notes', 'day', id, day] as const,
   month: (id: string, month: string) => ['spiritual-notes', 'month', id, month] as const,
   history: (id: string, since: string) => ['spiritual-notes', 'history', id, since] as const,
+  range: (id: string, from: string, to: string) => ['spiritual-notes', 'range', id, from, to] as const,
 };
 
 /** The chosen day of a kid: `null` = nothing written that day. */
@@ -24,7 +25,12 @@ export function useKidHistory(id: string, since: string) {
   return useQuery({ queryKey: notesKeys.history(id, since), queryFn: () => fetchKidDays(id, since), staleTime: MINUTE });
 }
 
-type SaveInput = { childId: string; day: string; month: string; values: NoteValues; confession: boolean; confessionChanged: boolean; by: string; since: string };
+/** The days from `from` to `to` of a kid (covers the week and the month of the open day, for the points). */
+export function useKidRange(id: string, from: string, to: string) {
+  return useQuery({ queryKey: notesKeys.range(id, from, to), queryFn: () => fetchKidDaysBetween(id, from, to), staleTime: MINUTE });
+}
+
+type SaveInput = { childId: string; day: string; month: string; values: NoteValues; confession: boolean; confessionChanged: boolean; by: string; since: string; from: string; to: string };
 
 /** Saves the chosen day, and the month's confession when it changed. */
 export function useSaveNote() {
@@ -40,7 +46,9 @@ export function useSaveNote() {
     onSuccess: (saved, input) => {
       client.setQueryData<NoteDay | null>(notesKeys.day(input.childId, input.day), saved);
       client.setQueryData<boolean>(notesKeys.month(input.childId, input.month), input.confession);
-      client.setQueryData<NoteDay[]>(notesKeys.history(input.childId, input.since), (old = []) => [saved, ...old.filter((n) => n.day !== saved.day)].sort((a, b) => (a.day < b.day ? 1 : -1)));
+      const put = (old: NoteDay[] = []) => [saved, ...old.filter((n) => n.day !== saved.day)].sort((a, b) => (a.day < b.day ? 1 : -1));
+      client.setQueryData<NoteDay[]>(notesKeys.history(input.childId, input.since), put);
+      client.setQueryData<NoteDay[]>(notesKeys.range(input.childId, input.from, input.to), put);
     },
   });
 }
