@@ -55,6 +55,64 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
+describe('PodiumShow: automatic or by hand', () => {
+  const pick = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+
+  it('starts automatic: it explains it and moves on by itself', () => {
+    setup();
+    expect(screen.getByRole('button', { name: /أوتوماتيك/ })).toHaveAttribute('aria-pressed', 'true');
+    start();
+    waitEach(PODIUM_TIMES.suspense[3], PODIUM_TIMES.reveal[3]);
+    expect(screen.getByText('المركز التاني')).toBeInTheDocument();
+  });
+
+  it('by hand: each drum roll / climb plays by itself, then the kid stays until the button is tapped', () => {
+    setup();
+    pick('👆 يدوي');
+    expect(screen.getByText(/إنت اللي بتدوس/)).toBeInTheDocument();
+    start();
+    wait(PODIUM_TIMES.suspense[3]);
+    expect(screen.getByText('مينا سامح')).toBeInTheDocument();
+    wait(PODIUM_TIMES.reveal[3] * 10); // however long he waits, the kid stays
+    expect(screen.getByText('مينا سامح')).toBeInTheDocument();
+    expect(screen.queryByText('المركز التاني')).not.toBeInTheDocument();
+
+    tap('المركز اللي بعده');
+    expect(screen.getByText('المركز التاني')).toBeInTheDocument();
+    expect(screen.queryByText('مينا سامح')).not.toBeInTheDocument();
+    wait(PODIUM_TIMES.suspense[2]);
+    expect(screen.getByText('مارك عادل')).toBeInTheDocument();
+    tap('المركز اللي بعده');
+    wait(PODIUM_TIMES.suspense[1]);
+    expect(screen.getByText('بيتر ماهر')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'المركز اللي بعده' })).toHaveTextContent('النتيجة النهائية'); // the last one leads to the finished podium
+    tap('المركز اللي بعده');
+    expect(screen.getByText(/مبروك للفائزين/)).toBeInTheDocument();
+  });
+
+  it('can be switched while it runs: by hand it stops after the kid, automatic it carries on', () => {
+    setup();
+    start();
+    wait(PODIUM_TIMES.suspense[3]);
+    tap('التبديل ليدوي');
+    wait(PODIUM_TIMES.reveal[3] * 10);
+    expect(screen.getByText('مينا سامح')).toBeInTheDocument();
+    tap('التبديل لأوتوماتيك');
+    wait(PODIUM_TIMES.reveal[3]);
+    expect(screen.getByText('المركز التاني')).toBeInTheDocument();
+  });
+
+  it('switching does not restart the sounds of the kid on the screen', () => {
+    setup();
+    start();
+    wait(PODIUM_TIMES.suspense[3]);
+    const reveals = sounds.reveal.mock.calls.length;
+    tap('التبديل ليدوي');
+    tap('التبديل لأوتوماتيك');
+    expect(sounds.reveal.mock.calls.length).toBe(reveals);
+  });
+});
+
 describe('PodiumShow: the places under the third, and the round podium', () => {
   const longShow: PodiumStep[] = [step(5, 0, 'e', 'يوسف مراد حنا', 20), step(4, 1, 'd', 'كيرلس أمير نبيل', 30, { photo: 'data:image/png;base64,BBB' }), ...full.map((st, i) => ({ ...st, face: i + 2 }))];
 

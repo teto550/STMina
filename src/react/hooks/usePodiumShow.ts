@@ -54,6 +54,8 @@ export function usePodiumShow(steps: PodiumStep[]) {
   const sounds = useMemo(() => createPodiumSounds(), []);
   const [state, setState] = useState<ShowState>({ phase: ShowPhase.Intro, index: 0 });
   const [muted, setMuted] = useState(false);
+  /** true = the show moves on by itself; false = the servant taps for the kid after each reveal */
+  const [auto, setAuto] = useState(true);
   const count = steps.length;
   const step = steps[state.index];
 
@@ -66,7 +68,6 @@ export function usePodiumShow(steps: PodiumStep[]) {
       sounds.music('tense', variant);
       sounds.drumroll(wait / 1000, variant);
     } else if (state.phase === ShowPhase.Reveal && step) {
-      wait = revealMs(step);
       sounds.music('party', variant);
       sounds.reveal(isTop(step.place) ? step.place : 3, variant);
     } else if (state.phase === ShowPhase.Final) {
@@ -79,6 +80,16 @@ export function usePodiumShow(steps: PodiumStep[]) {
     const timer = window.setTimeout(() => setState((s) => after(s, count)), wait);
     return () => window.clearTimeout(timer);
   }, [state, step, count, sounds]);
+
+  // the time a kid stays on the screen: only when the show runs by itself (by hand, he stays until the servant taps). It has its own effect, so
+  // switching between the two ways while a kid is shown starts or stops this wait without restarting the sounds.
+  useEffect(() => {
+    if (!auto || state.phase !== ShowPhase.Reveal || !step) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setState((s) => after(s, count)), revealMs(step));
+    return () => window.clearTimeout(timer);
+  }, [auto, state, step, count]);
 
   useEffect(() => () => sounds.shutdown(), [sounds]);
 
@@ -96,5 +107,5 @@ export function usePodiumShow(steps: PodiumStep[]) {
     setMuted(!muted);
   }, [sounds, muted]);
 
-  return { phase: state.phase, step, muted, start, skip, toggleMute };
+  return { phase: state.phase, step, muted, auto, setAuto, start, skip, toggleMute, isLast: state.index + 1 >= count };
 }

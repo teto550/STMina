@@ -44,7 +44,8 @@ until it reaches the top, then the kid's picture lands there with his name above
   mood changes on the next bar. On top of it the effects of each part (`podium-sounds.ts`: timpani, snare roll, whoosh, brass, marimba, bells, whistle, boing, crowd, applause; the music is lowered a moment
   under a reveal). Every kid gets his own key and his own flourish (`variant` = the number of his step), so no two kids sound the same. All of it is made with Web Audio (`podium-synth.ts`): no sound
   files, works offline, silent where Web Audio is missing.
-- It moves on by itself (the times are `PODIUM_TIMES` in `src/react/hooks/usePodiumShow.ts`); "⏭ التالي" jumps ahead, 🔊 mutes, ✕ / Escape close it (which also stops the music).
+- **Automatic or by hand** (a choice on the start screen, and a switch ⏱ / 👆 in the header that can be flipped at any time): automatic moves on by itself (the times are `PODIUM_TIMES` in `src/react/hooks/usePodiumShow.ts`); by hand, each drum roll / climb still plays by itself, but after the kid is shown he stays until the servant taps the big "👆 المركز اللي بعده" button (the last one says "🏁 النتيجة النهائية"). Switching never restarts the sounds. It starts automatic.
+- Automatic: "⏭ التالي" jumps ahead, 🔊 mutes, ✕ / Escape close it (which also stops the music).
 - No extra reads: it uses what the ranking already loaded.
 - Code: `src/react/screens/spiritual-notes-ranking/podium.ts` (the steps) and `podium-show/` (the screens), `src/react/hooks/usePodiumShow.ts` (the timer and what plays when),
   `src/react/lib/podium-{sounds,music,synth}.ts`. Tests: `PodiumShow.test.tsx`, `podium-logic.test.ts`, `podium-sounds.test.ts`, `SpiritualNotesRanking.test.tsx`.

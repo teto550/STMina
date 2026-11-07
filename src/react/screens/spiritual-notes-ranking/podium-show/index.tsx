@@ -38,7 +38,7 @@ const CONTROL = 'tw:h-10 tw:cursor-pointer tw:rounded-full tw:bg-white/15 tw:px-
  * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the kids are announced from the LAST place up to
  * the first. From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
  * fanfare), and the finished podium stays on the screen. Every kid comes on
- * his own with his picture (kids that tie come one after the other, in the same place). It moves on by itself; "التالي" jumps ahead, the speaker
+ * his own with his picture (kids that tie come one after the other, in the same place). It moves on by itself (or by hand, see the switch); "التالي" jumps ahead, the speaker
  * button mutes it.
  */
 export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
@@ -74,6 +74,11 @@ export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
       <header className="tw:relative tw:z-10 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:p-3">
         <button type="button" aria-label="إغلاق" onClick={onClose} className={`${CONTROL} tw:w-10 tw:px-0 tw:text-lg`}>✕</button>
         <div className="tw:flex tw:gap-2">
+          {phase !== ShowPhase.Intro && phase !== ShowPhase.Final && (
+            <button type="button" aria-pressed={!show.auto} aria-label={show.auto ? 'التبديل ليدوي' : 'التبديل لأوتوماتيك'} onClick={() => show.setAuto(!show.auto)} className={CONTROL}>
+              {show.auto ? '⏱ أوتوماتيك' : '👆 يدوي'}
+            </button>
+          )}
           {(phase === ShowPhase.Suspense || phase === ShowPhase.Reveal) && (
             <button type="button" aria-label="التالي" onClick={show.skip} className={CONTROL}>⏭ التالي</button>
           )}
@@ -85,7 +90,7 @@ export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
       <main aria-live="polite" className="tw:relative tw:flex tw:min-h-0 tw:flex-1 tw:items-center tw:justify-center tw:overflow-y-auto tw:px-4 tw:pb-8">
         <Switch>
           <Case condition={phase === ShowPhase.Intro}>
-            <IntroView onStart={show.start} />
+            <IntroView onStart={show.start} auto={show.auto} onAutoChange={show.setAuto} />
           </Case>
           <Case condition={phase === ShowPhase.Suspense}>
             {step && <SuspenseView key={step.face} step={step} />}
@@ -98,6 +103,14 @@ export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
           </Case>
         </Switch>
       </main>
+      {/* by hand: after a kid is shown, a big button brings the one after him (or the finished podium) */}
+      {!show.auto && phase === ShowPhase.Reveal && (
+        <div className="tw:relative tw:z-10 tw:flex tw:justify-center tw:p-4">
+          <button type="button" aria-label="المركز اللي بعده" onClick={show.skip} className="rx-beat tw:h-14 tw:cursor-pointer tw:rounded-full tw:bg-amber-400 tw:px-8 tw:text-xl tw:font-black tw:text-amber-950 tw:shadow-2xl">
+            {show.isLast ? '🏁 النتيجة النهائية' : '👆 المركز اللي بعده'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
