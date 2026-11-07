@@ -1,7 +1,7 @@
 import { useEffect, type FC } from 'react';
 import { Case, Switch } from 'react-if';
 import { ShowPhase, usePodiumShow } from '@/react/hooks/usePodiumShow';
-import type { PodiumStep } from '../podium';
+import { isTop, type PodiumStep } from '../podium';
 import { Backdrop } from './Backdrop';
 import { FinalView } from './FinalView';
 import { IntroView } from './IntroView';
@@ -9,7 +9,7 @@ import { RevealView } from './RevealView';
 import { SuspenseView } from './SuspenseView';
 
 export type PodiumShowProps = {
-  /** the kids to reveal one by one, third place first and first place last (see podiumSteps) */
+  /** the kids to reveal one by one, the last place first and the first place last (see podiumSteps) */
   steps: PodiumStep[];
   onClose: () => void;
 };
@@ -21,9 +21,10 @@ const SHAPES = {
   reveal: ['⭐', '🌟', '🎈', '🎉', '🏅', '💪', '👏', '🚀', '🔥'],
   final: ['🏆', '🎉', '🥇', '🌟', '🎈', '👏', '👑', '🎊'],
 };
-const SKY: Record<'intro' | 'suspense' | 'final' | 'third' | 'second' | 'first', string> = {
+const SKY: Record<'intro' | 'suspense' | 'final' | 'rest' | 'third' | 'second' | 'first', string> = {
   intro: 'tw:from-[#46178f] tw:via-[#5b21b6] tw:to-[#1e0b46]',
   suspense: 'tw:from-[#0f172a] tw:via-[#1e1b4b] tw:to-[#312e81]',
+  rest: 'tw:from-[#0369a1] tw:via-[#4f46e5] tw:to-[#1e1b4b]',
   third: 'tw:from-[#ea580c] tw:via-[#be185d] tw:to-[#4c1d95]',
   second: 'tw:from-[#0284c7] tw:via-[#6366f1] tw:to-[#4c1d95]',
   first: 'tw:from-[#d97706] tw:via-[#c2410c] tw:to-[#9d174d]',
@@ -34,8 +35,9 @@ const REVEAL_SKY = { 3: SKY.third, 2: SKY.second, 1: SKY.first } as const;
 const CONTROL = 'tw:h-10 tw:cursor-pointer tw:rounded-full tw:bg-white/15 tw:px-4 tw:text-sm tw:font-bold tw:text-white';
 
 /**
- * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the third place is announced
- * with a drum roll, then the second, then the winner with confetti and a fanfare, and the finished podium stays on the screen. Every kid comes on
+ * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the kids are announced from the LAST place up to
+ * the first. From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
+ * fanfare), and the finished podium stays on the screen. Every kid comes on
  * his own with his picture (kids that tie come one after the other, in the same place). It moves on by itself; "التالي" jumps ahead, the speaker
  * button mutes it.
  */
@@ -59,7 +61,7 @@ export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
     sky = SKY.suspense;
     shapes = SHAPES.suspense;
   } else if (phase === ShowPhase.Reveal && step) {
-    sky = REVEAL_SKY[step.place];
+    sky = isTop(step.place) ? REVEAL_SKY[step.place] : SKY.rest;
     shapes = SHAPES.reveal;
   } else if (phase === ShowPhase.Final) {
     sky = SKY.final;
@@ -86,7 +88,7 @@ export const PodiumShow: FC<PodiumShowProps> = ({ steps, onClose }) => {
             <IntroView onStart={show.start} />
           </Case>
           <Case condition={phase === ShowPhase.Suspense}>
-            {step && <SuspenseView key={step.face} place={step.place} again={step.again} />}
+            {step && <SuspenseView key={step.face} step={step} />}
           </Case>
           <Case condition={phase === ShowPhase.Reveal}>
             {step && <RevealView key={step.face} step={step} />}

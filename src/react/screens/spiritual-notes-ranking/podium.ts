@@ -3,9 +3,9 @@ import type { RankedKid } from '../spiritual-notes/logic';
 
 export type PodiumPlace = 1 | 2 | 3;
 
-/** One reveal of the show: ONE kid in his place. Kids that tie share a place, so the same place comes up once for each of them. */
+/** One reveal of the show: ONE kid in his place (1, 2, 3 or lower: the places under the third get a simple reveal). Kids that tie share a place, so the same place comes up once for each of them. */
 export type PodiumStep = {
-  place: PodiumPlace;
+  place: number;
   kid: RankedKid;
   /** the kid's photo (a data URL or a link); '' = none, a cartoon face is drawn instead */
   photo: string;
@@ -15,13 +15,17 @@ export type PodiumStep = {
   face: number;
 };
 
+/** The top three places get the round podium that a question mark climbs; every place under them gets a simple reveal. */
+export const isTop = (place: number): place is PodiumPlace => place >= 1 && place <= 3;
+
 /**
- * The reveals of the show, in order: the third place, then the second, then the first (each kid of a tie on his own, by name). It uses the same
- * places as the ranking list (a tie shares a place and the next one is skipped: 1, 1, 3), so a place nobody holds is simply not shown.
+ * The reveals of the show, in order: from the LAST place up to the first (each kid of a tie on his own, by name). It uses the same places as the
+ * ranking list (a tie shares a place and the next one is skipped: 1, 1, 3), so a place nobody holds is simply not shown.
  */
 export function podiumSteps(ranked: RankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
   const steps: PodiumStep[] = [];
-  for (const place of [3, 2, 1] as const) {
+  const places = [...new Set(ranked.map((k) => k.rank))].sort((a, b) => b - a);
+  for (const place of places) {
     ranked
       .filter((k) => k.rank === place)
       .forEach((kid, i) => {
@@ -61,6 +65,17 @@ export const PLACES: Record<PodiumPlace, { label: string; medal: string; card: s
   1: { label: 'المركز الأول', medal: '🥇', card: 'tw:from-[#fef08a] tw:to-[#f59e0b]', ink: 'tw:text-amber-950', block: 'tw:h-48' },
 };
 
+/** The look of the places under the third (no medal, calm blue card). */
+const OTHER_LOOK = { medal: '🎖️', card: 'tw:from-[#e0f2fe] tw:to-[#7dd3fc]', ink: 'tw:text-sky-950', block: 'tw:h-16' };
+
+/** The words and colours of any place: the first three have their own, the rest share one look ("المركز ٥"). */
+export function lookOf(place: number): { label: string; medal: string; card: string; ink: string; block: string } {
+  if (isTop(place)) {
+    return PLACES[place];
+  }
+  return { label: `المركز ${place.toLocaleString('ar-EG')}`, ...OTHER_LOOK };
+}
+
 /** What the servant sees under the kid's name: a cheer for his place (a different one for every kid, so a tie does not repeat it). */
 const CHEERS: Record<PodiumPlace, string[]> = {
   3: ['شاطر يا بطل! 💪', 'كمّل كده! 🔥', 'برافو عليك! 👏'],
@@ -68,8 +83,10 @@ const CHEERS: Record<PodiumPlace, string[]> = {
   1: ['البطل بتاعنا! 🏆', 'إنت أسطورة! 👑', 'ربنا يباركك يا بطل! 🎉'],
 };
 
-export function cheerOf(place: PodiumPlace, index: number): string {
-  const list = CHEERS[place];
+const OTHER_CHEERS = ['حلو أوي! 👍', 'كمّل وهتوصل! 🚀', 'مجهود جميل! 🌈'];
+
+export function cheerOf(place: number, index: number): string {
+  const list = isTop(place) ? CHEERS[place] : OTHER_CHEERS;
   return list[index % list.length] ?? '';
 }
 

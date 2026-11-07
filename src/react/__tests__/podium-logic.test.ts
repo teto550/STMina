@@ -1,22 +1,29 @@
-import { cheerOf, faceOf, PODIUM_ORDER, podiumSteps, shortName } from '@/react/screens/spiritual-notes-ranking/podium';
+import { cheerOf, faceOf, isTop, lookOf, PODIUM_ORDER, podiumSteps, shortName } from '@/react/screens/spiritual-notes-ranking/podium';
 
 const kid = (id: string, rank: number, month: number) => ({ id, name: `ولد ${id}`, rank, month, week: 0 });
 const places = (steps: { place: number }[]) => steps.map((s) => s.place);
 const ids = (steps: { kid: { id: string } }[]) => steps.map((s) => s.kid.id);
 
 describe('podiumSteps', () => {
-  it('reveals third place first and the winner last, one kid per step', () => {
+  it('reveals from the LAST place up to the winner, one kid per step', () => {
     const steps = podiumSteps([kid('a', 1, 90), kid('b', 2, 70), kid('c', 3, 50), kid('d', 4, 10)]);
-    expect(places(steps)).toEqual([3, 2, 1]);
-    expect(ids(steps)).toEqual(['c', 'b', 'a']);
-    expect(steps[2]?.kid.month).toBe(90);
+    expect(places(steps)).toEqual([4, 3, 2, 1]);
+    expect(ids(steps)).toEqual(['d', 'c', 'b', 'a']);
+    expect(steps[3]?.kid.month).toBe(90);
+  });
+
+  it('includes every ranked kid, a long list too, ending on the first place', () => {
+    const ranked = Array.from({ length: 8 }, (_, i) => kid(`k${i + 1}`, i + 1, 100 - i));
+    const steps = podiumSteps(ranked);
+    expect(places(steps)).toEqual([8, 7, 6, 5, 4, 3, 2, 1]);
+    expect(steps.at(-1)?.kid.id).toBe('k1');
   });
 
   it('gives every kid of a tie his own step in the same place, the later ones marked `again`', () => {
     const steps = podiumSteps([kid('a', 1, 90), kid('b', 2, 70), kid('c', 2, 70), kid('d', 4, 10)]);
-    expect(places(steps)).toEqual([2, 2, 1]); // the place after a tie is skipped, like in the list (1, 2, 2, 4)
-    expect(ids(steps)).toEqual(['b', 'c', 'a']);
-    expect(steps.map((s) => s.again)).toEqual([false, true, false]);
+    expect(places(steps)).toEqual([4, 2, 2, 1]); // the place after a tie is skipped, like in the list (1, 2, 2, 4)
+    expect(ids(steps)).toEqual(['d', 'b', 'c', 'a']);
+    expect(steps.map((s) => s.again)).toEqual([false, false, true, false]);
   });
 
   it('a place of 3 kids (3, 3, 3) is three steps of the third place', () => {
@@ -48,6 +55,20 @@ describe('podiumSteps', () => {
 
   it('draws the finished podium as second, first, third', () => {
     expect(PODIUM_ORDER).toEqual([2, 1, 3]);
+  });
+});
+
+describe('isTop / lookOf', () => {
+  it('only the first three places get the podium', () => {
+    expect([1, 2, 3].every(isTop)).toBe(true);
+    expect([0, 4, 10].some(isTop)).toBe(false);
+  });
+
+  it('the places under the third get their own label and a shared look', () => {
+    expect(lookOf(3).label).toBe('المركز التالت');
+    expect(lookOf(4).label).toBe('المركز ٤');
+    expect(lookOf(12).label).toBe('المركز ١٢');
+    expect(lookOf(5).medal).toBe(lookOf(9).medal);
   });
 });
 

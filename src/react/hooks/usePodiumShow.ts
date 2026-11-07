@@ -2,7 +2,7 @@
 // the timers that move it on by itself, and the sounds that go with each part.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPodiumSounds } from '@/react/lib/podium-sounds';
-import type { PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
+import { isTop, type PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
 
 export enum ShowPhase {
   Intro = 'intro',
@@ -19,7 +19,22 @@ export const PODIUM_TIMES = {
   /** the drum roll before a kid that ties with the one just shown: short, the place is already known */
   tie: 2000,
   reveal: { 3: 4500, 2: 5000, 1: 7000 },
+  /** the places under the third: a short drum roll and a short reveal, so a long list does not drag */
+  other: { suspense: 2200, reveal: 3200 },
 } as const;
+
+/** How long the drum roll (for the top three: the climb of the question mark) before this kid lasts, in ms. */
+export function suspenseMs(step: PodiumStep): number {
+  if (step.again) {
+    return PODIUM_TIMES.tie;
+  }
+  return isTop(step.place) ? PODIUM_TIMES.suspense[step.place] : PODIUM_TIMES.other.suspense;
+}
+
+/** How long this kid stays on the screen, in ms. */
+export function revealMs(step: PodiumStep): number {
+  return isTop(step.place) ? PODIUM_TIMES.reveal[step.place] : PODIUM_TIMES.other.reveal;
+}
 
 /** The part that follows `state` (the drum roll, the place, the next drum roll... then the finished podium). */
 function after(state: ShowState, count: number): ShowState {
@@ -47,13 +62,13 @@ export function usePodiumShow(steps: PodiumStep[]) {
     const variant = step?.face ?? 0;
     let wait = 0;
     if (state.phase === ShowPhase.Suspense && step) {
-      wait = step.again ? PODIUM_TIMES.tie : PODIUM_TIMES.suspense[step.place];
+      wait = suspenseMs(step);
       sounds.music('tense', variant);
       sounds.drumroll(wait / 1000, variant);
     } else if (state.phase === ShowPhase.Reveal && step) {
-      wait = PODIUM_TIMES.reveal[step.place];
+      wait = revealMs(step);
       sounds.music('party', variant);
-      sounds.reveal(step.place, variant);
+      sounds.reveal(isTop(step.place) ? step.place : 3, variant);
     } else if (state.phase === ShowPhase.Final) {
       sounds.music('finale', variant);
       sounds.jingle();

@@ -14,11 +14,12 @@ const sounds = vi.hoisted(() => ({
 vi.mock('@/react/lib/podium-sounds', () => ({ createPodiumSounds: () => sounds }));
 
 import { PODIUM_TIMES } from '@/react/hooks/usePodiumShow';
+import { tiersOf } from '@/react/screens/spiritual-notes-ranking/podium-show/ClimbPodium';
 import { PodiumShow } from '@/react/screens/spiritual-notes-ranking/podium-show';
-import { faceOf, type PodiumPlace, type PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
+import { faceOf, type PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
 
 /** One step of the show: one kid in his place (`face` is also the number of his step). */
-const step = (place: PodiumPlace, face: number, id: string, name: string, month: number, extra: Partial<PodiumStep> = {}): PodiumStep => ({
+const step = (place: number, face: number, id: string, name: string, month: number, extra: Partial<PodiumStep> = {}): PodiumStep => ({
   place,
   kid: { id, name, rank: place, month, week: 0 },
   photo: '',
@@ -53,6 +54,51 @@ beforeEach(() => {
   Object.values(sounds).forEach((m) => m.mockReset());
 });
 afterEach(() => vi.useRealTimers());
+
+describe('PodiumShow: the places under the third, and the round podium', () => {
+  const longShow: PodiumStep[] = [step(5, 0, 'e', 'يوسف مراد حنا', 20), step(4, 1, 'd', 'كيرلس أمير نبيل', 30, { photo: 'data:image/png;base64,BBB' }), ...full.map((st, i) => ({ ...st, face: i + 2 }))];
+
+  it('starts from the last place, with his picture, and goes up place by place to the first', () => {
+    setup(longShow);
+    start();
+    expect(screen.getByText('المركز ٥')).toBeInTheDocument();
+    expect(screen.queryByText('يوسف مراد')).not.toBeInTheDocument();
+    wait(PODIUM_TIMES.other.suspense);
+    expect(screen.getByText('يوسف مراد')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'يوسف مراد' })).toBeInTheDocument();
+    expect(screen.queryByTestId('climb-podium')).not.toBeInTheDocument(); // no podium under the third place
+
+    wait(PODIUM_TIMES.other.reveal);
+    expect(screen.getByText('المركز ٤')).toBeInTheDocument();
+    wait(PODIUM_TIMES.other.suspense);
+    expect(screen.getByRole('img', { name: 'كيرلس أمير' }).querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,BBB');
+  });
+
+  it('from the third place a question mark climbs a round podium; the name appears on top when it arrives', () => {
+    setup(longShow);
+    start();
+    waitEach(PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal, PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal);
+    expect(screen.getByText('المركز التالت')).toBeInTheDocument();
+    expect(screen.getByTestId('climb-podium')).toBeInTheDocument();
+    expect(screen.getByText('؟')).toBeInTheDocument(); // the question mark on the stairs
+    expect(screen.queryByText('مينا سامح')).not.toBeInTheDocument();
+
+    wait(PODIUM_TIMES.suspense[3]);
+    expect(screen.getByTestId('climb-podium')).toBeInTheDocument();
+    expect(screen.queryByText('؟')).not.toBeInTheDocument(); // the question mark is replaced by the kid
+    expect(screen.getByText('مينا سامح')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'مينا سامح' })).toBeInTheDocument();
+  });
+
+  it('the better the place, the taller the podium', () => {
+    expect([3, 2, 1].map((p) => tiersOf(p as 1 | 2 | 3))).toEqual([2, 3, 4]);
+  });
+
+  it('the places under the third are shorter than the top three, so a long list does not drag', () => {
+    expect(PODIUM_TIMES.other.suspense).toBeLessThan(PODIUM_TIMES.suspense[3]);
+    expect(PODIUM_TIMES.other.reveal).toBeLessThan(PODIUM_TIMES.reveal[3]);
+  });
+});
 
 describe('PodiumShow', () => {
   it('waits for a tap: nothing is revealed and no sound or music plays before start', () => {

@@ -1,6 +1,7 @@
 import type { FC } from 'react';
-import { cheerOf, delayed, PLACES, shortName, type PodiumStep } from '../podium';
+import { cheerOf, delayed, isTop, lookOf, shortName, type PodiumStep } from '../podium';
 import { Burst } from './Burst';
+import { ClimbPodium } from './ClimbPodium';
 import { Confetti } from './Confetti';
 import { KidPhoto } from './KidPhoto';
 
@@ -11,11 +12,14 @@ type RevealViewProps = {
 const SPARKS = ['⭐', '✨', '🌟', '💫'];
 
 /**
- * One kid revealed: his picture with the medal, rings and stars bursting around it, his place, his first two names, his points and a cheer,
+ * One kid revealed (the top three: his picture lands on the round podium, see ClimbPodium; the others: the card below). The card: his picture with the medal, rings and stars bursting around it, his place, his first two names, his points and a cheer,
  * with confetti. The winner gets a crown, a glow and more of everything.
  */
 export const RevealView: FC<RevealViewProps> = ({ step }) => {
-  const look = PLACES[step.place];
+  if (isTop(step.place)) {
+    return <ClimbPodium place={step.place} seconds={0} step={step} />;
+  }
+  const look = lookOf(step.place);
   const winner = step.place === 1;
   const name = shortName(step.kid.name);
   return (
