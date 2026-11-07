@@ -22,6 +22,16 @@ Screen `src/react/screens/spiritual-notes-ranking`: the kids with points in the 
 with the same score share the same place (1, 2, 2, 4), by name inside a place; kids with no points are left out. The servant filter of the statistics applies.
 Reads: for each kid one range query (the written days of the last 4 weeks) + 1 confession document, 8 kids at a time (`fetchKidsMonthData`), kept 5 minutes; the 🔄 button reads again.
 
+### 🏆 عرض (the winners show)
+A button next to 🔄 in the ranking header, shown only when somebody has points. It opens a full-screen show to put in front of the class (a quiz-game podium):
+"يلا نبدأ" (this tap also unlocks the browser's audio) → drum roll + "المركز التالت" → the name and points with confetti → the same for the second → the winner with a
+crown, a glow, more confetti and a bigger fanfare → the finished podium (second · first · third) with "إعادة العرض" / "إغلاق".
+- It moves on by itself (the times are `PODIUM_TIMES` in `src/react/hooks/usePodiumShow.ts`); "⏭ التالي" jumps ahead, 🔊 mutes, ✕ / Escape close it.
+- The places are the ones of the list: kids with the same score share a place and the next one is skipped (1, 1, 3 shows the third, then the first with both names); a place nobody holds is not shown.
+- No extra reads: it uses what the ranking already loaded.
+- The sounds are made with the Web Audio API (`src/react/lib/podium-sounds.ts`): no sound files, works offline, silent where Web Audio is missing. The animations are CSS (`rx-*` in `src/react/styles.css`); the confetti is hidden when the device asks for less motion.
+- Code: `src/react/screens/spiritual-notes-ranking/podium.ts` (the places) and `podium-show/` (the screens), `src/react/hooks/usePodiumShow.ts` (the timer). Tests: `PodiumShow.test.tsx`, `podium-logic.test.ts`, `SpiritualNotesRanking.test.tsx`.
+
 ## Data (a part of the students' data: one subcollection per student, nothing else is touched)
 - `spiritualNotes/{studentId}/days/{YYYY-MM-DD}` = `{ day, prayerMorning, prayerNight, gospel (bool; old notes: string), mass, fast?, updatedAt, updatedBy }`
 - `spiritualNotes/{studentId}/months/{YYYY-MM}` = `{ confession, updatedAt, updatedBy }`

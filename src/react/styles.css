@@ -30,3 +30,22 @@
 .rx-root button, .rx-root input, .rx-root select, .rx-root textarea { font: inherit; color: inherit; }
 .rx-root ul, .rx-root ol { list-style: none; margin: 0; padding: 0; }
 .rx-root button { background: none; border: 0; padding: 0; } /* plain buttons are not the browser's grey; utilities (important) still win */
+
+/* The winners show (statistics > النوتة الروحية > عرض). Plain `rx-` classes instead of `tw:animate-*`, because those utilities are !important
+   and would ignore the per-element --rx-delay / --rx-dur set inline. */
+@keyframes rx-fall { from { transform: translate3d(0, -10vh, 0) rotate(0deg); } to { transform: translate3d(var(--rx-drift, 0px), 110vh, 0) rotate(720deg); } }
+@keyframes rx-pop { 0% { transform: scale(0.2) rotate(-8deg); opacity: 0; } 60% { transform: scale(1.15) rotate(3deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+@keyframes rx-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes rx-glow { 0%, 100% { box-shadow: 0 0 30px 6px rgba(253, 224, 71, 0.45); } 50% { box-shadow: 0 0 70px 18px rgba(253, 224, 71, 0.9); } }
+@keyframes rx-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes rx-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+.rx-fall { animation: rx-fall var(--rx-dur, 3.5s) linear var(--rx-delay, 0s) infinite both; }
+.rx-pop { animation: rx-pop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) var(--rx-delay, 0s) both; }
+.rx-beat { animation: rx-beat 0.6s ease-in-out infinite; }
+.rx-glow { animation: rx-glow 1.2s ease-in-out infinite; }
+.rx-grow { transform-origin: bottom; animation: rx-grow 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) var(--rx-delay, 0s) both; }
+.rx-dot { display: inline-block; animation: rx-bounce 0.6s ease-in-out var(--rx-delay, 0s) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .rx-fall { display: none; }
+  .rx-beat, .rx-glow, .rx-dot { animation: none; }
+}

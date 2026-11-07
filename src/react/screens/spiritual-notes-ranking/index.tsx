@@ -1,4 +1,4 @@
-import { useMemo, type FC } from 'react';
+import { useMemo, useState, type FC } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { notesErrorMessage } from '@/api/errors';
 import { Alert } from '@/react/components/ui/alert';
@@ -6,6 +6,8 @@ import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData } from '@/react/hooks/useSpiritualNotes';
 import { dateToStr, monthOf, monthRange, rankKids } from '../spiritual-notes/logic';
+import { podiumSteps } from './podium';
+import { PodiumShow } from './podium-show';
 
 export type SpiritualNotesRankingProps = {
   /** the kids to rank (the class, after the servant filter of the statistics) */
@@ -26,6 +28,8 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
   const ids = useMemo(() => kids.map((k) => k.id), [kids]);
   const data = useKidsMonthData(ids, from, to, monthOf(today));
   const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today) : []), [kids, data.data, today]);
+  const steps = useMemo(() => podiumSteps(ranked), [ranked]);
+  const [showing, setShowing] = useState(false);
 
   return (
     <section aria-label="ترتيب النوتة الروحية" className="tw:flex tw:flex-col tw:gap-3">
@@ -33,6 +37,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
         <p className="tw:text-sm tw:font-bold">الترتيب حسب نقط آخر ٤ أسابيع</p>
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
+          {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
           <Button size="icon" variant="ghost" aria-label="تحديث" disabled={data.isFetching} onClick={() => void data.refetch()}>
             <RefreshCw className="tw:size-4" aria-hidden="true" />
           </Button>
@@ -56,6 +61,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
           </li>
         ))}
       </ol>
+      {showing && <PodiumShow steps={steps} onClose={() => setShowing(false)} />}
     </section>
   );
 };
