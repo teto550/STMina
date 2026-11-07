@@ -24,28 +24,19 @@ Reads: for each kid one range query (the written days of the last 4 weeks) + 1 c
 
 ### 🏆 عرض (the winners show)
 A button next to 🔄 in the ranking header, shown only when somebody has points. It opens a full-screen show to put in front of the class (a quiz-game podium):
-"يلا نبدأ" (this tap also unlocks the browser's audio) → drum roll + "المركز التالت" → the name and points with confetti → the same for the second → the winner with a
-crown, a glow, more confetti and a bigger fanfare → the finished podium (second · first · third) with "إعادة العرض" / "إغلاق".
-- It moves on by itself (the times are `PODIUM_TIMES` in `src/react/hooks/usePodiumShow.ts`); "⏭ التالي" jumps ahead, 🔊 mutes, ✕ / Escape close it.
-- The places are the ones of the list: kids with the same score share a place and the next one is skipped (1, 1, 3 shows the third, then the first with both names); a place nobody holds is not shown.
+"يلا نبدأ" (this tap also unlocks the browser's audio) → a drum roll, a 3-2-1 and "المركز التالت" → the kid appears with his picture, his FIRST TWO NAMES only, his points and a cheer
+→ the same for the second → the winner with a crown, a glow, more confetti and a bigger fanfare → the finished podium (second · first · third) with "إعادة العرض" / "إغلاق".
+- **One kid per step.** Kids with the same score share a place and come one after the other in that place (the second one gets a short drum roll and "ومعاه كمان واحد!"). The places are the ones
+  of the list: a tie skips the next place (1, 1, 3 shows the third, then both first-place kids); a place nobody holds is not shown.
+- **Pictures:** the photo of the kid's card (`photo`, passed from `renderNotesStats` in `src/features/dashboard/stats.ts`); a kid without one (or whose photo does not load) gets a cartoon face on a
+  coloured background, a different one for every step (`faceOf` in `podium.ts`).
+- **Looks:** the background changes with the part (suspense = dark and tense, each place its own colours, finale = purple) and never stops moving: turning rays and shapes (stars, balloons, drums,
+  trophies...) floating up, rings and stars bursting around the picture, shape confetti, a wiggling cheer. The decoration is CSS (`rx-*` in `src/react/styles.css`) and is hidden when the device asks for less motion.
+- **Sound: the music never stops** from the start tap to the end (`podium-music.ts`): a tense minor groove while waiting, a happy major groove for each reveal, a faster one with bells for the finale; the
+  mood changes on the next bar. On top of it the effects of each part (`podium-sounds.ts`: timpani, snare roll, whoosh, brass, marimba, bells, whistle, boing, crowd, applause; the music is lowered a moment
+  under a reveal). Every kid gets his own key and his own flourish (`variant` = the number of his step), so no two kids sound the same. All of it is made with Web Audio (`podium-synth.ts`): no sound
+  files, works offline, silent where Web Audio is missing.
+- It moves on by itself (the times are `PODIUM_TIMES` in `src/react/hooks/usePodiumShow.ts`); "⏭ التالي" jumps ahead, 🔊 mutes, ✕ / Escape close it (which also stops the music).
 - No extra reads: it uses what the ranking already loaded.
-- The sounds are made with the Web Audio API (`src/react/lib/podium-sounds.ts`): no sound files, works offline, silent where Web Audio is missing. The animations are CSS (`rx-*` in `src/react/styles.css`); the confetti is hidden when the device asks for less motion.
-- Code: `src/react/screens/spiritual-notes-ranking/podium.ts` (the places) and `podium-show/` (the screens), `src/react/hooks/usePodiumShow.ts` (the timer). Tests: `PodiumShow.test.tsx`, `podium-logic.test.ts`, `SpiritualNotesRanking.test.tsx`.
-
-## Data (a part of the students' data: one subcollection per student, nothing else is touched)
-- `spiritualNotes/{studentId}/days/{YYYY-MM-DD}` = `{ day, prayerMorning, prayerNight, gospel (bool; old notes: string), mass, fast?, updatedAt, updatedBy }`
-- `spiritualNotes/{studentId}/months/{YYYY-MM}` = `{ confession, updatedAt, updatedBy }`
-- `studentId` is the id of the document in `students`. Documents are never deleted.
-- Reads: nothing when the tab opens (the names are already loaded). Opening a kid reads that day, the month, his last 30 days and the
-  days of the week/month for the points (about 70 documents at most). Saving writes 1 document (2 when the confession changed).
-
-## Rules
-`firestore.rules` has the two `match /spiritualNotes/...` blocks (before the catch-all). Rules are NOT deployed by the GitHub Pages build:
-paste/deploy them yourself (`firebase deploy --only firestore:rules`, or Firebase Console > Firestore > Rules). Until then the tab shows
-"مش مسموح بالنوتة الروحية".
-Any approved servant can write any student's notes (the same trust the students collection has); the rules (`gospel` may be a bool, or the old string) check the shape of the
-document, the date format and that `updatedAt` is the server time.
-
-## Code
-`src/api/spiritual-notes.ts` (backend) · `src/react/hooks/useSpiritualNotes.ts` · `src/react/screens/spiritual-notes/` (screen) ·
-tab plumbing in `index.html`, `src/features/shell/tabs.ts`, `src/features/shell/app-shell.ts` · tests in `src/react/__tests__/`.
+- Code: `src/react/screens/spiritual-notes-ranking/podium.ts` (the steps) and `podium-show/` (the screens), `src/react/hooks/usePodiumShow.ts` (the timer and what plays when),
+  `src/react/lib/podium-{sounds,music,synth}.ts`. Tests: `PodiumShow.test.tsx`, `podium-logic.test.ts`, `podium-sounds.test.ts`, `SpiritualNotesRanking.test.tsx`.

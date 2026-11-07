@@ -5,11 +5,14 @@ import { renderWithQuery } from '@/test/render';
 
 const h = vi.hoisted(() => ({ fetchKidsMonthData: vi.fn() }));
 vi.mock('@/api/spiritual-notes', () => ({ fetchKidsMonthData: h.fetchKidsMonthData }));
-vi.mock('@/react/lib/podium-sounds', () => ({ createPodiumSounds: () => ({ unlock: vi.fn(), drumroll: vi.fn(), reveal: vi.fn(), jingle: vi.fn(), stop: vi.fn(), setMuted: vi.fn() }) }));
+vi.mock('@/react/lib/podium-sounds', () => ({
+  createPodiumSounds: () => ({ unlock: vi.fn(), drumroll: vi.fn(), reveal: vi.fn(), jingle: vi.fn(), music: vi.fn(), stop: vi.fn(), shutdown: vi.fn(), setMuted: vi.fn() }),
+}));
 
 import SpiritualNotesRanking from '@/react/screens/spiritual-notes-ranking';
 
-const kids = [{ id: 'k1', name: 'بيتر' }, { id: 'k2', name: 'مارك' }, { id: 'k3', name: 'مينا' }, { id: 'k4', name: 'يوسف' }];
+const PHOTO = 'data:image/png;base64,AAA';
+const kids = [{ id: 'k1', name: 'بيتر' }, { id: 'k2', name: 'مارك' }, { id: 'k3', name: 'مينا سامح عادل', photo: PHOTO }, { id: 'k4', name: 'يوسف' }];
 
 // Friday 18 October 2030: the last 4 weeks run from Friday 27/9 to Thursday 24/10
 const mass = (day: string) => ({ day, mass: true });
@@ -39,15 +42,17 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('the show announces the ranking of the list: third place is مينا', async () => {
+  it('the show announces the ranking of the list: third place is مينا, with his first two names and the photo of his card', async () => {
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.click(await screen.findByRole('button', { name: /عرض/ }));
     await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
     const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
-    expect(dialog).toHaveTextContent('مينا');
+    expect(dialog).toHaveTextContent('مينا سامح');
+    expect(dialog).not.toHaveTextContent('عادل');
     expect(dialog).toHaveTextContent('⭐ 20 نقطة');
+    expect(screen.getByRole('img', { name: 'مينا سامح' }).querySelector('img')).toHaveAttribute('src', PHOTO);
   });
 
   it('is not there while loading, or when nobody has points', async () => {

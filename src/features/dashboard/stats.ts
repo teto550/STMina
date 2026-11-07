@@ -131,7 +131,7 @@ function renderNotesStats() {
   const deacon = document.getElementById('stats-deacon-filter').value;
   const list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : state.allStudents;
   window.openReactScreen('spiritual-notes-ranking', document.getElementById('stats-panel-notes'), {
-    kids: list.map(s => ({ id: s.id, name: s.name || '' })),
+    kids: list.map(s => ({ id: s.id, name: s.name || '', photo: s.photo || '' })),
     onOpenKid: (id) => window.openProfile(id)
   });
 }

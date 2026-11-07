@@ -1,34 +1,45 @@
 import type { FC } from 'react';
-import { delayed, PLACES, type PodiumStep } from '../podium';
+import { cheerOf, delayed, PLACES, shortName, type PodiumStep } from '../podium';
+import { Burst } from './Burst';
 import { Confetti } from './Confetti';
+import { KidPhoto } from './KidPhoto';
 
 type RevealViewProps = {
   step: PodiumStep;
 };
 
-/** A place revealed: the medal, the name (or the names of a tie) and the points, with confetti. The winner gets a crown, a glow and more confetti. */
+const SPARKS = ['⭐', '✨', '🌟', '💫'];
+
+/**
+ * One kid revealed: his picture with the medal, rings and stars bursting around it, his place, his first two names, his points and a cheer,
+ * with confetti. The winner gets a crown, a glow and more of everything.
+ */
 export const RevealView: FC<RevealViewProps> = ({ step }) => {
   const look = PLACES[step.place];
   const winner = step.place === 1;
-  const many = step.kids.length > 1;
+  const name = shortName(step.kid.name);
   return (
-    <div className="tw:flex tw:w-full tw:max-w-xl tw:flex-col tw:items-center tw:gap-4 tw:text-center">
-      <Confetti count={winner ? 90 : 36} />
-      {winner && (
-        <div className="rx-pop tw:text-7xl" aria-hidden="true">👑</div>
-      )}
-      <div className="rx-pop tw:text-8xl" aria-hidden="true" style={delayed(0.1)}>{look.medal}</div>
-      <p className="rx-pop tw:rounded-full tw:bg-white/15 tw:px-6 tw:py-1 tw:text-2xl tw:font-bold" style={delayed(0.2)}>{look.label}</p>
-      <ul className="tw:flex tw:w-full tw:flex-col tw:gap-3">
-        {step.kids.map((kid, i) => (
-          <li key={kid.id} className="rx-pop" style={delayed(0.4 + i * 0.3)}>
-            <div className={`${winner ? 'rx-glow ' : ''}tw:rounded-3xl tw:bg-linear-to-b ${look.card} ${look.ink} tw:px-6 tw:py-5 tw:shadow-2xl`}>
-              <span className={`tw:block tw:font-black ${many ? 'tw:text-3xl' : 'tw:text-4xl tw:md:text-6xl'}`}>{kid.name}</span>
-              <span className="tw:mt-1 tw:block tw:text-xl tw:font-bold">⭐ {kid.month} نقطة</span>
-            </div>
-          </li>
+    <div className="tw:flex tw:w-full tw:max-w-xl tw:flex-col tw:items-center tw:gap-5 tw:text-center">
+      <Confetti count={winner ? 90 : 40} />
+      <div className="rx-pop tw:relative" style={delayed(0.1)}>
+        {[0, 0.7, 1.4].map((d) => (
+          <span key={d} className="rx-ring tw:absolute tw:inset-0 tw:rounded-full tw:border-4 tw:border-white/60" style={delayed(d)} aria-hidden="true" />
         ))}
-      </ul>
+        <Burst glyphs={SPARKS} count={winner ? 14 : 10} radius={winner ? 190 : 150} />
+        {winner && (
+          <div className="rx-wiggle tw:absolute tw:inset-x-0 tw:-top-12 tw:z-10 tw:flex tw:justify-center tw:text-6xl" aria-hidden="true">👑</div>
+        )}
+        <div className={winner ? 'rx-glow tw:rounded-full' : undefined}>
+          <KidPhoto name={name} photo={step.photo} face={step.face} size={170} />
+        </div>
+        <span className="tw:absolute tw:-bottom-3 tw:-end-3 tw:text-6xl" aria-hidden="true">{look.medal}</span>
+      </div>
+      <p className="rx-pop tw:mt-2 tw:rounded-full tw:bg-white/15 tw:px-6 tw:py-1 tw:text-2xl tw:font-bold" style={delayed(0.25)}>{look.label}</p>
+      <div className={`rx-pop tw:box-border tw:w-full tw:rounded-3xl tw:bg-linear-to-b ${look.card} ${look.ink} tw:px-6 tw:py-5 tw:shadow-2xl`} style={delayed(0.4)}>
+        <span className="tw:block tw:text-4xl tw:font-black tw:md:text-6xl">{name}</span>
+        <span className="tw:mt-1 tw:block tw:text-xl tw:font-bold">⭐ {step.kid.month} نقطة</span>
+      </div>
+      <p className="rx-pop rx-wiggle tw:text-3xl tw:font-black tw:text-amber-200 tw:drop-shadow-lg" style={delayed(0.7)}>{cheerOf(step.place, step.face)}</p>
     </div>
   );
 };

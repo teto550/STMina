@@ -10,8 +10,8 @@ import { podiumSteps } from './podium';
 import { PodiumShow } from './podium-show';
 
 export type SpiritualNotesRankingProps = {
-  /** the kids to rank (the class, after the servant filter of the statistics) */
-  kids: { id: string; name: string }[];
+  /** the kids to rank (the class, after the servant filter of the statistics); `photo` is the picture of his card, used by the winners show */
+  kids: { id: string; name: string; photo?: string }[];
   /** called when a kid is tapped (opens his profile) */
   onOpenKid?: (id: string) => void;
 };
@@ -28,7 +28,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
   const ids = useMemo(() => kids.map((k) => k.id), [kids]);
   const data = useKidsMonthData(ids, from, to, monthOf(today));
   const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today) : []), [kids, data.data, today]);
-  const steps = useMemo(() => podiumSteps(ranked), [ranked]);
+  const steps = useMemo(() => podiumSteps(ranked, Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? '']))), [ranked, kids]);
   const [showing, setShowing] = useState(false);
 
   return (

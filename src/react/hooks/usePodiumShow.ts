@@ -1,4 +1,4 @@
-// The winners show: which part is on the screen (waiting to start, the drum roll before a place, the place revealed, the finished podium),
+// The winners show: which part is on the screen (waiting to start, the drum roll before a kid, the kid revealed, the finished podium),
 // the timers that move it on by itself, and the sounds that go with each part.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPodiumSounds } from '@/react/lib/podium-sounds';
@@ -16,6 +16,8 @@ type ShowState = { phase: ShowPhase; index: number };
 /** How long each part lasts (ms): the drum roll before a place, then the place on the screen. The winner waits and stays the longest. */
 export const PODIUM_TIMES = {
   suspense: { 3: 3200, 2: 3600, 1: 4800 },
+  /** the drum roll before a kid that ties with the one just shown: short, the place is already known */
+  tie: 2000,
   reveal: { 3: 4500, 2: 5000, 1: 7000 },
 } as const;
 
@@ -42,14 +44,18 @@ export function usePodiumShow(steps: PodiumStep[]) {
 
   useEffect(() => {
     sounds.stop();
+    const variant = step?.face ?? 0;
     let wait = 0;
     if (state.phase === ShowPhase.Suspense && step) {
-      wait = PODIUM_TIMES.suspense[step.place];
-      sounds.drumroll(wait / 1000);
+      wait = step.again ? PODIUM_TIMES.tie : PODIUM_TIMES.suspense[step.place];
+      sounds.music('tense', variant);
+      sounds.drumroll(wait / 1000, variant);
     } else if (state.phase === ShowPhase.Reveal && step) {
       wait = PODIUM_TIMES.reveal[step.place];
-      sounds.reveal(step.place);
+      sounds.music('party', variant);
+      sounds.reveal(step.place, variant);
     } else if (state.phase === ShowPhase.Final) {
+      sounds.music('finale', variant);
       sounds.jingle();
     }
     if (wait === 0) {
@@ -59,7 +65,7 @@ export function usePodiumShow(steps: PodiumStep[]) {
     return () => window.clearTimeout(timer);
   }, [state, step, count, sounds]);
 
-  useEffect(() => () => sounds.stop(), [sounds]);
+  useEffect(() => () => sounds.shutdown(), [sounds]);
 
   /** The first tap: it also wakes the audio up (browsers keep it locked until a tap). Used again to play the show from the start. */
   const start = useCallback(() => {
