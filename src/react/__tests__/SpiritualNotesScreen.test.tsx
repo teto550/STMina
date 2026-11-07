@@ -128,7 +128,7 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
   });
 
   it('shows the points of the day, the week and the month above the file', async () => {
-    // Friday 18/10/2030 (today): morning 5 + night 5 + gospel 15 + mass 20 + fast 10 = 55. Thursday 24 is in the same week. Earlier in the month: 20. Confession: 25.
+    // Friday 18/10/2030 (today): morning 5 + night 5 + gospel 15 + mass 20 + fast 10 = 55. Thursday 24 is in the same week. Earlier in the last 4 weeks: 20. Confession: 25.
     h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true });
     h.fetchKidDaysBetween.mockResolvedValue([
       { day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true },
@@ -142,7 +142,7 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     await waitFor(() => expect(box('نقط الأسبوع')).toHaveTextContent('75'));
     expect(box('نقط اليوم')).toHaveTextContent('55');
     expect(box('نقط الشهر')).toHaveTextContent('120'); // 55 + 20 + 20 + the confession 25
-    expect(h.fetchKidDaysBetween).toHaveBeenCalledWith('k2', '2030-10-01', '2030-10-31');
+    expect(h.fetchKidDaysBetween).toHaveBeenCalledWith('k2', '2030-09-27', '2030-10-24'); // the last 4 weeks
   });
 
   it('a failed save shows a message and keeps what was ticked', async () => {

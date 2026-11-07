@@ -109,19 +109,24 @@ export function weekPoints(notes: NoteDay[], day: string): number {
   return pointsBetween(notes, days[0] ?? day, days[6] ?? day);
 }
 
-/** The points of the month of `day`: every day of the month, plus the confession of that month when he confessed. */
-export function monthPoints(notes: NoteDay[], day: string, confessed: boolean): number {
-  const month = monthOf(day);
-  return pointsBetween(notes, `${month}-01`, `${month}-31`) + (confessed ? POINTS.confession : 0);
+/** The "month" of the programme is the last 4 weeks (Friday to Thursday), ending with the week of `day`. */
+export const MONTH_WEEKS = 4;
+
+/** The first (a Friday) and the last (a Thursday) day of the last {@link MONTH_WEEKS} weeks, the week of `day` included. */
+export function monthRange(day: string): { from: string; to: string } {
+  const start = weekStart(day);
+  return { from: addDays(start, -7 * (MONTH_WEEKS - 1)), to: addDays(start, 6) };
 }
 
-/** The first and the last day to read so that both the week and the month of `day` are covered (a week can cross two months). */
+/** The points of the month of `day`: the days of the last 4 weeks (Friday to Thursday), plus the confession of the calendar month of `day` when he confessed. */
+export function monthPoints(notes: NoteDay[], day: string, confessed: boolean): number {
+  const { from, to } = monthRange(day);
+  return pointsBetween(notes, from, to) + (confessed ? POINTS.confession : 0);
+}
+
+/** The first and the last day to read so that both the week and the month of `day` are covered (the month contains the week, at most 28 days). */
 export function rangeFor(day: string): { from: string; to: string } {
-  const week = weekDays(day);
-  const month = monthOf(day);
-  const from = [week[0] ?? day, `${month}-01`].sort()[0] ?? day;
-  const to = [week[6] ?? day, `${month}-31`].sort().at(-1) ?? day;
-  return { from, to };
+  return monthRange(day);
 }
 
 /** "الصبح · بليل · القداس · صام" (what was done that day) */

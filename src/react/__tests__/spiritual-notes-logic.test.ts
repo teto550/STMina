@@ -1,4 +1,4 @@
-import { dayPoints, monthPoints, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, summaryOf } from '@/react/screens/spiritual-notes/logic';
+import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, summaryOf } from '@/react/screens/spiritual-notes/logic';
 
 describe('spiritual notes: the days', () => {
   it('lastDays gives today first and the days before it, across a month change', () => {
@@ -71,15 +71,28 @@ describe('spiritual notes: the points', () => {
     expect(weekPoints(notes, '2030-10-20')).toBe(25);
     expect(pointsBetween(notes, '2030-10-01', '2030-10-31')).toBe(65);
   });
-  it('the month adds the confession (25) once', () => {
-    const notes = [{ day: '2030-10-18', mass: true }, { day: '2030-11-01', mass: true }];
-    expect(monthPoints(notes, '2030-10-20', false)).toBe(20);
-    expect(monthPoints(notes, '2030-10-20', true)).toBe(45);
+  it('the month is the last 4 weeks (Friday to Thursday) and adds the confession (25) once', () => {
+    const notes = [
+      { day: '2030-09-26', mass: true }, // Thursday before the 4 weeks: out
+      { day: '2030-09-27', mass: true }, // first Friday of the 4 weeks: in
+      { day: '2030-10-18', mass: true }, // the open week
+      { day: '2030-10-24', mass: true }, // last Thursday of the open week: in
+      { day: '2030-10-25', mass: true }, // the next week: out
+    ];
+    expect(monthPoints(notes, '2030-10-20', false)).toBe(60);
+    expect(monthPoints(notes, '2030-10-20', true)).toBe(85);
   });
-  it('reads one range that covers both the week and the month, even when the week crosses months', () => {
-    expect(rangeFor('2030-10-18')).toEqual({ from: '2030-10-01', to: '2030-10-31' });
-    expect(rangeFor('2030-10-30')).toEqual({ from: '2030-10-01', to: '2030-10-31' }); // week 25-10 .. 31-10
-    expect(rangeFor('2030-11-03')).toEqual({ from: '2030-11-01', to: '2030-11-31' });
-    expect(rangeFor('2030-11-30')).toEqual({ from: '2030-11-01', to: '2030-12-05' }); // week 29-11 .. 05-12
+  it('with one week written, the month equals the week (no confession)', () => {
+    const notes = [{ day: '2030-10-18', mass: true }, { day: '2030-10-20', prayerNight: true }];
+    expect(monthPoints(notes, '2030-10-20', false)).toBe(weekPoints(notes, '2030-10-20'));
+  });
+  it('the month range is 4 whole weeks ending on the Thursday of the open week, even across months and years', () => {
+    expect(monthRange('2030-10-18')).toEqual({ from: '2030-09-27', to: '2030-10-24' });
+    expect(monthRange('2030-10-30')).toEqual({ from: '2030-10-04', to: '2030-10-31' });
+    expect(monthRange('2031-01-03')).toEqual({ from: '2030-12-13', to: '2031-01-09' });
+  });
+  it('reads one range that covers both the week and the month', () => {
+    expect(rangeFor('2030-10-18')).toEqual({ from: '2030-09-27', to: '2030-10-24' });
+    expect(rangeFor('2030-10-24')).toEqual({ from: '2030-09-27', to: '2030-10-24' }); // Thursday: same week as Friday 18
   });
 });

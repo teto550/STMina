@@ -12,8 +12,8 @@ A tab next to الحضور / المخدومين for ONE class of the boys' secti
 ## Points (shown at the top of every kid's file: اليوم / الأسبوع / الشهر)
 `POINTS` in `src/react/screens/spiritual-notes/logic.ts`: صلاة الصبح 5 · صلاة بليل 5 · الإنجيل 15 · القداس 20 · الصوم 10 (Wednesday and Friday only) · الاعتراف 25 (once a month).
 - Day = the ticks of that day (the confession is not in it). Week = the 7 days Friday→Thursday (the confession is not in it, it has no date).
-  Month = every day of the month + 25 when he confessed that month.
-- Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the days covering both the week and the month of the open day, at most about 37 documents).
+  Month = the last 4 weeks (Friday→Thursday, ending with the week of the open day, `monthRange`) + 25 when he confessed in the calendar month of the open day.
+- Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the last 4 weeks, which contain the open week, at most 28 documents).
 - Older notes that hold the gospel as TEXT count as "read" (15 points); new saves write `gospel: true/false`.
 
 ## Data (a part of the students' data: one subcollection per student, nothing else is touched)
