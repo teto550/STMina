@@ -23,6 +23,7 @@ export const screens: Record<string, Loader> = {
   'no-access': () => import('./no-access'),
   parts: () => import('./parts'),
   'spiritual-notes': () => import('./spiritual-notes'),
+  'spiritual-notes-ranking': () => import('./spiritual-notes-ranking'),
   'servants-filter': () => import('./servants-filter'),
   'servants-list': () => import('./servants-list'),
 };

@@ -6,6 +6,8 @@ import { DEACONS } from '@/features/servants/deacons';
 import { avatarBox } from '@/features/students/photos';
 import { db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
+import { hasSpiritualNotes } from '@/core/notes-access';
+import { sectionTag } from '@/core/section';
 
 // ===== STATS TAB =====
 let currentStatsSubtab = 'attendance';
@@ -15,6 +17,18 @@ export function initStatsTab() {
   const cur = sel.value;
   sel.innerHTML = '<option value="">كل الخدام</option>' +
     DEACONS.map(d => `<option${cur===d?' selected':''}>${d}</option>`).join('');
+  // the "النوتة الروحية" sub-tab exists only in the classes that have the notes
+  const hasNotes = hasSpiritualNotes(state.activeGrade, sectionTag());
+  const notesBtn = document.getElementById('stats-subtab-notes');
+  if (notesBtn) { notesBtn.style.display = hasNotes ? '' : 'none'; }
+  if (!hasNotes && currentStatsSubtab === 'notes') {
+    currentStatsSubtab = 'attendance';
+    document.querySelectorAll('#tab-stats > .tabs .tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('stats-subtab-attendance').classList.add('active');
+    ['attendance', 'birthdays', 'absence', 'stars', 'notes'].forEach(p => {
+      document.getElementById('stats-panel-' + p).style.display = p === 'attendance' ? 'block' : 'none';
+    });
+  }
   renderStats();
 }
 
@@ -26,6 +40,7 @@ window.switchStatsSubtab = (subtab, btn) => {
   document.getElementById('stats-panel-birthdays').style.display  = subtab === 'birthdays'  ? 'block' : 'none';
   document.getElementById('stats-panel-absence').style.display    = subtab === 'absence'    ? 'block' : 'none';
   document.getElementById('stats-panel-stars').style.display      = subtab === 'stars'       ? 'block' : 'none';
+  document.getElementById('stats-panel-notes').style.display      = subtab === 'notes'       ? 'block' : 'none';
   renderStats();
 };
 
@@ -33,6 +48,7 @@ window.renderStats = () => {
   if (currentStatsSubtab === 'attendance') renderAttendanceStats();
   else if (currentStatsSubtab === 'birthdays') renderBirthdayStats();
   else if (currentStatsSubtab === 'stars') renderStarStats();
+  else if (currentStatsSubtab === 'notes') renderNotesStats();
   else renderAbsenceStats();
 };
 
@@ -108,6 +124,16 @@ function renderStarStats() {
       <div style="background:rgba(241,196,15,0.15);border:1px solid rgba(241,196,15,0.35);color:#f1c40f;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap">⭐ ${count} / 6</div>
     </div>`;
   }).join('');
+}
+
+// ترتيب النوتة الروحية: شاشة React (src/react/screens/spiritual-notes-ranking) بتقرا نقط آخر ٤ أسابيع لكل ولد وبترتبهم
+function renderNotesStats() {
+  const deacon = document.getElementById('stats-deacon-filter').value;
+  const list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : state.allStudents;
+  window.openReactScreen('spiritual-notes-ranking', document.getElementById('stats-panel-notes'), {
+    kids: list.map(s => ({ id: s.id, name: s.name || '' })),
+    onOpenKid: (id) => window.openProfile(id)
+  });
 }
 
 function renderBirthdayStats() {

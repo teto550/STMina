@@ -1,6 +1,6 @@
 // The spiritual notes (النوتة الروحية) of one kid, as React Query hooks. Saving updates what is already held (no second read).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchConfession, fetchKidDay, fetchKidDays, fetchKidDaysBetween, saveConfession, saveNoteDay, type NoteDay, type NoteValues } from '@/api/spiritual-notes';
+import { fetchConfession, fetchKidDay, fetchKidsMonthData, fetchKidDays, fetchKidDaysBetween, saveConfession, saveNoteDay, type NoteDay, type NoteValues } from '@/api/spiritual-notes';
 
 const MINUTE = 60 * 1000;
 
@@ -8,6 +8,7 @@ export const notesKeys = {
   day: (id: string, day: string) => ['spiritual-notes', 'day', id, day] as const,
   month: (id: string, month: string) => ['spiritual-notes', 'month', id, month] as const,
   history: (id: string, since: string) => ['spiritual-notes', 'history', id, since] as const,
+  ranking: (ids: string, from: string, to: string, month: string) => ['spiritual-notes', 'ranking', ids, from, to, month] as const,
   range: (id: string, from: string, to: string) => ['spiritual-notes', 'range', id, from, to] as const,
 };
 
@@ -51,4 +52,10 @@ export function useSaveNote() {
       client.setQueryData<NoteDay[]>(notesKeys.range(input.childId, input.from, input.to), put);
     },
   });
+}
+
+/** The last 4 weeks of many kids (and the month's confession), for the ranking in the statistics. Kept 5 minutes: the servant refreshes by hand. */
+export function useKidsMonthData(ids: string[], from: string, to: string, month: string) {
+  const key = [...ids].sort().join(',');
+  return useQuery({ queryKey: notesKeys.ranking(key, from, to, month), queryFn: () => fetchKidsMonthData(ids, from, to, month), staleTime: 5 * MINUTE, enabled: ids.length > 0 });
 }

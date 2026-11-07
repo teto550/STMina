@@ -1,4 +1,4 @@
-import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, summaryOf } from '@/react/screens/spiritual-notes/logic';
+import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, rankKids, summaryOf } from '@/react/screens/spiritual-notes/logic';
 
 describe('spiritual notes: the days', () => {
   it('lastDays gives today first and the days before it, across a month change', () => {
@@ -94,5 +94,28 @@ describe('spiritual notes: the points', () => {
   it('reads one range that covers both the week and the month', () => {
     expect(rangeFor('2030-10-18')).toEqual({ from: '2030-09-27', to: '2030-10-24' });
     expect(rangeFor('2030-10-24')).toEqual({ from: '2030-09-27', to: '2030-10-24' }); // Thursday: same week as Friday 18
+  });
+});
+
+describe('spiritual notes: the ranking', () => {
+  const kids = [{ id: 'a', name: 'مينا' }, { id: 'b', name: 'أنطونيوس' }, { id: 'c', name: 'بيشوي' }, { id: 'd', name: 'كيرلس' }, { id: 'e', name: 'يوسف' }];
+  const data = {
+    a: { days: [{ day: '2030-10-18', mass: true }], confessed: false }, // 20
+    b: { days: [{ day: '2030-10-18', mass: true }], confessed: false }, // 20: same place as a
+    c: { days: [{ day: '2030-10-04', mass: true }, { day: '2030-10-20', mass: true }], confessed: false }, // 40
+    d: { days: [{ day: '2030-09-26', mass: true }], confessed: false }, // before the 4 weeks: no points
+    // e has nothing written at all
+  };
+  it('lists the kids with points from the first place, and kids with the same score share the place (1, 2, 2, 4)', () => {
+    const out = rankKids([...kids, { id: 'f', name: 'جرجس' }], { ...data, f: { days: [{ day: '2030-10-18', prayerNight: true }], confessed: false } }, '2030-10-20');
+    expect(out.map((k) => [k.name, k.rank, k.month])).toEqual([['بيشوي', 1, 40], ['أنطونيوس', 2, 20], ['مينا', 2, 20], ['جرجس', 4, 5]]);
+  });
+  it('leaves out kids with no points, and counts the confession in the points', () => {
+    const out = rankKids(kids, { ...data, e: { days: [], confessed: true } }, '2030-10-20');
+    expect(out.find((k) => k.name === 'يوسف')).toMatchObject({ month: 25, week: 0 });
+    expect(out.find((k) => k.name === 'كيرلس')).toBeUndefined();
+  });
+  it('says nothing for an empty class', () => {
+    expect(rankKids([], {}, '2030-10-20')).toEqual([]);
   });
 });

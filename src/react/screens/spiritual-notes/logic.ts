@@ -129,6 +129,31 @@ export function rangeFor(day: string): { from: string; to: string } {
   return monthRange(day);
 }
 
+export type RankedKid = { id: string; name: string; rank: number; month: number; week: number };
+
+/**
+ * The kids that have points in the last 4 weeks, from the first place to the last. Kids with the same score share the same place
+ * (1, 1, 3: the next place skips as many as shared), and are listed by name inside a place. Kids with no points are left out.
+ */
+export function rankKids(kids: { id: string; name: string }[], data: Record<string, { days: NoteDay[]; confessed: boolean }>, today: string): RankedKid[] {
+  const scored = kids
+    .map((k) => {
+      const d = data[k.id];
+      return { id: k.id, name: k.name, month: d ? monthPoints(d.days, today, d.confessed) : 0, week: d ? weekPoints(d.days, today) : 0 };
+    })
+    .filter((k) => k.month > 0)
+    .sort((a, b) => b.month - a.month || a.name.localeCompare(b.name, 'ar'));
+  let place = 0;
+  let previous: number | null = null;
+  return scored.map((k, i) => {
+    if (k.month !== previous) {
+      place = i + 1;
+      previous = k.month;
+    }
+    return { ...k, rank: place };
+  });
+}
+
 /** "الصبح · بليل · القداس · صام" (what was done that day) */
 export function summaryOf(note: NoteDay): string {
   const parts: string[] = [];

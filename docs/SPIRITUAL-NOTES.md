@@ -16,6 +16,12 @@ A tab next to الحضور / المخدومين for ONE class of the boys' secti
 - Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the last 4 weeks, which contain the open week, at most 28 documents).
 - Older notes that hold the gospel as TEXT count as "read" (15 points); new saves write `gospel: true/false`.
 
+## Statistics > النوتة الروحية (ranking)
+A sub-tab next to ⭐ النجوم in the statistics tab, shown only for the classes in `SPIRITUAL_NOTES_GRADES` (`initStatsTab` hides the button otherwise).
+Screen `src/react/screens/spiritual-notes-ranking`: the kids with points in the last 4 weeks (the same "نقط الشهر" of the kid's file), highest first; kids
+with the same score share the same place (1, 2, 2, 4), by name inside a place; kids with no points are left out. The servant filter of the statistics applies.
+Reads: for each kid one range query (the written days of the last 4 weeks) + 1 confession document, 8 kids at a time (`fetchKidsMonthData`), kept 5 minutes; the 🔄 button reads again.
+
 ## Data (a part of the students' data: one subcollection per student, nothing else is touched)
 - `spiritualNotes/{studentId}/days/{YYYY-MM-DD}` = `{ day, prayerMorning, prayerNight, gospel (bool; old notes: string), mass, fast?, updatedAt, updatedBy }`
 - `spiritualNotes/{studentId}/months/{YYYY-MM}` = `{ confession, updatedAt, updatedBy }`

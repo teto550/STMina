@@ -394,6 +394,7 @@
         <button class="tab" id="stats-subtab-absence" onclick="switchStatsSubtab('absence',this)">📋 الغياب</button>
         <button class="tab" id="stats-subtab-birthdays" onclick="switchStatsSubtab('birthdays',this)">🎂 المواليد</button>
         <button class="tab" id="stats-subtab-stars" onclick="switchStatsSubtab('stars',this)">⭐ النجوم</button>
+        <button class="tab" id="stats-subtab-notes" style="display:none" onclick="switchStatsSubtab('notes',this)">📓 النوتة الروحية</button>
       </div>
 
       <!-- ATTENDANCE SUB-TAB -->
@@ -467,6 +468,9 @@
         </div>
         <div id="stats-stars-list"><div class="empty-state"><div class="empty-icon">⭐</div>لا يوجد مخدومين</div></div>
       </div>
+
+      <!-- SPIRITUAL NOTES SUB-TAB (only for the classes that have the notes) -->
+      <div id="stats-panel-notes" style="display:none"></div>
 
     </div>
 

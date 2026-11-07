@@ -58,3 +58,19 @@ export async function saveNoteDay({ childId, day, values, by }: { childId: strin
 export async function saveConfession({ childId, month, value, by }: { childId: string; month: string; value: boolean; by: string }): Promise<void> {
   await setDoc(doc(db, 'spiritualNotes', childId, 'months', month), { confession: value, updatedAt: serverTimestamp(), updatedBy: by }, { merge: true });
 }
+
+export type KidMonthData = { days: NoteDay[]; confessed: boolean };
+
+/** For many kids at once: the days from `from` to `to` and whether each confessed in `month` (YYYY-MM). A few kids are read at a time; a failure reaches the caller. */
+export async function fetchKidsMonthData(kidIds: string[], from: string, to: string, month: string): Promise<Record<string, KidMonthData>> {
+  const out: Record<string, KidMonthData> = {};
+  const AT_A_TIME = 8;
+  for (let i = 0; i < kidIds.length; i += AT_A_TIME) {
+    const chunk = kidIds.slice(i, i + AT_A_TIME);
+    const results = await Promise.all(chunk.map(async (id) => ({ id, days: await fetchKidDaysBetween(id, from, to), confessed: await fetchConfession(id, month) })));
+    for (const r of results) {
+      out[r.id] = { days: r.days, confessed: r.confessed };
+    }
+  }
+  return out;
+}
