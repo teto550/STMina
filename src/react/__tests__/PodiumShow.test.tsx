@@ -14,7 +14,7 @@ const sounds = vi.hoisted(() => ({
 vi.mock('@/react/lib/podium-sounds', () => ({ createPodiumSounds: () => sounds }));
 
 import { PODIUM_TIMES } from '@/react/hooks/usePodiumShow';
-import { tiersOf } from '@/react/screens/spiritual-notes-ranking/podium-show/ClimbPodium';
+import { PODIUM_HEIGHT, STAIRS } from '@/react/screens/spiritual-notes-ranking/podium-show/ClimbPodium';
 import { PodiumShow } from '@/react/screens/spiritual-notes-ranking/podium-show';
 import { faceOf, type PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
 
@@ -91,7 +91,32 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
   });
 
   it('the better the place, the taller the podium', () => {
-    expect([3, 2, 1].map((p) => tiersOf(p as 1 | 2 | 3))).toEqual([2, 3, 4]);
+    expect(PODIUM_HEIGHT[3]).toBeLessThan(PODIUM_HEIGHT[2]);
+    expect(PODIUM_HEIGHT[2]).toBeLessThan(PODIUM_HEIGHT[1]);
+  });
+
+  it('the podium is reached by three stairs, in the climb and after the reveal', () => {
+    expect(STAIRS).toBe(3);
+    setup(longShow);
+    start();
+    waitEach(PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal, PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal);
+    expect(screen.getAllByTestId('stair')).toHaveLength(3);
+    wait(PODIUM_TIMES.suspense[3]);
+    expect(screen.getAllByTestId('stair')).toHaveLength(3);
+  });
+
+  it('the words are written on the LEFT of the podium, never behind the picture', () => {
+    setup(longShow);
+    start();
+    waitEach(PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal, PODIUM_TIMES.other.suspense, PODIUM_TIMES.other.reveal, PODIUM_TIMES.suspense[3]);
+    const words = screen.getByTestId('climb-text');
+    expect(words).toHaveStyle({ textAlign: 'left' });
+    expect(words.parentElement).toHaveAttribute('dir', 'ltr'); // the words come first in a left-to-right row: on the left
+    expect(words.nextElementSibling).toBe(screen.getByTestId('climb-podium'));
+    expect(words).toHaveTextContent('المركز التالت');
+    expect(words).toHaveTextContent('مينا سامح');
+    expect(words).toHaveTextContent('⭐ 50 نقطة');
+    expect(screen.getByRole('img', { name: 'مينا سامح' }).closest('[data-testid="climb-text"]')).toBeNull(); // the picture is on the podium, not in the words
   });
 
   it('the places under the third are shorter than the top three, so a long list does not drag', () => {
