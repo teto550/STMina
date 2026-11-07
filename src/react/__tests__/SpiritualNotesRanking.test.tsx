@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 
-const h = vi.hoisted(() => ({ fetchKidsMonthData: vi.fn() }));
-vi.mock('@/api/spiritual-notes', () => ({ fetchKidsMonthData: h.fetchKidsMonthData }));
+const h = vi.hoisted(() => ({ fetchKidsMonthData: vi.fn(), fetchNotePoints: vi.fn() }));
+vi.mock('@/api/spiritual-notes', () => ({ fetchKidsMonthData: h.fetchKidsMonthData, fetchNotePoints: h.fetchNotePoints }));
 vi.mock('@/react/lib/podium-sounds', () => ({
   createPodiumSounds: () => ({ unlock: vi.fn(), drumroll: vi.fn(), reveal: vi.fn(), jingle: vi.fn(), music: vi.fn(), stop: vi.fn(), shutdown: vi.fn(), setMuted: vi.fn() }),
 }));
@@ -21,6 +21,8 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2030, 9, 18, 12));
   h.fetchKidsMonthData.mockReset();
+  h.fetchNotePoints.mockReset();
+  h.fetchNotePoints.mockResolvedValue(null); // never set: the default points
   h.fetchKidsMonthData.mockResolvedValue({
     k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false }, // 60
     k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false }, // 40

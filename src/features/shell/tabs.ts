@@ -61,6 +61,7 @@ function showNotes() {
     grade: state.activeGrade,
     kids: state.allStudents.map(s => ({ id: s.id, name: s.name || '' })),
     canEdit: canManageGrade(state.activeGrade), // any servant of the open class (admins any class)
+    canSetPoints: state.currentUserRole === 'admin', // the "نقاط النوتة" button: only an admin writes config/notes-points
     user: { name: state.currentUserName }
   });
 }

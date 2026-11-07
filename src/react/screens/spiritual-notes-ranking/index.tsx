@@ -4,7 +4,7 @@ import { notesErrorMessage } from '@/api/errors';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
-import { useKidsMonthData } from '@/react/hooks/useSpiritualNotes';
+import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
 import { dateToStr, monthOf, monthRange, rankKids } from '../spiritual-notes/logic';
 import { podiumSteps } from './podium';
 import { PodiumShow } from './podium-show';
@@ -27,7 +27,8 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
   const { from, to } = monthRange(today);
   const ids = useMemo(() => kids.map((k) => k.id), [kids]);
   const data = useKidsMonthData(ids, from, to, monthOf(today));
-  const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today) : []), [kids, data.data, today]);
+  const points = useNotePoints();
+  const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today, points) : []), [kids, data.data, today, points]);
   const steps = useMemo(() => podiumSteps(ranked, Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? '']))), [ranked, kids]);
   const [showing, setShowing] = useState(false);
 

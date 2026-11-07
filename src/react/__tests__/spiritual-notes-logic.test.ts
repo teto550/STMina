@@ -119,3 +119,27 @@ describe('spiritual notes: the ranking', () => {
     expect(rankKids([], {}, '2030-10-20')).toEqual([]);
   });
 });
+
+describe('custom points (set by the admin)', () => {
+  const custom = { prayerMorning: 1, prayerNight: 2, gospel: 3, mass: 4, fast: 5, confession: 6 };
+  // Friday 18 October 2030: a fasting day
+  const all = { day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true };
+
+  it('dayPoints counts each thing with the points it is given, and with the starting ones when none are given', () => {
+    expect(dayPoints(all)).toBe(5 + 5 + 15 + 20 + 10);
+    expect(dayPoints(all, custom)).toBe(1 + 2 + 3 + 4 + 5);
+  });
+
+  it('the week, the month (with the confession) and the ranking use them too', () => {
+    expect(weekPoints([all], '2030-10-18', custom)).toBe(15);
+    expect(monthPoints([all], '2030-10-18', true, custom)).toBe(15 + 6);
+    const ranked = rankKids([{ id: 'a', name: 'أ' }], { a: { days: [all], confessed: true } }, '2030-10-18', custom);
+    expect(ranked[0]?.month).toBe(21);
+  });
+
+  it('a thing worth 0 earns nothing, and a kid with only that thing is left out of the ranking', () => {
+    const zero = { ...custom, mass: 0 };
+    expect(dayPoints({ day: '2030-10-18', mass: true }, zero)).toBe(0);
+    expect(rankKids([{ id: 'a', name: 'أ' }], { a: { days: [{ day: '2030-10-18', mass: true }], confessed: false } }, '2030-10-18', zero)).toEqual([]);
+  });
+});

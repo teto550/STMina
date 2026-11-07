@@ -10,7 +10,14 @@ A tab next to الحضور / المخدومين for ONE class of the boys' secti
 - Any servant of the class (and admins) can write, like the other class tabs (`canManageGrade`).
 
 ## Points (shown at the top of every kid's file: اليوم / الأسبوع / الشهر)
-`POINTS` in `src/react/screens/spiritual-notes/logic.ts`: صلاة الصبح 5 · صلاة بليل 5 · الإنجيل 15 · القداس 20 · الصوم 10 (Wednesday and Friday only) · الاعتراف 25 (once a month).
+The starting points (`DEFAULT_POINTS` in `src/core/notes-points.ts`): صلاة الصبح 5 · صلاة بليل 5 · الإنجيل 15 · القداس 20 · الصوم 10 (Wednesday and Friday only) · الاعتراف 25 (once a month).
+
+### ⚙️ نقاط النوتة (the admin sets the points)
+A button at the top of the نوتة روحية tab, shown to admins only (`canSetPoints`, passed from `showNotes` in `features/shell/tabs.ts`). It opens a sheet (`PointsSettings.tsx`) with a box per thing (0 to 1000, whole numbers; "الأصلية" puts the starting points back) and "حفظ النقاط".
+- **One setting for the whole app**, stored in `config/notes-points` = `{ points: {prayerMorning, prayerNight, gospel, mass, fast, confession}, updatedAt, updatedBy }`. The existing `config` rules already let every signed-in person read and only an admin write, so there is NO rules change to deploy. Migration note: a one-row `notes_points` table.
+- **Counts for every day, old ones too**: the points are worked out from what was ticked (never stored with a day), so a change re-prices the whole history, the kid's file (اليوم / الأسبوع / الشهر) and the ranking at once.
+- Everybody sees the current points as a small line under the title. Until the admin saves, or when the document cannot be read, the starting points count (`cleanPoints` also repairs a hand-edited document). One extra read (cached 5 minutes) per opened screen: `useNotePoints` in `src/react/hooks/useSpiritualNotes.ts`.
+- Tests: `notes-points.test.ts`, the `custom points` block of `spiritual-notes-logic.test.ts`, and the `نقاط النوتة` block of `SpiritualNotesScreen.test.tsx`.
 - Day = the ticks of that day (the confession is not in it). Week = the 7 days Friday→Thursday (the confession is not in it, it has no date).
   Month = the last 4 weeks (Friday→Thursday, ending with the week of the open day, `monthRange`) + 25 when he confessed in the calendar month of the open day.
 - Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the last 4 weeks, which contain the open week, at most 28 documents).
@@ -24,10 +31,11 @@ Reads: for each kid one range query (the written days of the last 4 weeks) + 1 c
 
 ### 🏆 عرض (the winners show)
 A button next to 🔄 in the ranking header, shown only when somebody has points. It opens a full-screen show to put in front of the class (a quiz-game podium):
-"يلا نبدأ" (this tap also unlocks the browser's audio) → a drum roll, a 3-2-1 and "المركز التالت" → the kid appears with his picture, his FIRST TWO NAMES only, his points and a cheer
-→ the same for the second → the winner with a crown, a glow, more confetti and a bigger fanfare → the finished podium (second · first · third) with "إعادة العرض" / "إغلاق".
+"يلا نبدأ" (this tap also unlocks the browser's audio) → the kids come from the LAST place up to the first (every kid with points). A place under the third: a short drum roll, a 3-2-1 and "المركز ٥" → the kid
+with his picture, his FIRST TWO NAMES only, his points and a cheer. From the THIRD place on (`ClimbPodium.tsx`): a round podium of stacked round tiers (3rd = 2 tiers, 2nd = 3, 1st = 4) where a ❓ hops up the tiers
+until it reaches the top, then the kid's picture lands there with his name above it (the winner with a crown, a glow, more confetti and a bigger fanfare) → the finished podium (second · first · third) with "إعادة العرض" / "إغلاق".
 - **One kid per step.** Kids with the same score share a place and come one after the other in that place (the second one gets a short drum roll and "ومعاه كمان واحد!"). The places are the ones
-  of the list: a tie skips the next place (1, 1, 3 shows the third, then both first-place kids); a place nobody holds is not shown.
+  of the list: a tie skips the next place (1, 1, 3 shows the third, then both first-place kids); a place nobody holds is not shown. The places under the third use shorter times (`PODIUM_TIMES.other`).
 - **Pictures:** the photo of the kid's card (`photo`, passed from `renderNotesStats` in `src/features/dashboard/stats.ts`); a kid without one (or whose photo does not load) gets a cartoon face on a
   coloured background, a different one for every step (`faceOf` in `podium.ts`).
 - **Looks:** the background changes with the part (suspense = dark and tense, each place its own colours, finale = purple) and never stops moving: turning rays and shapes (stars, balloons, drums,

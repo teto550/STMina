@@ -1,4 +1,5 @@
 import type { NoteDay } from '@/api/spiritual-notes';
+import { DEFAULT_POINTS, type NotePoints } from '@/core/notes-points';
 
 const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربع', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -81,32 +82,32 @@ export function didAnything(note: NoteDay): boolean {
   return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note));
 }
 
-/** The points of each thing (set by the user): prayer 5 + 5, gospel 15, confession 25 (once a month), fasting 10 (Wednesday and Friday), mass 20. */
-export const POINTS = { prayerMorning: 5, prayerNight: 5, gospel: 15, confession: 25, fast: 10, mass: 20 } as const;
+/** The points each thing started with (the admin can change them: see `useNotePoints`; every function below takes the ones to use and falls back to these). */
+export const POINTS = DEFAULT_POINTS;
 
 /** The points of one day: prayers, gospel, mass and fasting (the fasting counts on Wednesday and Friday only). The confession is a month thing, see monthPoints. */
-export function dayPoints(note: NoteDay | null | undefined): number {
+export function dayPoints(note: NoteDay | null | undefined, points: NotePoints = DEFAULT_POINTS): number {
   if (!note) {
     return 0;
   }
   return (
-    (note.prayerMorning ? POINTS.prayerMorning : 0) +
-    (note.prayerNight ? POINTS.prayerNight : 0) +
-    (readGospel(note) ? POINTS.gospel : 0) +
-    (note.mass ? POINTS.mass : 0) +
-    (note.fast && isFastDay(note.day) ? POINTS.fast : 0)
+    (note.prayerMorning ? points.prayerMorning : 0) +
+    (note.prayerNight ? points.prayerNight : 0) +
+    (readGospel(note) ? points.gospel : 0) +
+    (note.mass ? points.mass : 0) +
+    (note.fast && isFastDay(note.day) ? points.fast : 0)
   );
 }
 
 /** The points of the days of `notes` that fall from `from` to `to` (YYYY-MM-DD, included). */
-export function pointsBetween(notes: NoteDay[], from: string, to: string): number {
-  return notes.filter((n) => n.day >= from && n.day <= to).reduce((sum, n) => sum + dayPoints(n), 0);
+export function pointsBetween(notes: NoteDay[], from: string, to: string, points: NotePoints = DEFAULT_POINTS): number {
+  return notes.filter((n) => n.day >= from && n.day <= to).reduce((sum, n) => sum + dayPoints(n, points), 0);
 }
 
 /** The points of the week of `day` (Friday to Thursday), from the days written. The confession is not in it (it belongs to the month). */
-export function weekPoints(notes: NoteDay[], day: string): number {
+export function weekPoints(notes: NoteDay[], day: string, points: NotePoints = DEFAULT_POINTS): number {
   const days = weekDays(day);
-  return pointsBetween(notes, days[0] ?? day, days[6] ?? day);
+  return pointsBetween(notes, days[0] ?? day, days[6] ?? day, points);
 }
 
 /** The "month" of the programme is the last 4 weeks (Friday to Thursday), ending with the week of `day`. */
@@ -119,9 +120,9 @@ export function monthRange(day: string): { from: string; to: string } {
 }
 
 /** The points of the month of `day`: the days of the last 4 weeks (Friday to Thursday), plus the confession of the calendar month of `day` when he confessed. */
-export function monthPoints(notes: NoteDay[], day: string, confessed: boolean): number {
+export function monthPoints(notes: NoteDay[], day: string, confessed: boolean, points: NotePoints = DEFAULT_POINTS): number {
   const { from, to } = monthRange(day);
-  return pointsBetween(notes, from, to) + (confessed ? POINTS.confession : 0);
+  return pointsBetween(notes, from, to, points) + (confessed ? points.confession : 0);
 }
 
 /** The first and the last day to read so that both the week and the month of `day` are covered (the month contains the week, at most 28 days). */
@@ -135,11 +136,11 @@ export type RankedKid = { id: string; name: string; rank: number; month: number;
  * The kids that have points in the last 4 weeks, from the first place to the last. Kids with the same score share the same place
  * (1, 1, 3: the next place skips as many as shared), and are listed by name inside a place. Kids with no points are left out.
  */
-export function rankKids(kids: { id: string; name: string }[], data: Record<string, { days: NoteDay[]; confessed: boolean }>, today: string): RankedKid[] {
+export function rankKids(kids: { id: string; name: string }[], data: Record<string, { days: NoteDay[]; confessed: boolean }>, today: string, points: NotePoints = DEFAULT_POINTS): RankedKid[] {
   const scored = kids
     .map((k) => {
       const d = data[k.id];
-      return { id: k.id, name: k.name, month: d ? monthPoints(d.days, today, d.confessed) : 0, week: d ? weekPoints(d.days, today) : 0 };
+      return { id: k.id, name: k.name, month: d ? monthPoints(d.days, today, d.confessed, points) : 0, week: d ? weekPoints(d.days, today, points) : 0 };
     })
     .filter((k) => k.month > 0)
     .sort((a, b) => b.month - a.month || a.name.localeCompare(b.name, 'ar'));

@@ -7,7 +7,7 @@ import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Input } from '@/react/components/ui/input';
 import { Spinner } from '@/react/components/ui/spinner';
-import { useConfession, useKidDay, useKidHistory, useKidRange, useSaveNote } from '@/react/hooks/useSpiritualNotes';
+import { useConfession, useKidDay, useKidHistory, useKidRange, useNotePoints, useSaveNote } from '@/react/hooks/useSpiritualNotes';
 import { addDays, dateToStr, dayLabel, dayPoints, didAnything, isFastDay, lastDays, monthOf, monthPoints, rangeFor, readGospel, summaryOf, weekDays, weekPoints } from './logic';
 
 export type KidRef = { id: string; name: string };
@@ -151,12 +151,13 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
   const { from, to } = rangeFor(day);
   const range = useKidRange(kid.id, from, to);
   const written = (history.data ?? []).filter(didAnything);
+  const points = useNotePoints();
 
   // the points: the day from the saved day, the week and the month from the days read around it (the month also has the confession)
   const rangeReady = range.isSuccess && !confession.isPending && !confession.isError;
-  const dayTotal = dayData.isSuccess ? dayPoints(dayData.data) : null;
-  const weekTotal = rangeReady ? weekPoints(range.data, day) : null;
-  const monthTotal = rangeReady ? monthPoints(range.data, day, confession.data === true) : null;
+  const dayTotal = dayData.isSuccess ? dayPoints(dayData.data, points) : null;
+  const weekTotal = rangeReady ? weekPoints(range.data, day, points) : null;
+  const monthTotal = rangeReady ? monthPoints(range.data, day, confession.data === true, points) : null;
 
   let view = FileView.Data;
   if (dayData.isPending || confession.isPending) {

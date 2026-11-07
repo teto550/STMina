@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 
-const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchKidDaysBetween: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn() }));
-vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchKidDaysBetween: h.fetchKidDaysBetween, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession }));
+const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchKidDaysBetween: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn(), fetchNotePoints: vi.fn(), saveNotePoints: vi.fn() }));
+vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchKidDaysBetween: h.fetchKidDaysBetween, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession, fetchNotePoints: h.fetchNotePoints, saveNotePoints: h.saveNotePoints }));
 
 import SpiritualNotesScreen from '@/react/screens/spiritual-notes';
 
@@ -26,6 +26,8 @@ beforeEach(() => {
   h.fetchConfession.mockResolvedValue(false);
   h.saveNoteDay.mockImplementation(async ({ day, values }: { day: string; values: object }) => ({ day, ...values }));
   h.saveConfession.mockResolvedValue(undefined);
+  h.fetchNotePoints.mockResolvedValue(null); // never set: the default points
+  h.saveNotePoints.mockImplementation(async ({ points }: { points: object }) => points);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -161,5 +163,62 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     await screen.findByRole('button', { name: 'الصبح' });
     expect(screen.queryByRole('button', { name: 'حفظ اليوم' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'الصبح' })).toBeDisabled();
+  });
+});
+
+describe('SpiritualNotesScreen: نقاط النوتة (the points of each thing)', () => {
+  it('shows the points of each thing to everybody, but the button only to who may set them', () => {
+    setup();
+    expect(screen.getByLabelText('نقاط كل حاجة')).toHaveTextContent('الصبح 5');
+    expect(screen.queryByRole('button', { name: /نقاط النوتة/ })).not.toBeInTheDocument();
+  });
+
+  it('the admin opens the sheet, changes the points and saves them', async () => {
+    h.fetchNotePoints.mockResolvedValue({ mass: 30 });
+    const { user } = setup({ canSetPoints: true });
+    await user.click(screen.getByRole('button', { name: /نقاط النوتة/ }));
+    const dialog = await screen.findByRole('dialog', { name: /نقاط النوتة/ });
+    expect(dialog).toBeInTheDocument();
+    const mass = screen.getByLabelText('القداس');
+    await waitFor(() => expect(mass).toHaveValue(30)); // what he set before
+    expect(screen.getByLabelText('صلاة الصبح')).toHaveValue(5);
+
+    const morning = screen.getByLabelText('صلاة الصبح'); // held, because its label gains the error text while the box is empty
+    await user.clear(morning);
+    await user.type(morning, '8');
+    await user.click(screen.getByRole('button', { name: 'حفظ النقاط' }));
+    await waitFor(() => expect(h.saveNotePoints).toHaveBeenCalledTimes(1));
+    expect(h.saveNotePoints).toHaveBeenCalledWith({ points: { prayerMorning: 8, prayerNight: 5, gospel: 15, mass: 30, fast: 10, confession: 25 }, by: 'الخادم' });
+    expect(await screen.findByText('اتحفظ ✓')).toBeInTheDocument();
+    expect(screen.getByLabelText('نقاط كل حاجة')).toHaveTextContent('الصبح 8'); // the list shows the new points at once
+  });
+
+  it('refuses a wrong number and does not save', async () => {
+    const { user } = setup({ canSetPoints: true });
+    await user.click(screen.getByRole('button', { name: /نقاط النوتة/ }));
+    await screen.findByRole('dialog', { name: /نقاط النوتة/ });
+    const mass = screen.getByLabelText('القداس');
+    await user.clear(mass);
+    expect(screen.getByRole('button', { name: 'حفظ النقاط' })).toBeDisabled();
+    await user.type(mass, '5000');
+    expect(screen.getByRole('button', { name: 'حفظ النقاط' })).toBeDisabled();
+    expect(h.saveNotePoints).not.toHaveBeenCalled();
+  });
+
+  it('"الأصلية" puts the starting points back in the boxes', async () => {
+    h.fetchNotePoints.mockResolvedValue({ gospel: 50 });
+    const { user } = setup({ canSetPoints: true });
+    await user.click(screen.getByRole('button', { name: /نقاط النوتة/ }));
+    await waitFor(() => expect(screen.getByLabelText('الإنجيل (قرأ)')).toHaveValue(50));
+    await user.click(screen.getByRole('button', { name: 'الأصلية' }));
+    expect(screen.getByLabelText('الإنجيل (قرأ)')).toHaveValue(15);
+  });
+
+  it('a kid\'s file counts with the points the admin set', async () => {
+    h.fetchNotePoints.mockResolvedValue({ mass: 40 });
+    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', mass: true });
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: /مينا/ }));
+    await waitFor(() => expect(screen.getByText('نقط اليوم').nextSibling).toHaveTextContent('40'));
   });
 });

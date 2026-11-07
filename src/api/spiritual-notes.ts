@@ -2,9 +2,11 @@
 // src/react/hooks/useSpiritualNotes.ts wraps them.
 //   spiritualNotes/{studentId}/days/{YYYY-MM-DD}   { day, prayerMorning, prayerNight, gospel, mass, fast?, updatedAt, updatedBy }
 //   spiritualNotes/{studentId}/months/{YYYY-MM}    { confession, updatedAt, updatedBy }
+//   config/notes-points                            { points: { prayerMorning, prayerNight, gospel, mass, fast, confession }, updatedAt, updatedBy }  (every signed-in person reads, only an admin writes)
 // Errors are NOT swallowed here (unlike getDocsFast): a refusal by the rules must reach the screen, not look like "nothing written yet".
 import { collection, doc, documentId, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { db } from '@/core/firebase';
+import type { NotePoints } from '@/core/notes-points';
 
 export interface NoteValues {
   prayerMorning: boolean;
@@ -73,4 +75,16 @@ export async function fetchKidsMonthData(kidIds: string[], from: string, to: str
     }
   }
   return out;
+}
+
+/** The points the admin set for each thing (`config/notes-points`); the raw value, or null when he never set them (the caller cleans it with `cleanPoints`). */
+export async function fetchNotePoints(): Promise<unknown> {
+  const snap = await getDoc(doc(db, 'config', 'notes-points'));
+  return snap.exists() ? (snap.data() as { points?: unknown }).points ?? null : null;
+}
+
+/** Saves the points of every thing (admin only: the `config` rules refuse anybody else). */
+export async function saveNotePoints({ points, by }: { points: NotePoints; by: string }): Promise<NotePoints> {
+  await setDoc(doc(db, 'config', 'notes-points'), { points, updatedAt: serverTimestamp(), updatedBy: by });
+  return points;
 }
