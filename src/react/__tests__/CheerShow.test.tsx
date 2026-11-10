@@ -17,12 +17,12 @@ import { CHEER_KID_MS } from '@/react/hooks/useCheerShow';
 import { CHEER_CLOSING, type CheerStep } from '@/react/screens/spiritual-notes-ranking/cheer';
 import { CheerShow } from '@/react/screens/spiritual-notes-ranking/cheer-show';
 
-const step = (id: string, name: string, face: number, line: string, photo = ''): CheerStep => ({ kid: { id, name }, photo, face, line });
+const step = (id: string, name: string, face: number, line: string, photo = '', stars = 0): CheerStep => ({ kid: { id, name }, photo, face, line, stars });
 
 const steps: CheerStep[] = [
-  step('a', 'بيتر ماهر جرجس', 0, 'بيتر ماهر شاطر ومثابر 💪', 'data:image/png;base64,AAA'),
+  step('a', 'بيتر ماهر جرجس', 0, 'بيتر ماهر شاطر ومثابر 💪', 'data:image/png;base64,AAA', 1.5),
   step('b', 'مارك عادل فوزي', 1, 'مارك عادل نجم ساطع 🌟'),
-  step('c', 'مينا سامح عادل', 2, 'مينا سامح قلبه نضيف ✨'),
+  step('c', 'مينا سامح عادل', 2, 'مينا سامح قلبه نضيف ✨', '', 6),
 ];
 
 const wait = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
@@ -65,14 +65,20 @@ describe('CheerShow', () => {
     expect(screen.getByRole('img', { name: 'بيتر ماهر' }).querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,AAA');
   });
 
-  it('puts the six stars of the card in front of each kid: five dim ones and one that lights up', () => {
+  it('puts the six stars of the card in front of each kid, and lights the ones the servant gave him (a half star counts)', () => {
     setup();
     start();
-    const row = screen.getByRole('img', { name: 'نجمة واحدة من ٦ نجوم' });
-    expect(row.textContent?.match(/☆/g)).toHaveLength(6); // all six are on the row, dim
-    expect(row.textContent?.match(/⭐/g)).toHaveLength(1); // and one of them lights up
-    tap('التالي');
-    expect(screen.getByRole('img', { name: 'نجمة واحدة من ٦ نجوم' })).toBeInTheDocument(); // the next kid has his own row
+    // the first kid has 1.5 stars: all six are on the row, dim, and two of them light up (the second only on its first half)
+    const row = screen.getByRole('img', { name: '١٫٥ من ٦ نجوم' });
+    expect(row.textContent?.match(/☆/g)).toHaveLength(6);
+    expect(row.textContent?.match(/⭐/g)).toHaveLength(2);
+    tap('التالي'); // the second kid has none: six dim stars and nothing lit
+    const none = screen.getByRole('img', { name: 'النجوم لسه مطفية' });
+    expect(none.textContent?.match(/☆/g)).toHaveLength(6);
+    expect(none.textContent).not.toContain('⭐');
+    tap('التالي'); // the third has all six
+    const all = screen.getByRole('img', { name: '٦ من ٦ نجوم' });
+    expect(all.textContent?.match(/⭐/g)).toHaveLength(6);
   });
 
   it('shows no place and no points for a kid', () => {

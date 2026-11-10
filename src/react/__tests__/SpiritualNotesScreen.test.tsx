@@ -31,6 +31,11 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
+const openKid = async (user: ReturnType<typeof userEvent.setup>, name = /مينا/) => {
+  await user.click(screen.getByRole('button', { name }));
+  return screen.findByRole('button', { name: 'حفظ اليوم' });
+};
+
 describe('SpiritualNotesScreen: the list of kids', () => {
   it('shows every kid and reads nothing until a kid is opened', () => {
     setup();
@@ -57,10 +62,6 @@ describe('SpiritualNotesScreen: the list of kids', () => {
 });
 
 describe('SpiritualNotesScreen: the file of a kid', () => {
-  const openKid = async (user: ReturnType<typeof userEvent.setup>, name = /مينا/) => {
-    await user.click(screen.getByRole('button', { name }));
-    return screen.findByRole('button', { name: 'حفظ اليوم' });
-  };
 
   it('opens on today, with the fasting box (Friday), and goes back to the list', async () => {
     const { user } = setup();
@@ -163,6 +164,80 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     await screen.findByRole('button', { name: 'الصبح' });
     expect(screen.queryByRole('button', { name: 'حفظ اليوم' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'الصبح' })).toBeDisabled();
+  });
+});
+
+describe('SpiritualNotesScreen: the extra stars of a kid', () => {
+  const stars = () => screen.getByRole('status', { name: 'النجوم الزيادة' });
+  const plus = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: 'زوّد نص نجمة' }));
+
+  it('gives a star or half a star at a time, from nothing up to six, and takes them back', async () => {
+    const { user } = setup();
+    await openKid(user);
+    expect(stars()).toHaveTextContent('⭐ ٠');
+    expect(screen.getByRole('button', { name: 'ناقص نص نجمة' })).toBeDisabled();
+    await plus(user);
+    expect(stars()).toHaveTextContent('⭐ ٠٫٥');
+    await plus(user);
+    await plus(user);
+    expect(stars()).toHaveTextContent('⭐ ١٫٥');
+    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
+    expect(stars()).toHaveTextContent('⭐ ١');
+    for (let i = 0; i < 12; i += 1) {
+      await plus(user);
+    }
+    expect(stars()).toHaveTextContent('⭐ ٦');
+    expect(screen.getByRole('button', { name: 'زوّد نص نجمة' })).toBeDisabled();
+  });
+
+  it('saves the stars with the day, and a day without stars is saved exactly as before (no stars field)', async () => {
+    const { user } = setup();
+    await openKid(user);
+    await user.click(screen.getByRole('button', { name: 'الصبح' }));
+    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
+    await screen.findByText('اتحفظ ✓');
+    expect(h.saveNoteDay.mock.calls[0]?.[0].values).not.toHaveProperty('stars');
+    await plus(user);
+    await plus(user);
+    await plus(user);
+    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
+    await waitFor(() => expect(h.saveNoteDay).toHaveBeenCalledTimes(2));
+    expect(h.saveNoteDay.mock.calls[1]?.[0].values).toMatchObject({ prayerMorning: true, stars: 1.5 });
+  });
+
+  it('shows the stars already saved for the day, and can take them all back (0 is saved, so the old ones do not stay)', async () => {
+    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', mass: true, stars: 1 });
+    const { user } = setup();
+    await openKid(user);
+    expect(stars()).toHaveTextContent('⭐ ١');
+    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
+    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
+    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
+    await waitFor(() => expect(h.saveNoteDay).toHaveBeenCalled());
+    expect(h.saveNoteDay.mock.calls[0]?.[0].values).toMatchObject({ stars: 0 });
+  });
+
+  it('shows the stars of the last 4 weeks above the file (at most six), and a day with only stars is in the last days', async () => {
+    h.fetchKidDaysBetween.mockResolvedValue([
+      { day: '2030-10-18', stars: 2 },
+      { day: '2030-10-05', stars: 1.5 },
+      { day: '2030-09-27', stars: 3 }, // the first day of the 4 weeks
+      { day: '2030-09-26', stars: 5 }, // before them: not counted
+    ]);
+    h.fetchKidDays.mockResolvedValue([{ day: '2030-10-18', stars: 2 }]);
+    const { user } = setup();
+    await openKid(user);
+    expect(await screen.findByLabelText('نجوم الشهر')).toHaveTextContent('٦ من ٦'); // 2 + 1.5 + 3 = 6.5, the card has six
+    expect(await screen.findByText('⭐ ٢')).toBeInTheDocument(); // the list of the last days
+  });
+
+  it('without the right to write the buttons are off', async () => {
+    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', stars: 1 });
+    const { user } = setup({ canEdit: false });
+    await user.click(screen.getByRole('button', { name: /مينا/ })); // read only: there is no save button to wait for
+    await screen.findByRole('status', { name: 'النجوم الزيادة' });
+    expect(screen.getByRole('button', { name: 'زوّد نص نجمة' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'ناقص نص نجمة' })).toBeDisabled();
   });
 });
 

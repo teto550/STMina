@@ -49,3 +49,14 @@ until it reaches the top, then the kid's picture lands there with his name above
 - No extra reads: it uses what the ranking already loaded.
 - Code: `src/react/screens/spiritual-notes-ranking/podium.ts` (the steps) and `podium-show/` (the screens), `src/react/hooks/usePodiumShow.ts` (the timer and what plays when),
   `src/react/lib/podium-{sounds,music,synth}.ts`. Tests: `PodiumShow.test.tsx`, `podium-logic.test.ts`, `podium-sounds.test.ts`, `SpiritualNotesRanking.test.tsx`.
+
+## ⭐ Extra stars (given by the servant) and the 🎉 cheer show
+- **Data:** an optional `stars` number on the day document `spiritualNotes/{kid}/days/{YYYY-MM-DD}`: the extra stars the servant gave that day, in halves (0, 0.5, 1 ... 6). It is only written when there are
+  some (or there were, so they can be taken back). Stars are **not points** (`dayPoints` ignores them).
+  Security rule: `stars` is in the `hasOnly` list of the day rule and must be one of the 13 values 0 to 6 in halves (`firestore.rules`). **Deploy the rules (`firebase deploy --only firestore:rules`) before a servant saves a day with stars**, otherwise that save is refused.
+  A migration to another backend needs the same field and the same check (a number, a multiple of 0.5, 0 to 6).
+- **Giving them:** in the kid's file (النوتة الروحية), a "نجوم" row with − / + changes the day's stars by half a star; "حفظ اليوم" saves them with the day. Above the file, "نجوم آخر ٤ أسابيع" shows the total of the last 4 weeks
+  (the same "month" as the points), at most six (the six stars of the kid's card). A day with only stars counts as written in "آخر الأيام".
+- **The cheer show** (statistics > النوتة الروحية > 🎉 عرض التشجيع): every kid that has points comes on his own (random order, picture, name, a rhyme), with no places or points, and at the end all together.
+  Under each kid's name are the six stars of the card, all dim; the ones he got (his stars of the last 4 weeks, a half star lit on its first half) light up one after the other. A kid without stars keeps the six dim ones.
+  Code: `src/react/screens/spiritual-notes-ranking/cheer.ts` (the order and the rhymes `CHEER_LINES`), `cheer-show/` (the screens), `src/react/hooks/useCheerShow.ts` (the timer and the sounds, the same sounds as the winners show).

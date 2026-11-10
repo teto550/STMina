@@ -228,11 +228,13 @@ service cloud.firestore {
       allow read: if isApproved();
       allow create, update: if isApproved()
         && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && request.resource.data.keys().hasOnly(['day', 'prayerMorning', 'prayerNight', 'gospel', 'mass', 'fast', 'updatedAt', 'updatedBy'])
+        && request.resource.data.keys().hasOnly(['day', 'prayerMorning', 'prayerNight', 'gospel', 'mass', 'fast', 'stars', 'updatedAt', 'updatedBy'])
         && request.resource.data.day == day
         && request.resource.data.updatedAt == request.time
         && request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 80
-        && (!('gospel' in request.resource.data) || request.resource.data.gospel is bool || (request.resource.data.gospel is string && request.resource.data.gospel.size() <= 300));
+        && (!('gospel' in request.resource.data) || request.resource.data.gospel is bool || (request.resource.data.gospel is string && request.resource.data.gospel.size() <= 300))
+        // the extra stars the servant gives (a star or half a star at a time, the six of the kid's card at most)
+        && (!('stars' in request.resource.data) || request.resource.data.stars in [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6]);
     }
     match /spiritualNotes/{childId}/months/{month} {
       allow read: if isApproved();

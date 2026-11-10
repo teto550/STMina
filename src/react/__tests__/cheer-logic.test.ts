@@ -33,7 +33,7 @@ describe('cheerSteps', () => {
     const steps = cheerSteps(ranked, {}, seeded());
     expect(steps.map((s) => s.kid.id).sort()).toEqual(['a', 'b', 'c', 'd']);
     steps.forEach((s) => {
-      expect(Object.keys(s).sort()).toEqual(['face', 'kid', 'line', 'photo']);
+      expect(Object.keys(s).sort()).toEqual(['face', 'kid', 'line', 'photo', 'stars']);
       expect(Object.keys(s.kid).sort()).toEqual(['id', 'name']);
     });
   });
@@ -68,6 +68,15 @@ describe('cheerSteps', () => {
     expect(steps.find((s) => s.kid.id === 'a')?.photo).toBe('data:image/png;base64,AAA');
     expect(steps.find((s) => s.kid.id === 'b')?.photo).toBe('');
     expect(steps.map((s) => s.face)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('gives each kid the stars the servant gave him (0 when none, never over six, only whole or half stars)', () => {
+    const steps = cheerSteps(ranked, {}, seeded(), CHEER_LINES, { a: 2.5, b: 9, c: 0.7 });
+    const stars = (id: string) => steps.find((s) => s.kid.id === id)?.stars;
+    expect(stars('a')).toBe(2.5);
+    expect(stars('b')).toBe(6);
+    expect(stars('c')).toBe(0.5);
+    expect(stars('d')).toBe(0);
   });
 
   it('works with nobody', () => {

@@ -1,11 +1,12 @@
 import { useMemo, useState, type FC } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { notesErrorMessage } from '@/api/errors';
+import type { NoteDay } from '@/api/spiritual-notes';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
-import { dateToStr, monthOf, monthRange, rankKids } from '../spiritual-notes/logic';
+import { dateToStr, monthOf, monthRange, monthStars, rankKids } from '../spiritual-notes/logic';
 import { cheerSteps, type CheerStep } from './cheer';
 import { CheerShow } from './cheer-show';
 import { podiumSteps } from './podium';
@@ -19,6 +20,11 @@ export type SpiritualNotesRankingProps = {
 };
 
 const MEDALS = ['🥇', '🥈', '🥉'];
+
+/** The stars the servants gave each kid in the last 4 weeks (by kid id). */
+function starsOf(data: Record<string, { days: NoteDay[] }>, today: string): Record<string, number> {
+  return Object.fromEntries(Object.entries(data).map(([id, d]) => [id, monthStars(d.days, today)]));
+}
 
 /**
  * Statistics > النوتة الروحية: the kids that have points in the last 4 weeks (Friday to Thursday, this week included), from the first place to the
@@ -44,7 +50,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
           {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
-          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos))}>🎉 عرض التشجيع</Button>}
+          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos, Math.random, undefined, starsOf(data.data ?? {}, today)))}>🎉 عرض التشجيع</Button>}
           <Button size="icon" variant="ghost" aria-label="تحديث" disabled={data.isFetching} onClick={() => void data.refetch()}>
             <RefreshCw className="tw:size-4" aria-hidden="true" />
           </Button>

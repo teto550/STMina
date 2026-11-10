@@ -1,6 +1,6 @@
 // النوتة الروحية: what each kid did in his spiritual life, written by the servants. Plain functions (no React):
 // src/react/hooks/useSpiritualNotes.ts wraps them.
-//   spiritualNotes/{studentId}/days/{YYYY-MM-DD}   { day, prayerMorning, prayerNight, gospel, mass, fast?, updatedAt, updatedBy }
+//   spiritualNotes/{studentId}/days/{YYYY-MM-DD}   { day, prayerMorning, prayerNight, gospel, mass, fast?, stars?, updatedAt, updatedBy }
 //   spiritualNotes/{studentId}/months/{YYYY-MM}    { confession, updatedAt, updatedBy }
 //   config/notes-points                            { points: { prayerMorning, prayerNight, gospel, mass, fast, confession }, updatedAt, updatedBy }  (every signed-in person reads, only an admin writes)
 // Errors are NOT swallowed here (unlike getDocsFast): a refusal by the rules must reach the screen, not look like "nothing written yet".
@@ -16,6 +16,8 @@ export interface NoteValues {
   gospel: boolean;
   /** only on the fasting days (Wednesday and Friday); left out on the other days */
   fast?: boolean;
+  /** the extra stars the servant gave the kid that day, in halves (0, 0.5, 1 ... 6); left out when none. They do not count as points: the cheer show lights them on his six stars */
+  stars?: number;
 }
 
 export interface NoteDay extends Omit<Partial<NoteValues>, 'gospel'> {

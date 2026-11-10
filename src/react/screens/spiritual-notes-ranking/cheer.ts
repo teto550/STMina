@@ -1,4 +1,5 @@
 import type { RankedKid } from '../spiritual-notes/logic';
+import { clampStars } from '../spiritual-notes/logic';
 import { shortName } from './podium';
 
 /** One kid of the cheer show: no place and no points, only his picture, his name and a rhyme of his own. */
@@ -10,6 +11,8 @@ export type CheerStep = {
   face: number;
   /** the rhyme under his name, with his name already in it */
   line: string;
+  /** the stars the servant gave him in the last 4 weeks, in halves, 0 to 6: that many of the six stars on his screen light up */
+  stars: number;
 };
 
 /** Short rhymes for the kids, `{name}` is replaced by the kid's first two names. More lines than kids means nobody hears the same one twice. */
@@ -52,14 +55,22 @@ export function shuffled<T>(list: T[], random: () => number = Math.random): T[] 
 /**
  * The steps of the cheer show: EVERY kid that has points, once, in a random order (so nobody feels first or last), each with a rhyme of his own.
  * The rhymes are shuffled too and used one after the other, so they only repeat when there are more kids than rhymes.
+ * `stars` is what the servant gave each kid (by id); a kid without an entry has none.
  */
-export function cheerSteps(ranked: RankedKid[], photos: Record<string, string> = {}, random: () => number = Math.random, lines: string[] = CHEER_LINES): CheerStep[] {
+export function cheerSteps(
+  ranked: RankedKid[],
+  photos: Record<string, string> = {},
+  random: () => number = Math.random,
+  lines: string[] = CHEER_LINES,
+  stars: Record<string, number> = {},
+): CheerStep[] {
   const kids = shuffled(ranked, random);
   const rhymes = shuffled(lines, random);
   return kids.map((k, i) => ({
     kid: { id: k.id, name: k.name },
     photo: photos[k.id] ?? '',
     face: i,
+    stars: clampStars(stars[k.id]),
     line: fillLine(rhymes[i % rhymes.length] ?? '{name} بطل 🌟', shortName(k.name)),
   }));
 }

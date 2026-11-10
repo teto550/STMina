@@ -77,10 +77,34 @@ export function readGospel(note: NoteDay): boolean {
   return typeof note.gospel === 'string' ? note.gospel.trim() !== '' : note.gospel === true;
 }
 
-/** Did the kid do anything that day? */
+/** Did the kid do anything that day (or get a star)? */
 export function didAnything(note: NoteDay): boolean {
-  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note));
+  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note) || (note.stars ?? 0) > 0);
 }
+
+/** The stars of the kid's card: six, and the servant gives them in halves. */
+export const MAX_STARS = 6;
+export const STAR_STEP = 0.5;
+
+/** A number of stars made a whole or a half number between 0 and the six of the card (anything else, a missing value too, becomes the nearest of those). */
+export function clampStars(value: unknown): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return Math.min(MAX_STARS, Math.max(0, Math.round(n / STAR_STEP) * STAR_STEP));
+}
+
+/** The stars given on the days of `notes` that fall from `from` to `to` (YYYY-MM-DD, included), added up (not capped: see monthStars). */
+export function starsBetween(notes: NoteDay[], from: string, to: string): number {
+  return notes.filter((n) => n.day >= from && n.day <= to).reduce((sum, n) => sum + clampStars(n.stars), 0);
+}
+
+/** The stars of the kid in the last 4 weeks (the same "month" as the points), at most the six of the card. The cheer show lights this many. */
+export function monthStars(notes: NoteDay[], day: string): number {
+  const { from, to } = monthRange(day);
+  return clampStars(starsBetween(notes, from, to));
+}
+
+/** "1" / "1.5" written in Arabic digits (١ / ١٫٥). */
+export const starsText = (stars: number): string => stars.toLocaleString('ar-EG');
 
 /** The points each thing started with (the admin can change them: see `useNotePoints`; every function below takes the ones to use and falls back to these). */
 export const POINTS = DEFAULT_POINTS;
@@ -172,6 +196,9 @@ export function summaryOf(note: NoteDay): string {
   }
   if (readGospel(note)) {
     parts.push('الإنجيل');
+  }
+  if ((note.stars ?? 0) > 0) {
+    parts.push(`⭐ ${starsText(clampStars(note.stars))}`);
   }
   return parts.join(' · ');
 }
