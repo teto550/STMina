@@ -65,6 +65,16 @@ describe('CheerShow', () => {
     expect(screen.getByRole('img', { name: 'بيتر ماهر' }).querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,AAA');
   });
 
+  it('puts the six stars of the card in front of each kid: five dim ones and one that lights up', () => {
+    setup();
+    start();
+    const row = screen.getByRole('img', { name: 'نجمة واحدة من ٦ نجوم' });
+    expect(row.textContent?.match(/☆/g)).toHaveLength(6); // all six are on the row, dim
+    expect(row.textContent?.match(/⭐/g)).toHaveLength(1); // and one of them lights up
+    tap('التالي');
+    expect(screen.getByRole('img', { name: 'نجمة واحدة من ٦ نجوم' })).toBeInTheDocument(); // the next kid has his own row
+  });
+
   it('shows no place and no points for a kid', () => {
     setup();
     start();
