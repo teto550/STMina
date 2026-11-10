@@ -35,7 +35,7 @@ afterEach(() => vi.useRealTimers());
 describe('SpiritualNotesRanking: the عرض button', () => {
   it('appears once the points are loaded, and opens the show on its start screen', async () => {
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    const button = await screen.findByRole('button', { name: /عرض/ });
+    const button = await screen.findByRole('button', { name: /^🏆/ });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.click(button);
     expect(screen.getByRole('dialog', { name: 'عرض الفائزين' })).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('SpiritualNotesRanking: the عرض button', () => {
   it('the show announces the ranking of the list: third place is مينا, with his first two names and the photo of his card', async () => {
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    await user.click(await screen.findByRole('button', { name: /عرض/ }));
+    await user.click(await screen.findByRole('button', { name: /^🏆/ }));
     await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
     const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
@@ -68,5 +68,37 @@ describe('SpiritualNotesRanking: the عرض button', () => {
   it('is not there when the class has no kids', () => {
     renderWithQuery(<SpiritualNotesRanking kids={[]} />);
     expect(screen.queryByRole('button', { name: /عرض/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('SpiritualNotesRanking: the عرض التشجيع button', () => {
+  it('opens the cheer show for the kids that have points (not the one without), with no places or points on the screen', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: /عرض التشجيع/ }));
+    const dialog = screen.getByRole('dialog', { name: 'عرض التشجيع' });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /يلا نبدأ/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    // the last screen has the three kids that have points together, and not the kid without points
+    expect(dialog).toHaveTextContent('بيتر');
+    expect(dialog).toHaveTextContent('مارك');
+    expect(dialog).toHaveTextContent('مينا سامح');
+    expect(dialog).not.toHaveTextContent('يوسف');
+    expect(dialog).not.toHaveTextContent('نقطة');
+    expect(dialog).not.toHaveTextContent('المركز');
+    await user.click(screen.getAllByRole('button', { name: 'إغلاق' })[0]!);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('is not there while loading, or when nobody has points', async () => {
+    h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [], confessed: false } });
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    expect(screen.queryByRole('button', { name: /عرض التشجيع/ })).not.toBeInTheDocument();
+    expect(await screen.findByText('لسه مفيش حد عنده نقط في آخر ٤ أسابيع')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /عرض التشجيع/ })).not.toBeInTheDocument();
   });
 });

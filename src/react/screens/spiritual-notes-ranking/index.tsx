@@ -6,6 +6,8 @@ import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
 import { dateToStr, monthOf, monthRange, rankKids } from '../spiritual-notes/logic';
+import { cheerSteps, type CheerStep } from './cheer';
+import { CheerShow } from './cheer-show';
 import { podiumSteps } from './podium';
 import { PodiumShow } from './podium-show';
 
@@ -29,8 +31,11 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
   const data = useKidsMonthData(ids, from, to, monthOf(today));
   const points = useNotePoints();
   const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today, points) : []), [kids, data.data, today, points]);
-  const steps = useMemo(() => podiumSteps(ranked, Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? '']))), [ranked, kids]);
+  const photos = useMemo(() => Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? ''])), [kids]);
+  const steps = useMemo(() => podiumSteps(ranked, photos), [ranked, photos]);
   const [showing, setShowing] = useState(false);
+  // the cheer show has no order: its kids are shuffled when the servant opens it, so every time is a different show
+  const [cheer, setCheer] = useState<CheerStep[] | null>(null);
 
   return (
     <section aria-label="ترتيب النوتة الروحية" className="tw:flex tw:flex-col tw:gap-3">
@@ -39,6 +44,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
           {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
+          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos))}>🎉 عرض التشجيع</Button>}
           <Button size="icon" variant="ghost" aria-label="تحديث" disabled={data.isFetching} onClick={() => void data.refetch()}>
             <RefreshCw className="tw:size-4" aria-hidden="true" />
           </Button>
@@ -63,6 +69,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
         ))}
       </ol>
       {showing && <PodiumShow steps={steps} onClose={() => setShowing(false)} />}
+      {cheer && <CheerShow steps={cheer} onClose={() => setCheer(null)} />}
     </section>
   );
 };
