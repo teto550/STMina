@@ -17,12 +17,12 @@ import { CHEER_KID_MS } from '@/react/hooks/useCheerShow';
 import { CHEER_CLOSING, type CheerStep } from '@/react/screens/spiritual-notes-ranking/cheer';
 import { CheerShow } from '@/react/screens/spiritual-notes-ranking/cheer-show';
 
-const step = (id: string, name: string, face: number, line: string, photo = '', stars = 0): CheerStep => ({ kid: { id, name }, photo, face, line, stars });
+const step = (id: string, name: string, face: number, photo = '', stars = 0): CheerStep => ({ kid: { id, name }, photo, face, stars });
 
 const steps: CheerStep[] = [
-  step('a', 'بيتر ماهر جرجس', 0, 'بيتر ماهر شاطر ومثابر 💪', 'data:image/png;base64,AAA', 1.5),
-  step('b', 'مارك عادل فوزي', 1, 'مارك عادل نجم ساطع 🌟'),
-  step('c', 'مينا سامح عادل', 2, 'مينا سامح قلبه نضيف ✨', '', 6),
+  step('a', 'بيتر ماهر جرجس', 0, 'data:image/png;base64,AAA', 1.5),
+  step('b', 'مارك عادل فوزي', 1),
+  step('c', 'مينا سامح عادل', 2, '', 6),
 ];
 
 const wait = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
@@ -51,7 +51,7 @@ describe('CheerShow', () => {
     expect(screen.queryByText(/بيتر/)).not.toBeInTheDocument();
   });
 
-  it('the tap wakes the audio, starts the happy music and shows the first kid on his own: first two names, photo and his rhyme', () => {
+  it('the tap wakes the audio, starts the happy music and shows the first kid on his own: first two names and photo', () => {
     setup();
     start();
     expect(sounds.unlock).toHaveBeenCalledTimes(1);
@@ -60,7 +60,6 @@ describe('CheerShow', () => {
     const dialog = screen.getByRole('dialog', { name: 'عرض التشجيع' });
     expect(dialog).toHaveTextContent('بيتر ماهر');
     expect(dialog).not.toHaveTextContent('جرجس');
-    expect(dialog).toHaveTextContent('بيتر ماهر شاطر ومثابر 💪');
     expect(dialog).not.toHaveTextContent('مارك');
     expect(screen.getByRole('img', { name: 'بيتر ماهر' }).querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,AAA');
   });
@@ -81,6 +80,28 @@ describe('CheerShow', () => {
     expect(all.textContent?.match(/⭐/g)).toHaveLength(6);
   });
 
+  it('a star enters once and then is a plain star: no beat, no glow, no sparks on the row; a half star is clipped to its first half', () => {
+    setup();
+    start();
+    const row = screen.getByRole('img', { name: '١٫٥ من ٦ نجوم' });
+    const lit = Array.from(row.querySelectorAll<HTMLElement>('.rx-star-in'));
+    expect(lit).toHaveLength(2);
+    expect(lit[0]!.style.clipPath).toBe(''); // a whole star
+    expect(lit[1]!.style.clipPath).toContain('inset'); // the half star
+    // each star lights up after the one before it
+    expect(parseFloat(lit[1]!.style.getPropertyValue('--rx-delay'))).toBeGreaterThan(parseFloat(lit[0]!.style.getPropertyValue('--rx-delay')));
+    // nothing else is animated on the row (no rx-beat, no sparks), and the stars are big
+    expect(row.querySelector('.rx-beat, .rx-glow, .rx-burst, [class*="rx-burst"]')).toBeNull();
+    expect(row.className).toContain('tw:text-5xl');
+  });
+
+  it('there is no sentence on a kid\'s screen: only his picture, his name and his stars', () => {
+    setup();
+    start();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.querySelector('p')).toBeNull();
+  });
+
   it('shows no place and no points for a kid', () => {
     setup();
     start();
@@ -94,10 +115,10 @@ describe('CheerShow', () => {
     setup();
     start();
     wait(CHEER_KID_MS);
-    expect(screen.getByRole('dialog')).toHaveTextContent('مارك عادل نجم ساطع');
+    expect(screen.getByRole('dialog')).toHaveTextContent('مارك عادل');
     expect(sounds.music).toHaveBeenLastCalledWith('party', 1);
     wait(CHEER_KID_MS);
-    expect(screen.getByRole('dialog')).toHaveTextContent('مينا سامح قلبه نضيف');
+    expect(screen.getByRole('dialog')).toHaveTextContent('مينا سامح');
     wait(CHEER_KID_MS);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(CHEER_CLOSING);
@@ -145,7 +166,7 @@ describe('CheerShow', () => {
     tap('التالي');
     tap('التالي');
     tap(/إعادة العرض/);
-    expect(screen.getByRole('dialog')).toHaveTextContent('بيتر ماهر شاطر');
+    expect(screen.getByRole('dialog')).toHaveTextContent('بيتر ماهر');
   });
 
   it('closes with the ✕ button, with Escape, and from the end screen; it cuts the sounds when closed', () => {
@@ -164,7 +185,7 @@ describe('CheerShow', () => {
   });
 
   it('a long list: every kid is on the end screen', () => {
-    const many = Array.from({ length: 20 }, (_, i) => step(`k${i}`, `بطل${i}`, i, `بطل${i} جميل`));
+    const many = Array.from({ length: 20 }, (_, i) => step(`k${i}`, `بطل${i}`, i));
     setup(many);
     start();
     // each kid sets the timer of the next one only after React has rendered him, so the kids are waited for one by one

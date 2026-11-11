@@ -12,11 +12,11 @@ type CheerKidViewProps = {
 
 const SPARKS = ['⭐', '✨', '🌟', '💫', '🎈'];
 
-/** One kid on his own: his picture bursting with stars, his first two names, the six stars of his card with the ones the servant gave him lighting up, and his rhyme, with confetti. No place and no points. */
+/** One kid on his own: his picture bursting with stars, his first two names and the six stars of his card, with the ones the servant gave him lighting up, with confetti. No place, no points, no sentence. */
 export const CheerKidView: FC<CheerKidViewProps> = ({ step }) => {
   const name = shortName(step.kid.name);
   return (
-    <div className="tw:flex tw:w-full tw:max-w-xl tw:flex-col tw:items-center tw:gap-6 tw:text-center">
+    <div className="tw:flex tw:w-full tw:max-w-2xl tw:flex-col tw:items-center tw:gap-7 tw:text-center">
       <Confetti count={50} />
       <div className="rx-pop tw:relative" style={delayed(0.1)}>
         {[0, 0.7, 1.4].map((d) => (
@@ -29,9 +29,6 @@ export const CheerKidView: FC<CheerKidViewProps> = ({ step }) => {
       </div>
       <span className="rx-pop tw:block tw:text-4xl tw:font-black tw:drop-shadow-lg tw:md:text-6xl" style={delayed(0.3)}>{name}</span>
       <StarRow stars={step.stars} />
-      <p className="rx-pop rx-wiggle tw:rounded-3xl tw:bg-white/15 tw:px-6 tw:py-4 tw:text-2xl tw:font-black tw:leading-relaxed tw:text-amber-200 tw:drop-shadow-lg" style={delayed(0.6)}>
-        {step.line}
-      </p>
     </div>
   );
 };

@@ -59,7 +59,8 @@ until it reaches the top, then the kid's picture lands there with his name above
 - **Giving them:** in the kid's file (النوتة الروحية) the box "⭐ نجوم الأسبوع" shows the stars of the week of the open day (the same for all its days); − / + change them by half a star and
   "حفظ نجوم الأسبوع" saves them (it does not save the day, and "حفظ اليوم" does not touch them). Above the file, "نجوم آخر ٤ أسابيع" shows the total of the last 4 weeks, at most six (the six stars of the kid's card).
   One extra read per kid and per screen: `fetchKidStarWeeks(id, from, to)` (a range on the document id, the same 4 weeks as the points); `fetchKidsMonthData` returns it as `starWeeks`.
-- **The cheer show** (statistics > النوتة الروحية > 🎉 عرض التشجيع): every kid that has points comes on his own (random order, picture, name, a rhyme), with no places or points, and at the end all together.
-  Under each kid's name are the six stars of the card, all dim; the ones he got (his stars of the last 4 weeks added up, at most six, a half star lit on its first half) light up one after the other.
-  A kid without stars keeps the six dim ones. Code: `src/react/screens/spiritual-notes-ranking/cheer.ts` (the order and the rhymes `CHEER_LINES`), `cheer-show/` (the screens, `StarRow.tsx` the stars),
+- **The cheer show** (statistics > النوتة الروحية > 🎉 عرض التشجيع): every kid that has points comes on his own (random order, picture and name), with no places, no points and no sentence, and at the end all together under one closing line.
+  Under each kid's name are the six stars of the card, big and all dim; the ones he got (his stars of the last 4 weeks added up, at most six, a half star lit on its first half) light up one after the other, each with ONE entrance
+  (`rx-star-in`: it spins and grows in with a flash) and then stays a plain star (no beat, no glow, no sparks). A kid without stars keeps the six dim ones.
+  Code: `src/react/screens/spiritual-notes-ranking/cheer.ts` (the random order, the closing line `CHEER_CLOSING`), `cheer-show/` (the screens, `StarRow.tsx` the stars),
   `src/react/hooks/useCheerShow.ts` (the timer and the sounds, the same sounds as the winners show).

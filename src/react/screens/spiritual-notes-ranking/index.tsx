@@ -50,7 +50,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
           {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
-          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos, Math.random, undefined, starsOf(data.data ?? {}, today)))}>🎉 عرض التشجيع</Button>}
+          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos, Math.random, starsOf(data.data ?? {}, today)))}>🎉 عرض التشجيع</Button>}
           <Button size="icon" variant="ghost" aria-label="تحديث" disabled={data.isFetching} onClick={() => void data.refetch()}>
             <RefreshCw className="tw:size-4" aria-hidden="true" />
           </Button>

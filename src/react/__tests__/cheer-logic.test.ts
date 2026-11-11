@@ -1,4 +1,4 @@
-import { CHEER_LINES, cheerSteps, fillLine, shuffled } from '@/react/screens/spiritual-notes-ranking/cheer';
+import { cheerSteps, shuffled } from '@/react/screens/spiritual-notes-ranking/cheer';
 
 const kid = (id: string, name = `ولد ${id}`, rank = 1, month = 10) => ({ id, name, rank, month, week: 0 });
 
@@ -20,20 +20,14 @@ describe('shuffled', () => {
   });
 });
 
-describe('fillLine', () => {
-  it('puts the name in every place of the rhyme', () => {
-    expect(fillLine('{name} و{name}', 'مينا')).toBe('مينا ومينا');
-  });
-});
-
 describe('cheerSteps', () => {
   const ranked = [kid('a', 'بيتر ماهر جرجس', 1, 90), kid('b', 'مارك عادل فوزي', 2, 70), kid('c', 'مينا سامح عادل', 3, 50), kid('d', 'يوسف', 4, 10)];
 
-  it('has every kid once, with no place and no points', () => {
+  it('has every kid once, with no place, no points and no sentence', () => {
     const steps = cheerSteps(ranked, {}, seeded());
     expect(steps.map((s) => s.kid.id).sort()).toEqual(['a', 'b', 'c', 'd']);
     steps.forEach((s) => {
-      expect(Object.keys(s).sort()).toEqual(['face', 'kid', 'line', 'photo', 'stars']);
+      expect(Object.keys(s).sort()).toEqual(['face', 'kid', 'photo', 'stars']);
       expect(Object.keys(s.kid).sort()).toEqual(['id', 'name']);
     });
   });
@@ -45,24 +39,6 @@ describe('cheerSteps', () => {
     expect(ids(() => 0.99)).not.toEqual(ids(() => 0));
   });
 
-  it('gives each kid a rhyme with his first two names in it, and no rhyme is left with an empty {name}', () => {
-    const steps = cheerSteps(ranked, {}, seeded());
-    steps.forEach((s) => {
-      expect(s.line).not.toContain('{name}');
-    });
-    expect(steps.find((s) => s.kid.id === 'a')?.line).toContain('بيتر ماهر');
-    expect(steps.find((s) => s.kid.id === 'a')?.line).not.toContain('جرجس');
-  });
-
-  it('uses a different rhyme for each kid while there are enough, and repeats only after that', () => {
-    const few = cheerSteps(ranked, {}, seeded(), ['{name} 1', '{name} 2', '{name} 3', '{name} 4']);
-    expect(new Set(few.map((s) => s.line.replace(/^.* /, ''))).size).toBe(4);
-    const crowd = Array.from({ length: CHEER_LINES.length + 3 }, (_, i) => kid(`k${i}`));
-    const steps = cheerSteps(crowd, {}, seeded());
-    expect(steps).toHaveLength(crowd.length);
-    expect(steps.every((s) => s.line.length > 0)).toBe(true);
-  });
-
   it('carries the photo of each kid (empty when he has none) and a different face for every step', () => {
     const steps = cheerSteps(ranked, { a: 'data:image/png;base64,AAA' }, seeded());
     expect(steps.find((s) => s.kid.id === 'a')?.photo).toBe('data:image/png;base64,AAA');
@@ -71,7 +47,7 @@ describe('cheerSteps', () => {
   });
 
   it('gives each kid the stars the servant gave him (0 when none, never over six, only whole or half stars)', () => {
-    const steps = cheerSteps(ranked, {}, seeded(), CHEER_LINES, { a: 2.5, b: 9, c: 0.7 });
+    const steps = cheerSteps(ranked, {}, seeded(), { a: 2.5, b: 9, c: 0.7 });
     const stars = (id: string) => steps.find((s) => s.kid.id === id)?.stars;
     expect(stars('a')).toBe(2.5);
     expect(stars('b')).toBe(6);
@@ -81,9 +57,5 @@ describe('cheerSteps', () => {
 
   it('works with nobody', () => {
     expect(cheerSteps([], {}, seeded())).toEqual([]);
-  });
-
-  it('every rhyme in the list has a place for the name', () => {
-    CHEER_LINES.forEach((line) => expect(line).toContain('{name}'));
   });
 });

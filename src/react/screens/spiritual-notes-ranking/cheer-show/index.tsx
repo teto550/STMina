@@ -35,7 +35,7 @@ const CONTROL = 'tw:h-10 tw:cursor-pointer tw:rounded-full tw:bg-white/15 tw:px-
 
 /**
  * Statistics > النوتة الروحية > عرض التشجيع: a full-screen fun show for every kid that has points. No places and no order: each kid comes on his own with his
- * picture, his name and a short rhyme, with confetti and happy music; at the end they are all on the screen together. It moves on by itself;
+ * picture, his name and his six stars (the ones the servant gave him light up), with confetti and happy music; at the end they are all on the screen together. It moves on by itself;
  * "التالي" jumps ahead, the pause button holds the kid on the screen, the speaker button mutes it.
  */
 export const CheerShow: FC<CheerShowProps> = ({ steps, onClose }) => {
