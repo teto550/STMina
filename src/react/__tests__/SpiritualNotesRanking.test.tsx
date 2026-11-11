@@ -101,4 +101,23 @@ describe('SpiritualNotesRanking: the عرض التشجيع button', () => {
     expect(await screen.findByText('لسه مفيش حد عنده نقط في آخر ٤ أسابيع')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /عرض التشجيع/ })).not.toBeInTheDocument();
   });
+
+  it('lights the stars the servant gave for the weeks of the last 4 weeks (at most six) on each kid, and none on a kid without', async () => {
+    h.fetchKidsMonthData.mockResolvedValue({
+      k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 2 }, { week: '2030-10-04', stars: 1.5 }] }, // 3.5
+      k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 5 }, { week: '2030-10-11', stars: 4 }] }, // 9: six
+      k3: { days: [mass('2030-10-18')], confessed: false }, // none
+      k4: { days: [], confessed: false },
+    });
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: /عرض التشجيع/ }));
+    await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
+    const seen: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      seen.push(screen.getByRole('img', { name: /نجوم|مطفية/ }).getAttribute('aria-label') ?? '');
+      await user.click(screen.getByRole('button', { name: 'التالي' }));
+    }
+    expect(seen.sort()).toEqual(['النجوم لسه مطفية', '٣٫٥ من ٦ نجوم', '٦ من ٦ نجوم'].sort());
+  });
 });

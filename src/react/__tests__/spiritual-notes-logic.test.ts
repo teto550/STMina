@@ -1,4 +1,4 @@
-import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, rankKids, summaryOf, clampStars, monthStars, starsBetween, starsText } from '@/react/screens/spiritual-notes/logic';
+import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, rankKids, summaryOf, clampStars, monthStars, weekStarsOf, starsText } from '@/react/screens/spiritual-notes/logic';
 
 describe('spiritual notes: the days', () => {
   it('lastDays gives today first and the days before it, across a month change', () => {
@@ -145,7 +145,15 @@ describe('custom points (set by the admin)', () => {
 });
 
 
-describe('spiritual notes: the stars the servant gives', () => {
+describe('spiritual notes: the stars the servant gives for a week', () => {
+  // Friday 18/10/2030: the last 4 weeks start on Friday 27/9 and end on Thursday 24/10
+  const weeks = [
+    { week: '2030-10-18', stars: 2 },
+    { week: '2030-10-04', stars: 1.5 },
+    { week: '2030-09-27', stars: 3 },
+    { week: '2030-09-20', stars: 5 }, // the week before the 4 weeks: not counted
+  ];
+
   it('clampStars keeps whole and half stars between 0 and six', () => {
     expect(clampStars(1.5)).toBe(1.5);
     expect(clampStars(0.7)).toBe(0.5);
@@ -156,28 +164,22 @@ describe('spiritual notes: the stars the servant gives', () => {
     expect(clampStars(NaN)).toBe(0);
   });
 
-  it('adds up the stars of the days in a range, and the month (the last 4 weeks) is at most six', () => {
-    const notes = [
-      { day: '2030-10-18', stars: 2 },
-      { day: '2030-10-05', stars: 1.5 },
-      { day: '2030-09-27', stars: 3 },
-      { day: '2030-09-26', stars: 5 },
-      { day: '2030-10-10' },
-    ];
-    expect(starsBetween(notes, '2030-10-01', '2030-10-31')).toBe(3.5);
-    expect(monthStars(notes, '2030-10-18')).toBe(6); // 6.5 in the 4 weeks (27/9 to 24/10): the card has six
-    expect(monthStars(notes.slice(0, 2), '2030-10-18')).toBe(3.5);
+  it('weekStarsOf gives the stars of the week the day is in (Friday to Thursday), 0 when none', () => {
+    expect(weekStarsOf(weeks, '2030-10-18')).toBe(2); // the Friday itself
+    expect(weekStarsOf(weeks, '2030-10-24')).toBe(2); // the Thursday of the same week
+    expect(weekStarsOf(weeks, '2030-10-12')).toBe(0); // the week of 11/10 has none
+    expect(weekStarsOf([], '2030-10-18')).toBe(0);
+  });
+
+  it('monthStars adds up the 4 weeks and never goes over the six of the card', () => {
+    expect(monthStars(weeks, '2030-10-18')).toBe(6); // 2 + 1.5 + 3 = 6.5, the card has six
+    expect(monthStars(weeks.slice(0, 2), '2030-10-18')).toBe(3.5);
     expect(monthStars([], '2030-10-18')).toBe(0);
   });
 
-  it('a day with only stars counts as written, and its summary shows them', () => {
-    expect(didAnything({ day: '2030-10-18', stars: 0.5 })).toBe(true);
-    expect(didAnything({ day: '2030-10-18', stars: 0 })).toBe(false);
-    expect(summaryOf({ day: '2030-10-18', mass: true, stars: 1.5 })).toBe('القداس · ⭐ ١٫٥');
-  });
-
-  it('dayPoints ignores the stars (they are not points)', () => {
-    expect(dayPoints({ day: '2030-10-18', stars: 3 })).toBe(0);
+  it('stars are not points and do not make a day "written"', () => {
+    expect(dayPoints({ day: '2030-10-18' })).toBe(0);
+    expect(didAnything({ day: '2030-10-18' })).toBe(false);
   });
 
   it('starsText writes halves in Arabic digits', () => {

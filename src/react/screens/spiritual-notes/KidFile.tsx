@@ -7,8 +7,8 @@ import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Input } from '@/react/components/ui/input';
 import { Spinner } from '@/react/components/ui/spinner';
-import { useConfession, useKidDay, useKidHistory, useKidRange, useNotePoints, useSaveNote } from '@/react/hooks/useSpiritualNotes';
-import { addDays, clampStars, dateToStr, dayLabel, dayPoints, didAnything, isFastDay, lastDays, MAX_STARS, monthOf, monthPoints, monthStars, rangeFor, readGospel, STAR_STEP, starsText, summaryOf, weekDays, weekPoints } from './logic';
+import { useConfession, useKidDay, useKidHistory, useKidRange, useKidStarWeeks, useNotePoints, useSaveNote, useSaveWeekStars } from '@/react/hooks/useSpiritualNotes';
+import { addDays, clampStars, dateToStr, dayLabel, dayPoints, didAnything, isFastDay, lastDays, MAX_STARS, monthOf, monthPoints, monthStars, rangeFor, readGospel, STAR_STEP, starsText, summaryOf, weekDays, weekPoints, weekStarsOf, weekStart } from './logic';
 
 export type KidRef = { id: string; name: string };
 
@@ -55,21 +55,48 @@ const PointsBox: FC<PointsBoxProps> = ({ label, points }) => {
   );
 };
 
-type StarsGiverProps = { stars: number; disabled: boolean; onChange: (stars: number) => void };
+type WeekStarsBoxProps = { kid: KidRef; week: string; initial: number; canEdit: boolean; by: string; from: string; to: string };
 
-/** Gives the kid extra stars for the day: a star or half a star at a time (the cheer show lights them on his six stars). */
-const StarsGiver: FC<StarsGiverProps> = ({ stars, disabled, onChange }) => {
+/** The extra stars of the WEEK of the open day (Friday to Thursday): a star or half a star at a time, from 0 to the six of the kid's card. Mounted again for each week (the `key`). */
+const WeekStarsBox: FC<WeekStarsBoxProps> = ({ kid, week, initial, canEdit, by, from, to }) => {
+  const [stars, setStars] = useState(initial);
+  const [saved, setSaved] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const save = useSaveWeekStars();
+
+  const change = (value: number) => {
+    setStars(value);
+    setSaved(false);
+  };
+
+  const onSave = async () => {
+    setProblem(null);
+    try {
+      await save.mutateAsync({ childId: kid.id, week, stars, by, from, to });
+      setSaved(true);
+    } catch (e) {
+      setProblem(notesErrorMessage(e));
+    }
+  };
+
   return (
-    <div className="tw:flex tw:flex-col tw:gap-1">
+    <div className="tw:flex tw:flex-col tw:gap-2 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:p-3">
+      <h3 className="tw:text-sm tw:font-bold">⭐ نجوم الأسبوع (من {dayLabel(week)})</h3>
       <div className="tw:flex tw:items-center tw:gap-2">
-        <span className="tw:w-16 tw:text-sm tw:font-bold">نجوم</span>
-        <Button type="button" size="icon" variant="secondary" aria-label="ناقص نص نجمة" disabled={disabled || stars <= 0} onClick={() => onChange(clampStars(stars - STAR_STEP))}>−</Button>
-        <span role="status" aria-label="النجوم الزيادة" className="tw:min-w-16 tw:flex-1 tw:text-center tw:text-lg tw:font-bold">
+        <Button type="button" size="icon" variant="secondary" aria-label="ناقص نص نجمة" disabled={!canEdit || stars <= 0} onClick={() => change(clampStars(stars - STAR_STEP))}>−</Button>
+        <span role="status" aria-label="نجوم الأسبوع" className="tw:min-w-16 tw:flex-1 tw:text-center tw:text-lg tw:font-bold">
           ⭐ {starsText(stars)}
         </span>
-        <Button type="button" size="icon" variant="secondary" aria-label="زوّد نص نجمة" disabled={disabled || stars >= MAX_STARS} onClick={() => onChange(clampStars(stars + STAR_STEP))}>+</Button>
+        <Button type="button" size="icon" variant="secondary" aria-label="زوّد نص نجمة" disabled={!canEdit || stars >= MAX_STARS} onClick={() => change(clampStars(stars + STAR_STEP))}>+</Button>
       </div>
-      <span className="tw:text-xs tw:text-dim">نجمة أو نص نجمة زيادة لليوم ده (ماتحسبش نقط، وبتظهر في عرض التشجيع)</span>
+      <span className="tw:text-xs tw:text-dim">نجمة أو نص نجمة زيادة للأسبوع كله (ماتحسبش نقط، وبتظهر في عرض التشجيع)</span>
+      {problem && <Alert onDismiss={() => setProblem(null)}>{problem}</Alert>}
+      {canEdit && (
+        <Button loading={save.isPending} disabled={stars === initial && !saved} onClick={() => void onSave()}>
+          حفظ نجوم الأسبوع
+        </Button>
+      )}
+      {saved && <p role="status" className="tw:text-center tw:text-sm tw:font-bold tw:text-ok">اتحفظ ✓</p>}
     </div>
   );
 };
@@ -84,7 +111,6 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
   const [fast, setFast] = useState(!!initial?.fast);
   const [gospel, setGospel] = useState(initial ? readGospel(initial) : false);
   const [confession, setConfession] = useState(initialConfession);
-  const [stars, setStars] = useState(clampStars(initial?.stars));
   const [saved, setSaved] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const save = useSaveNote();
@@ -103,8 +129,7 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
         childId: kid.id,
         day,
         month,
-        // `stars` is only sent when there are some (or there were, to take them back), so a day without stars is saved exactly as before
-        values: { prayerMorning: morning, prayerNight: night, mass, gospel, ...(fastDay ? { fast } : {}), ...(stars > 0 || clampStars(initial?.stars) > 0 ? { stars } : {}) },
+        values: { prayerMorning: morning, prayerNight: night, mass, gospel, ...(fastDay ? { fast } : {}) },
         confession,
         confessionChanged: confession !== initialConfession,
         by,
@@ -142,7 +167,6 @@ const DayForm: FC<DayFormProps> = ({ kid, day, initial, initialConfession, canEd
           <Toggle label="صام" on={fast} disabled={!canEdit} onToggle={() => change(() => setFast(!fast))} />
         </div>
       )}
-      <StarsGiver stars={stars} disabled={!canEdit} onChange={(value) => change(() => setStars(value))} />
       <div className="tw:flex tw:flex-col tw:gap-1">
         <div className="tw:flex tw:items-center tw:gap-2">
           <span className="tw:w-16 tw:text-sm tw:font-bold">الاعتراف</span>
@@ -172,6 +196,7 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
   const history = useKidHistory(kid.id, since);
   const { from, to } = rangeFor(day);
   const range = useKidRange(kid.id, from, to);
+  const starWeeks = useKidStarWeeks(kid.id, from, to);
   const written = (history.data ?? []).filter(didAnything);
   const points = useNotePoints();
 
@@ -180,7 +205,7 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
   const dayTotal = dayData.isSuccess ? dayPoints(dayData.data, points) : null;
   const weekTotal = rangeReady ? weekPoints(range.data, day, points) : null;
   const monthTotal = rangeReady ? monthPoints(range.data, day, confession.data === true, points) : null;
-  const starsTotal = range.isSuccess ? monthStars(range.data, day) : null;
+  const starsTotal = starWeeks.isSuccess ? monthStars(starWeeks.data, day) : null;
 
   let view = FileView.Data;
   if (dayData.isPending || confession.isPending) {
@@ -217,6 +242,8 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
           </button>
         ))}
       </div>
+      {starWeeks.isError && <p className="tw:text-xs tw:text-dim">{notesErrorMessage(starWeeks.error)}</p>}
+      {starWeeks.isSuccess && <WeekStarsBox key={weekStart(day)} kid={kid} week={weekStart(day)} initial={weekStarsOf(starWeeks.data, day)} canEdit={canEdit} by={by} from={from} to={to} />}
       <label className="tw:flex tw:flex-col tw:gap-1 tw:text-xs tw:text-dim">
         يوم تاني
         <Input type="date" max={today} value={day} onChange={(e) => e.target.value && e.target.value <= today && setDay(e.target.value)} />

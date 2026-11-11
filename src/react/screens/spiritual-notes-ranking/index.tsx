@@ -1,7 +1,7 @@
 import { useMemo, useState, type FC } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { notesErrorMessage } from '@/api/errors';
-import type { NoteDay } from '@/api/spiritual-notes';
+import type { WeekStars } from '@/api/spiritual-notes';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
@@ -22,8 +22,8 @@ export type SpiritualNotesRankingProps = {
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 /** The stars the servants gave each kid in the last 4 weeks (by kid id). */
-function starsOf(data: Record<string, { days: NoteDay[] }>, today: string): Record<string, number> {
-  return Object.fromEntries(Object.entries(data).map(([id, d]) => [id, monthStars(d.days, today)]));
+function starsOf(data: Record<string, { starWeeks?: WeekStars[] }>, today: string): Record<string, number> {
+  return Object.fromEntries(Object.entries(data).map(([id, d]) => [id, monthStars(d.starWeeks ?? [], today)]));
 }
 
 /**

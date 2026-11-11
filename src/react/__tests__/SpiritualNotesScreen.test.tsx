@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 
-const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchKidDaysBetween: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn(), fetchNotePoints: vi.fn(), saveNotePoints: vi.fn() }));
-vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchKidDaysBetween: h.fetchKidDaysBetween, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession, fetchNotePoints: h.fetchNotePoints, saveNotePoints: h.saveNotePoints }));
+const h = vi.hoisted(() => ({ fetchKidDay: vi.fn(), fetchKidDays: vi.fn(), fetchKidDaysBetween: vi.fn(), fetchConfession: vi.fn(), saveNoteDay: vi.fn(), saveConfession: vi.fn(), fetchNotePoints: vi.fn(), saveNotePoints: vi.fn(), fetchKidStarWeeks: vi.fn(), saveWeekStars: vi.fn() }));
+vi.mock('@/api/spiritual-notes', () => ({ fetchKidDay: h.fetchKidDay, fetchKidDays: h.fetchKidDays, fetchKidDaysBetween: h.fetchKidDaysBetween, fetchConfession: h.fetchConfession, saveNoteDay: h.saveNoteDay, saveConfession: h.saveConfession, fetchNotePoints: h.fetchNotePoints, saveNotePoints: h.saveNotePoints, fetchKidStarWeeks: h.fetchKidStarWeeks, saveWeekStars: h.saveWeekStars }));
 
 import SpiritualNotesScreen from '@/react/screens/spiritual-notes';
 
@@ -28,6 +28,8 @@ beforeEach(() => {
   h.saveConfession.mockResolvedValue(undefined);
   h.fetchNotePoints.mockResolvedValue(null); // never set: the default points
   h.saveNotePoints.mockImplementation(async ({ points }: { points: object }) => points);
+  h.fetchKidStarWeeks.mockResolvedValue([]);
+  h.saveWeekStars.mockImplementation(async ({ week, stars }: { week: string; stars: number }) => ({ week, stars }));
 });
 afterEach(() => vi.useRealTimers());
 
@@ -167,77 +169,99 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
   });
 });
 
-describe('SpiritualNotesScreen: the extra stars of a kid', () => {
-  const stars = () => screen.getByRole('status', { name: 'النجوم الزيادة' });
+describe('SpiritualNotesScreen: the extra stars of a kid (for the whole week)', () => {
+  // Friday 18/10/2030 is today: its week runs from Friday 18/10 to Thursday 24/10, the last 4 weeks from Friday 27/9
+  const stars = () => screen.findByRole('status', { name: 'نجوم الأسبوع' });
   const plus = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: 'زوّد نص نجمة' }));
+  const openStars = async (user: ReturnType<typeof userEvent.setup>) => {
+    await openKid(user);
+    return stars();
+  };
 
   it('gives a star or half a star at a time, from nothing up to six, and takes them back', async () => {
     const { user } = setup();
-    await openKid(user);
-    expect(stars()).toHaveTextContent('⭐ ٠');
+    expect(await openStars(user)).toHaveTextContent('⭐ ٠');
     expect(screen.getByRole('button', { name: 'ناقص نص نجمة' })).toBeDisabled();
     await plus(user);
-    expect(stars()).toHaveTextContent('⭐ ٠٫٥');
+    expect(await stars()).toHaveTextContent('⭐ ٠٫٥');
     await plus(user);
     await plus(user);
-    expect(stars()).toHaveTextContent('⭐ ١٫٥');
+    expect(await stars()).toHaveTextContent('⭐ ١٫٥');
     await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
-    expect(stars()).toHaveTextContent('⭐ ١');
+    expect(await stars()).toHaveTextContent('⭐ ١');
     for (let i = 0; i < 12; i += 1) {
       await plus(user);
     }
-    expect(stars()).toHaveTextContent('⭐ ٦');
+    expect(await stars()).toHaveTextContent('⭐ ٦');
     expect(screen.getByRole('button', { name: 'زوّد نص نجمة' })).toBeDisabled();
   });
 
-  it('saves the stars with the day, and a day without stars is saved exactly as before (no stars field)', async () => {
+  it('saves the stars for the WEEK (its Friday is the id), not for the day, with the servant name', async () => {
     const { user } = setup();
-    await openKid(user);
+    await openStars(user);
+    await plus(user);
+    await plus(user);
+    await plus(user);
+    await user.click(screen.getByRole('button', { name: 'حفظ نجوم الأسبوع' }));
+    await waitFor(() => expect(h.saveWeekStars).toHaveBeenCalledTimes(1));
+    expect(h.saveWeekStars).toHaveBeenCalledWith({ childId: 'k2', week: '2030-10-18', stars: 1.5, by: 'الخادم' });
+    expect(h.saveNoteDay).not.toHaveBeenCalled(); // the day was not saved: the stars are not a thing of the day
+  });
+
+  it('the same stars are there on every day of the week, and the saved day carries no stars', async () => {
+    h.fetchKidStarWeeks.mockResolvedValue([{ week: '2030-10-18', stars: 2 }]);
+    const { user } = setup();
+    expect(await openStars(user)).toHaveTextContent('⭐ ٢');
+    await user.click(screen.getByRole('button', { name: /الخميس 24-10/ }).closest('button') ?? screen.getByRole('button', { name: /الخميس 24-10/ }));
+    expect(await stars()).toHaveTextContent('⭐ ٢');
+    await user.click(screen.getByRole('button', { name: 'الأسبوع اللي فات' })); // the week before has none
+    expect(await stars()).toHaveTextContent('⭐ ٠');
     await user.click(screen.getByRole('button', { name: 'الصبح' }));
     await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
-    await screen.findByText('اتحفظ ✓');
-    expect(h.saveNoteDay.mock.calls[0]?.[0].values).not.toHaveProperty('stars');
-    await plus(user);
-    await plus(user);
-    await plus(user);
-    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
-    await waitFor(() => expect(h.saveNoteDay).toHaveBeenCalledTimes(2));
-    expect(h.saveNoteDay.mock.calls[1]?.[0].values).toMatchObject({ prayerMorning: true, stars: 1.5 });
-  });
-
-  it('shows the stars already saved for the day, and can take them all back (0 is saved, so the old ones do not stay)', async () => {
-    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', mass: true, stars: 1 });
-    const { user } = setup();
-    await openKid(user);
-    expect(stars()).toHaveTextContent('⭐ ١');
-    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
-    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
-    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
     await waitFor(() => expect(h.saveNoteDay).toHaveBeenCalled());
-    expect(h.saveNoteDay.mock.calls[0]?.[0].values).toMatchObject({ stars: 0 });
+    expect(h.saveNoteDay.mock.calls[0]?.[0].values).not.toHaveProperty('stars');
   });
 
-  it('shows the stars of the last 4 weeks above the file (at most six), and a day with only stars is in the last days', async () => {
-    h.fetchKidDaysBetween.mockResolvedValue([
-      { day: '2030-10-18', stars: 2 },
-      { day: '2030-10-05', stars: 1.5 },
-      { day: '2030-09-27', stars: 3 }, // the first day of the 4 weeks
-      { day: '2030-09-26', stars: 5 }, // before them: not counted
-    ]);
-    h.fetchKidDays.mockResolvedValue([{ day: '2030-10-18', stars: 2 }]);
+  it('takes all the stars back: 0 is saved, so the old ones do not stay', async () => {
+    h.fetchKidStarWeeks.mockResolvedValue([{ week: '2030-10-18', stars: 1 }]);
     const { user } = setup();
-    await openKid(user);
-    expect(await screen.findByLabelText('نجوم الشهر')).toHaveTextContent('٦ من ٦'); // 2 + 1.5 + 3 = 6.5, the card has six
-    expect(await screen.findByText('⭐ ٢')).toBeInTheDocument(); // the list of the last days
+    await openStars(user);
+    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
+    await user.click(screen.getByRole('button', { name: 'ناقص نص نجمة' }));
+    await user.click(screen.getByRole('button', { name: 'حفظ نجوم الأسبوع' }));
+    await waitFor(() => expect(h.saveWeekStars).toHaveBeenCalledWith({ childId: 'k2', week: '2030-10-18', stars: 0, by: 'الخادم' }));
   });
 
-  it('without the right to write the buttons are off', async () => {
-    h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', stars: 1 });
+  it('shows the stars of the last 4 weeks above the file, at most six', async () => {
+    h.fetchKidStarWeeks.mockResolvedValue([
+      { week: '2030-10-18', stars: 2 },
+      { week: '2030-10-04', stars: 1.5 },
+      { week: '2030-09-27', stars: 3 },
+    ]);
+    const { user } = setup();
+    await openStars(user);
+    expect(await screen.findByLabelText('نجوم الشهر')).toHaveTextContent('٦ من ٦'); // 6.5 added up, the card has six
+    expect(h.fetchKidStarWeeks).toHaveBeenCalledWith('k2', '2030-09-27', '2030-10-24');
+  });
+
+  it('a failed save shows a message and keeps the stars', async () => {
+    h.saveWeekStars.mockRejectedValue(new Error('x'));
+    const { user } = setup();
+    await openStars(user);
+    await plus(user);
+    await user.click(screen.getByRole('button', { name: 'حفظ نجوم الأسبوع' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(await stars()).toHaveTextContent('⭐ ٠٫٥');
+  });
+
+  it('without the right to write the buttons are off and there is no save button', async () => {
+    h.fetchKidStarWeeks.mockResolvedValue([{ week: '2030-10-18', stars: 1 }]);
     const { user } = setup({ canEdit: false });
-    await user.click(screen.getByRole('button', { name: /مينا/ })); // read only: there is no save button to wait for
-    await screen.findByRole('status', { name: 'النجوم الزيادة' });
+    await user.click(screen.getByRole('button', { name: /مينا/ }));
+    expect(await stars()).toHaveTextContent('⭐ ١');
     expect(screen.getByRole('button', { name: 'زوّد نص نجمة' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'ناقص نص نجمة' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'حفظ نجوم الأسبوع' })).not.toBeInTheDocument();
   });
 });
 

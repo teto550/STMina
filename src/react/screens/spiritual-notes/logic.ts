@@ -1,4 +1,4 @@
-import type { NoteDay } from '@/api/spiritual-notes';
+import type { NoteDay, WeekStars } from '@/api/spiritual-notes';
 import { DEFAULT_POINTS, type NotePoints } from '@/core/notes-points';
 
 const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربع', 'الخميس', 'الجمعة', 'السبت'];
@@ -77,34 +77,10 @@ export function readGospel(note: NoteDay): boolean {
   return typeof note.gospel === 'string' ? note.gospel.trim() !== '' : note.gospel === true;
 }
 
-/** Did the kid do anything that day (or get a star)? */
+/** Did the kid do anything that day? */
 export function didAnything(note: NoteDay): boolean {
-  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note) || (note.stars ?? 0) > 0);
+  return !!(note.prayerMorning || note.prayerNight || note.mass || note.fast || readGospel(note));
 }
-
-/** The stars of the kid's card: six, and the servant gives them in halves. */
-export const MAX_STARS = 6;
-export const STAR_STEP = 0.5;
-
-/** A number of stars made a whole or a half number between 0 and the six of the card (anything else, a missing value too, becomes the nearest of those). */
-export function clampStars(value: unknown): number {
-  const n = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  return Math.min(MAX_STARS, Math.max(0, Math.round(n / STAR_STEP) * STAR_STEP));
-}
-
-/** The stars given on the days of `notes` that fall from `from` to `to` (YYYY-MM-DD, included), added up (not capped: see monthStars). */
-export function starsBetween(notes: NoteDay[], from: string, to: string): number {
-  return notes.filter((n) => n.day >= from && n.day <= to).reduce((sum, n) => sum + clampStars(n.stars), 0);
-}
-
-/** The stars of the kid in the last 4 weeks (the same "month" as the points), at most the six of the card. The cheer show lights this many. */
-export function monthStars(notes: NoteDay[], day: string): number {
-  const { from, to } = monthRange(day);
-  return clampStars(starsBetween(notes, from, to));
-}
-
-/** "1" / "1.5" written in Arabic digits (١ / ١٫٥). */
-export const starsText = (stars: number): string => stars.toLocaleString('ar-EG');
 
 /** The points each thing started with (the admin can change them: see `useNotePoints`; every function below takes the ones to use and falls back to these). */
 export const POINTS = DEFAULT_POINTS;
@@ -148,6 +124,31 @@ export function monthPoints(notes: NoteDay[], day: string, confessed: boolean, p
   const { from, to } = monthRange(day);
   return pointsBetween(notes, from, to, points) + (confessed ? points.confession : 0);
 }
+
+/** The stars of the kid's card: six, and the servant gives them in halves. */
+export const MAX_STARS = 6;
+export const STAR_STEP = 0.5;
+
+/** A number of stars made a whole or a half number between 0 and the six of the card (anything else, a missing value too, becomes the nearest of those). */
+export function clampStars(value: unknown): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return Math.min(MAX_STARS, Math.max(0, Math.round(n / STAR_STEP) * STAR_STEP));
+}
+
+/** The stars given for the week of `day` (Friday to Thursday); 0 when none were given. */
+export function weekStarsOf(weeks: WeekStars[], day: string): number {
+  const start = weekStart(day);
+  return clampStars(weeks.find((w) => w.week === start)?.stars);
+}
+
+/** The stars of the kid in the last 4 weeks (the same "month" as the points): the stars of those weeks added up, at most the six of the card. The cheer show lights this many. */
+export function monthStars(weeks: WeekStars[], day: string): number {
+  const { from, to } = monthRange(day);
+  return clampStars(weeks.filter((w) => w.week >= from && w.week <= to).reduce((sum, w) => sum + clampStars(w.stars), 0));
+}
+
+/** "1" / "1.5" written in Arabic digits (١ / ١٫٥). */
+export const starsText = (stars: number): string => stars.toLocaleString('ar-EG');
 
 /** The first and the last day to read so that both the week and the month of `day` are covered (the month contains the week, at most 28 days). */
 export function rangeFor(day: string): { from: string; to: string } {
@@ -196,9 +197,6 @@ export function summaryOf(note: NoteDay): string {
   }
   if (readGospel(note)) {
     parts.push('الإنجيل');
-  }
-  if ((note.stars ?? 0) > 0) {
-    parts.push(`⭐ ${starsText(clampStars(note.stars))}`);
   }
   return parts.join(' · ');
 }

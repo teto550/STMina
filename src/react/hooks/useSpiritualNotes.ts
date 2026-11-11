@@ -1,6 +1,6 @@
 // The spiritual notes (النوتة الروحية) of one kid, as React Query hooks. Saving updates what is already held (no second read).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchConfession, fetchKidDay, fetchKidsMonthData, fetchKidDays, fetchKidDaysBetween, fetchNotePoints, saveConfession, saveNotePoints, saveNoteDay, type NoteDay, type NoteValues } from '@/api/spiritual-notes';
+import { fetchConfession, fetchKidDay, fetchKidsMonthData, fetchKidDays, fetchKidDaysBetween, fetchKidStarWeeks, fetchNotePoints, saveConfession, saveNotePoints, saveNoteDay, saveWeekStars, type NoteDay, type NoteValues, type WeekStars } from '@/api/spiritual-notes';
 import { cleanPoints, DEFAULT_POINTS, type NotePoints } from '@/core/notes-points';
 
 const MINUTE = 60 * 1000;
@@ -12,6 +12,7 @@ export const notesKeys = {
   history: (id: string, since: string) => ['spiritual-notes', 'history', id, since] as const,
   ranking: (ids: string, from: string, to: string, month: string) => ['spiritual-notes', 'ranking', ids, from, to, month] as const,
   range: (id: string, from: string, to: string) => ['spiritual-notes', 'range', id, from, to] as const,
+  starWeeks: (id: string, from: string, to: string) => ['spiritual-notes', 'star-weeks', id, from, to] as const,
 };
 
 /** The chosen day of a kid: `null` = nothing written that day. */
@@ -31,6 +32,24 @@ export function useKidHistory(id: string, since: string) {
 /** The days from `from` to `to` of a kid (covers the week and the month of the open day, for the points). */
 export function useKidRange(id: string, from: string, to: string) {
   return useQuery({ queryKey: notesKeys.range(id, from, to), queryFn: () => fetchKidDaysBetween(id, from, to), staleTime: MINUTE });
+}
+
+/** The stars the servant gave a kid for each week from `from` to `to` (the last 4 weeks of the open day). */
+export function useKidStarWeeks(id: string, from: string, to: string) {
+  return useQuery({ queryKey: notesKeys.starWeeks(id, from, to), queryFn: () => fetchKidStarWeeks(id, from, to), staleTime: MINUTE });
+}
+
+type SaveStarsInput = { childId: string; week: string; stars: number; by: string; from: string; to: string };
+
+/** Saves the stars of one week of a kid, and puts them in the weeks already held (no second read). */
+export function useSaveWeekStars() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ childId, week, stars, by }: SaveStarsInput) => saveWeekStars({ childId, week, stars, by }),
+    onSuccess: (saved, input) => {
+      client.setQueryData<WeekStars[]>(notesKeys.starWeeks(input.childId, input.from, input.to), (old = []) => [saved, ...old.filter((w) => w.week !== saved.week)]);
+    },
+  });
 }
 
 type SaveInput = { childId: string; day: string; month: string; values: NoteValues; confession: boolean; confessionChanged: boolean; by: string; since: string; from: string; to: string };

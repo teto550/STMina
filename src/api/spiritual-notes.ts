@@ -1,7 +1,8 @@
 // النوتة الروحية: what each kid did in his spiritual life, written by the servants. Plain functions (no React):
 // src/react/hooks/useSpiritualNotes.ts wraps them.
-//   spiritualNotes/{studentId}/days/{YYYY-MM-DD}   { day, prayerMorning, prayerNight, gospel, mass, fast?, stars?, updatedAt, updatedBy }
+//   spiritualNotes/{studentId}/days/{YYYY-MM-DD}   { day, prayerMorning, prayerNight, gospel, mass, fast?, updatedAt, updatedBy }
 //   spiritualNotes/{studentId}/months/{YYYY-MM}    { confession, updatedAt, updatedBy }
+//   spiritualNotes/{studentId}/weeks/{YYYY-MM-DD}   { week, stars, updatedAt, updatedBy }  (the id is the FRIDAY the week starts on; `stars` = the extra stars the servant gave for the whole week, in halves, 0 to 6)
 //   config/notes-points                            { points: { prayerMorning, prayerNight, gospel, mass, fast, confession }, updatedAt, updatedBy }  (every signed-in person reads, only an admin writes)
 // Errors are NOT swallowed here (unlike getDocsFast): a refusal by the rules must reach the screen, not look like "nothing written yet".
 import { collection, doc, documentId, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
@@ -16,8 +17,6 @@ export interface NoteValues {
   gospel: boolean;
   /** only on the fasting days (Wednesday and Friday); left out on the other days */
   fast?: boolean;
-  /** the extra stars the servant gave the kid that day, in halves (0, 0.5, 1 ... 6); left out when none. They do not count as points: the cheer show lights them on his six stars */
-  stars?: number;
 }
 
 export interface NoteDay extends Omit<Partial<NoteValues>, 'gospel'> {
@@ -63,17 +62,35 @@ export async function saveConfession({ childId, month, value, by }: { childId: s
   await setDoc(doc(db, 'spiritualNotes', childId, 'months', month), { confession: value, updatedAt: serverTimestamp(), updatedBy: by }, { merge: true });
 }
 
-export type KidMonthData = { days: NoteDay[]; confessed: boolean };
+/** The extra stars the servant gave a kid for one week (Friday to Thursday): `week` is the Friday it starts on, `stars` is in halves (0 to 6). They are not points: the cheer show lights them on the kid's six stars. */
+export interface WeekStars {
+  week: string;
+  stars: number;
+}
 
-/** For many kids at once: the days from `from` to `to` and whether each confessed in `month` (YYYY-MM). A few kids are read at a time; a failure reaches the caller. */
+/** The weeks whose Friday is from `from` to `to` (both YYYY-MM-DD, included) that have stars for one kid: one query for the last 4 weeks. */
+export async function fetchKidStarWeeks(childId: string, from: string, to: string): Promise<WeekStars[]> {
+  const snap = await getDocs(query(collection(db, 'spiritualNotes', childId, 'weeks'), where(documentId(), '>=', from), where(documentId(), '<=', to)));
+  return snap.docs.map((d) => ({ week: d.id, stars: Number((d.data() as { stars?: unknown }).stars) || 0 }));
+}
+
+/** Saves the stars of one week of one kid (`week` = the Friday it starts on). `by` is the servant who gave them. */
+export async function saveWeekStars({ childId, week, stars, by }: { childId: string; week: string; stars: number; by: string }): Promise<WeekStars> {
+  await setDoc(doc(db, 'spiritualNotes', childId, 'weeks', week), { week, stars, updatedAt: serverTimestamp(), updatedBy: by });
+  return { week, stars };
+}
+
+export type KidMonthData = { days: NoteDay[]; confessed: boolean; starWeeks: WeekStars[] };
+
+/** For many kids at once: the days from `from` to `to`, whether each confessed in `month` (YYYY-MM) and the stars of their weeks. A few kids are read at a time; a failure reaches the caller. */
 export async function fetchKidsMonthData(kidIds: string[], from: string, to: string, month: string): Promise<Record<string, KidMonthData>> {
   const out: Record<string, KidMonthData> = {};
   const AT_A_TIME = 8;
   for (let i = 0; i < kidIds.length; i += AT_A_TIME) {
     const chunk = kidIds.slice(i, i + AT_A_TIME);
-    const results = await Promise.all(chunk.map(async (id) => ({ id, days: await fetchKidDaysBetween(id, from, to), confessed: await fetchConfession(id, month) })));
+    const results = await Promise.all(chunk.map(async (id) => ({ id, days: await fetchKidDaysBetween(id, from, to), confessed: await fetchConfession(id, month), starWeeks: await fetchKidStarWeeks(id, from, to) })));
     for (const r of results) {
-      out[r.id] = { days: r.days, confessed: r.confessed };
+      out[r.id] = { days: r.days, confessed: r.confessed, starWeeks: r.starWeeks };
     }
   }
   return out;
