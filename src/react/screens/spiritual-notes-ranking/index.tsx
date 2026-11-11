@@ -6,6 +6,7 @@ import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
+import { KidFile, type KidRef } from '../spiritual-notes/KidFile';
 import { dateToStr, monthOf, monthRange, monthStars, rankKids } from '../spiritual-notes/logic';
 import { cheerSteps, type CheerStep } from './cheer';
 import { CheerShow } from './cheer-show';
@@ -15,8 +16,10 @@ import { PodiumShow } from './podium-show';
 export type SpiritualNotesRankingProps = {
   /** the kids to rank (the class, after the servant filter of the statistics); `photo` is the picture of his card, used by the winners show */
   kids: { id: string; name: string; photo?: string }[];
-  /** called when a kid is tapped (opens his profile) */
-  onOpenKid?: (id: string) => void;
+  /** may write the notes (a servant of the class, or an admin): the same as in the النوتة الروحية tab; without it the kid's file is only read */
+  canEdit?: boolean;
+  /** the servant who writes, kept on what he saves */
+  user?: { name: string };
 };
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -29,8 +32,9 @@ function starsOf(data: Record<string, { starWeeks?: WeekStars[] }>, today: strin
 /**
  * Statistics > النوتة الروحية: the kids that have points in the last 4 weeks (Friday to Thursday, this week included), from the first place to the
  * last. Kids with the same score share the same place. The points are the ones of the "نقط الشهر" box in each kid's file.
+ * Tapping a kid opens his file of the النوتة الروحية (the same one as in that tab, not his profile) in place of the list; the back arrow returns to the list, with the points read again.
  */
-const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid }) => {
+const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit = false, user }) => {
   const today = useMemo(() => dateToStr(new Date()), []);
   const { from, to } = monthRange(today);
   const ids = useMemo(() => kids.map((k) => k.id), [kids]);
@@ -42,7 +46,15 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
   const [showing, setShowing] = useState(false);
   // the cheer show has no order: its kids are shuffled when the servant opens it, so every time is a different show
   const [cheer, setCheer] = useState<CheerStep[] | null>(null);
+  const [open, setOpen] = useState<KidRef | null>(null);
 
+  if (open) {
+    const back = () => {
+      setOpen(null);
+      void data.refetch(); // what was written in his file changes the points and the stars of the list
+    };
+    return <KidFile key={open.id} kid={open} canEdit={canEdit} by={user?.name ?? ''} onBack={back} />;
+  }
   return (
     <section aria-label="ترتيب النوتة الروحية" className="tw:flex tw:flex-col tw:gap-3">
       <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">
@@ -63,7 +75,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, onOpenKid
       <ol className="tw:flex tw:flex-col tw:gap-2">
         {ranked.map((k) => (
           <li key={k.id}>
-            <button type="button" onClick={() => onOpenKid?.(k.id)} className="tw:flex tw:min-h-12 tw:w-full tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:px-4 tw:py-2 tw:text-start">
+            <button type="button" onClick={() => setOpen({ id: k.id, name: k.name })} className="tw:flex tw:min-h-12 tw:w-full tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-card tw:border tw:border-line tw:bg-surface tw:px-4 tw:py-2 tw:text-start">
               <span className="tw:w-8 tw:text-center tw:text-base tw:font-bold" aria-label={`المركز ${k.rank}`}>{MEDALS[k.rank - 1] ?? k.rank}</span>
               <span className="tw:flex-1 tw:text-base tw:font-bold">{k.name}</span>
               <span className="tw:flex tw:flex-col tw:items-end">

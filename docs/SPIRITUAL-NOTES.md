@@ -64,3 +64,6 @@ until it reaches the top, then the kid's picture lands there with his name above
   (`rx-star-in`: it spins and grows in with a flash) and then stays a plain star (no beat, no glow, no sparks). A kid without stars keeps the six dim ones.
   Code: `src/react/screens/spiritual-notes-ranking/cheer.ts` (the random order, the closing line `CHEER_CLOSING`), `cheer-show/` (the screens, `StarRow.tsx` the stars),
   `src/react/hooks/useCheerShow.ts` (the timer and the sounds, the same sounds as the winners show).
+- **From the statistics:** in statistics > النوتة الروحية, tapping a kid in the ranking opens **his file of the النوتة الروحية** (the same `KidFile` as in the notes tab, with the same rights: `canEdit` = a servant of the open class, an admin any class)
+  in place of the list, and not his profile. The back arrow returns to the ranking, which reads the points again (what was written in the file changes the points and the stars).
+

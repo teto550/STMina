@@ -1,10 +1,20 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
 
-const h = vi.hoisted(() => ({ fetchKidsMonthData: vi.fn(), fetchNotePoints: vi.fn() }));
-vi.mock('@/api/spiritual-notes', () => ({ fetchKidsMonthData: h.fetchKidsMonthData, fetchNotePoints: h.fetchNotePoints }));
+const h = vi.hoisted(() => ({
+  fetchKidsMonthData: vi.fn(),
+  fetchNotePoints: vi.fn(),
+  // what a kid's file reads and writes (it opens in place of the list when a kid is tapped)
+  fetchKidDay: vi.fn(),
+  fetchKidDays: vi.fn(),
+  fetchKidDaysBetween: vi.fn(),
+  fetchConfession: vi.fn(),
+  fetchKidStarWeeks: vi.fn(),
+  saveNoteDay: vi.fn(),
+}));
+vi.mock('@/api/spiritual-notes', () => ({ ...h }));
 vi.mock('@/react/lib/podium-sounds', () => ({
   createPodiumSounds: () => ({ unlock: vi.fn(), drumroll: vi.fn(), reveal: vi.fn(), jingle: vi.fn(), music: vi.fn(), stop: vi.fn(), shutdown: vi.fn(), setMuted: vi.fn() }),
 }));
@@ -23,6 +33,12 @@ beforeEach(() => {
   h.fetchKidsMonthData.mockReset();
   h.fetchNotePoints.mockReset();
   h.fetchNotePoints.mockResolvedValue(null); // never set: the default points
+  h.fetchKidDay.mockReset().mockResolvedValue(null);
+  h.fetchKidDays.mockReset().mockResolvedValue([]);
+  h.fetchKidDaysBetween.mockReset().mockResolvedValue([]);
+  h.fetchConfession.mockReset().mockResolvedValue(false);
+  h.fetchKidStarWeeks.mockReset().mockResolvedValue([]);
+  h.saveNoteDay.mockReset().mockImplementation(async ({ day, values }: { day: string; values: object }) => ({ day, ...values }));
   h.fetchKidsMonthData.mockResolvedValue({
     k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false }, // 60
     k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false }, // 40
@@ -119,5 +135,49 @@ describe('SpiritualNotesRanking: the عرض التشجيع button', () => {
       await user.click(screen.getByRole('button', { name: 'التالي' }));
     }
     expect(seen.sort()).toEqual(['النجوم لسه مطفية', '٣٫٥ من ٦ نجوم', '٦ من ٦ نجوم'].sort());
+  });
+});
+
+describe('SpiritualNotesRanking: tapping a kid', () => {
+  it('opens his file of the النوتة الروحية in place of the list (not his profile)', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} canEdit user={{ name: 'الخادم' }} />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /بيتر/ }));
+    expect(await screen.findByRole('region', { name: 'ملف بيتر' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'بيتر — النوتة الروحية' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'حفظ اليوم' })).toBeInTheDocument();
+    expect(h.fetchKidDay).toHaveBeenCalledWith('k1', '2030-10-18');
+    expect(screen.queryByRole('region', { name: 'ترتيب النوتة الروحية' })).not.toBeInTheDocument(); // the ranking is not on the screen while the file is open
+  });
+
+  it('the back arrow returns to the ranking and reads the points again (what was written changes them)', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} canEdit user={{ name: 'الخادم' }} />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /مارك/ }));
+    await screen.findByRole('region', { name: 'ملف مارك' });
+    const reads = h.fetchKidsMonthData.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: 'رجوع' }));
+    expect(await screen.findByRole('region', { name: 'ترتيب النوتة الروحية' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^🏆/ })).toBeInTheDocument();
+    await waitFor(() => expect(h.fetchKidsMonthData.mock.calls.length).toBeGreaterThan(reads));
+  });
+
+  it('the servant who writes is the one of the screen, and a day is saved from here like in the tab', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} canEdit user={{ name: 'الخادم' }} />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /مينا/ }));
+    await user.click(await screen.findByRole('button', { name: 'الصبح' }));
+    await user.click(screen.getByRole('button', { name: 'حفظ اليوم' }));
+    await waitFor(() => expect(h.saveNoteDay).toHaveBeenCalledTimes(1));
+    expect(h.saveNoteDay.mock.calls[0]?.[0]).toMatchObject({ childId: 'k3', day: '2030-10-18', by: 'الخادم' });
+  });
+
+  it('without the right to write the file is only read: there is no save button', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /بيتر/ }));
+    await screen.findByRole('region', { name: 'ملف بيتر' });
+    await waitFor(() => expect(h.fetchKidDay).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'حفظ اليوم' })).not.toBeInTheDocument();
   });
 });

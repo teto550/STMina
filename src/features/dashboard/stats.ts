@@ -8,6 +8,7 @@ import { db } from '@/core/firebase';
 import { logActivity } from '@/core/presence';
 import { hasSpiritualNotes } from '@/core/notes-access';
 import { sectionTag } from '@/core/section';
+import { canManageGrade } from '@/core/session';
 
 // ===== STATS TAB =====
 let currentStatsSubtab = 'attendance';
@@ -132,7 +133,9 @@ function renderNotesStats() {
   const list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : state.allStudents;
   window.openReactScreen('spiritual-notes-ranking', document.getElementById('stats-panel-notes'), {
     kids: list.map(s => ({ id: s.id, name: s.name || '', photo: s.photo || '' })),
-    onOpenKid: (id) => window.openProfile(id)
+    // tapping a kid opens his file of the النوتة الروحية (not his profile); who may write is the same as in the notes tab
+    canEdit: canManageGrade(state.activeGrade),
+    user: { name: state.currentUserName }
   });
 }
 
