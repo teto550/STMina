@@ -99,7 +99,7 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [], confessed: false } });
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
     expect(screen.queryByRole('button', { name: /عرض/ })).not.toBeInTheDocument();
-    expect(await screen.findByText('لسه مفيش حد عنده نقط في آخر ٤ أسابيع')).toBeInTheDocument();
+    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٤ أسابيع')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /عرض/ })).not.toBeInTheDocument();
   });
 
@@ -119,8 +119,22 @@ describe('SpiritualNotesRanking: one show only', () => {
   it('there is no show while nobody has stars, even if kids have points', async () => {
     h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [mass('2030-10-18')], confessed: false, starWeeks: [] } });
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    await screen.findByText('بيتر');
+    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٤ أسابيع')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^🏆/ })).not.toBeInTheDocument();
+  });
+
+  it('the list has the same ranking as the show: by stars, the same places, the next place not skipped', async () => {
+    h.fetchKidsMonthData.mockResolvedValue({
+      k1: { days: [], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 4 }] },
+      k2: { days: [mass('2030-10-18')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 4 }] },
+      k3: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 3.5 }] },
+      k4: { days: [mass('2030-10-18')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 3 }] },
+    });
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    const items = await screen.findAllByRole('listitem');
+    expect(items.map((li) => li.querySelector('[aria-label^="المركز"]')?.getAttribute('aria-label'))).toEqual(['المركز 1', 'المركز 1', 'المركز 2', 'المركز 3']);
+    expect(items[0]).toHaveTextContent('⭐ ٤ نجمة');
+    expect(items[2]).toHaveTextContent('⭐ ٣٫٥ نجمة');
   });
 });
 

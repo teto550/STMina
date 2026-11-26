@@ -6,7 +6,7 @@ import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
 import { KidFile, type KidRef } from '../spiritual-notes/KidFile';
-import { dateToStr, monthOf, monthRange, rankKids, rankKidsByStars } from '../spiritual-notes/logic';
+import { dateToStr, monthOf, monthRange, rankKids, rankKidsByStars, starsText } from '../spiritual-notes/logic';
 import { podiumSteps } from './podium';
 import { PodiumShow } from './podium-show';
 
@@ -22,8 +22,9 @@ export type SpiritualNotesRankingProps = {
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 /**
- * Statistics > النوتة الروحية: the kids that have points in the last 4 weeks (Friday to Thursday, this week included), from the first place to the
- * last. The one 🏆 عرض button opens the show, whose places go by the STARS of the same 4 weeks (first place first), not by the points. Kids with the same score share the same place. The points are the ones of the "نقط الشهر" box in each kid's file.
+ * Statistics > النوتة الروحية: the kids that have stars in the last 4 weeks (Friday to Thursday, this week included), from the first place to the
+ * last. Kids with the same stars share the same place and the next place is not skipped. The points of the "نقط الشهر" box are only shown under the stars.
+ * The one 🏆 عرض button opens the show, with the same ranking (first place first). The points are the ones of the "نقط الشهر" box in each kid's file.
  * Tapping a kid opens his file of the النوتة الروحية (the same one as in that tab, not his profile) in place of the list; the back arrow returns to the list, with the points read again.
  */
 const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit = false, user }) => {
@@ -32,10 +33,13 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
   const ids = useMemo(() => kids.map((k) => k.id), [kids]);
   const data = useKidsMonthData(ids, from, to, monthOf(today));
   const points = useNotePoints();
-  const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today, points) : []), [kids, data.data, today, points]);
+  // the points of each kid (the small line under his stars in the list)
+  const monthPointsOf = useMemo(() => Object.fromEntries((data.data ? rankKids(kids, data.data, today, points) : []).map((k) => [k.id, k.month])), [kids, data.data, today, points]);
+  // the list and the show have ONE ranking: by the stars of the last 4 weeks (kids with the same stars share a place, the next place is not skipped)
+  const ranked = useMemo(() => (data.data ? rankKidsByStars(kids, data.data, today) : []), [kids, data.data, today]);
   const photos = useMemo(() => Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? ''])), [kids]);
-  // the one show: the kids that have stars in the last 4 weeks, announced from the first place down to the last
-  const steps = useMemo(() => podiumSteps(data.data ? rankKidsByStars(kids, data.data, today) : [], photos), [kids, data.data, today, photos]);
+  // the one show: the same ranking as the list, announced from the first place down to the last
+  const steps = useMemo(() => podiumSteps(ranked, photos), [ranked, photos]);
   const [showing, setShowing] = useState(false);
   const [open, setOpen] = useState<KidRef | null>(null);
 
@@ -49,7 +53,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
   return (
     <section aria-label="ترتيب النوتة الروحية" className="tw:flex tw:flex-col tw:gap-3">
       <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">
-        <p className="tw:text-sm tw:font-bold">الترتيب حسب نقط آخر ٤ أسابيع</p>
+        <p className="tw:text-sm tw:font-bold">الترتيب حسب نجوم آخر ٤ أسابيع</p>
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
           {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
@@ -61,7 +65,7 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
       {kids.length === 0 && <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">مفيش مخدومين</p>}
       {kids.length > 0 && data.isPending && <Spinner label="جاري تحميل النقط…" />}
       {data.isError && <Alert action={<Button size="sm" onClick={() => void data.refetch()}>حاول تاني</Button>}>{notesErrorMessage(data.error)}</Alert>}
-      {data.isSuccess && ranked.length === 0 && <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">لسه مفيش حد عنده نقط في آخر ٤ أسابيع</p>}
+      {data.isSuccess && ranked.length === 0 && <p className="tw:py-8 tw:text-center tw:text-sm tw:text-dim">لسه مفيش حد عنده نجوم في آخر ٤ أسابيع</p>}
       <ol className="tw:flex tw:flex-col tw:gap-2">
         {ranked.map((k) => (
           <li key={k.id}>
@@ -69,8 +73,8 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
               <span className="tw:w-8 tw:text-center tw:text-base tw:font-bold" aria-label={`المركز ${k.rank}`}>{MEDALS[k.rank - 1] ?? k.rank}</span>
               <span className="tw:flex-1 tw:text-base tw:font-bold">{k.name}</span>
               <span className="tw:flex tw:flex-col tw:items-end">
-                <span className="tw:text-sm tw:font-bold">{k.month} نقطة</span>
-                <span className="tw:text-xs tw:text-dim">الأسبوع: {k.week}</span>
+                <span className="tw:text-sm tw:font-bold">⭐ {starsText(k.stars)} نجمة</span>
+                <span className="tw:text-xs tw:text-dim">النقط: {monthPointsOf[k.id] ?? 0}</span>
               </span>
             </button>
           </li>
