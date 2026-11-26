@@ -1,5 +1,6 @@
 import type { CSSProperties, FC } from 'react';
 import { cheerOf, delayed, lookOf, shortName, type PodiumPlace, type PodiumStep } from '../podium';
+import { starsText } from '../../spiritual-notes/logic';
 import { Burst } from './Burst';
 import { Confetti } from './Confetti';
 import { KidPhoto } from './KidPhoto';
@@ -78,7 +79,7 @@ export const ClimbPodium: FC<ClimbPodiumProps> = ({ place, seconds, again = fals
         {step && (
           <div className={`rx-pop tw:mt-3 tw:box-border tw:rounded-2xl tw:bg-linear-to-b ${look.card} ${look.ink} tw:px-3 tw:py-2 tw:shadow-2xl`} style={delayed(0.35)}>
             <span className="tw:block tw:text-2xl tw:leading-tight tw:font-black tw:md:text-4xl">{name}</span>
-            <span className="tw:block tw:text-base tw:font-bold">⭐ {step.kid.month} نقطة</span>
+            <span className="tw:block tw:text-base tw:font-bold">⭐ {starsText(step.kid.stars)} نجمة</span>
           </div>
         )}
       </div>

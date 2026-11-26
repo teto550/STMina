@@ -1,4 +1,4 @@
-import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, rankKids, summaryOf, clampStars, monthStars, weekStarsOf, starsText } from '@/react/screens/spiritual-notes/logic';
+import { dayPoints, monthPoints, monthRange, pointsBetween, rangeFor, readGospel, weekPoints, addDays, weekDays, weekStart, dayLabel, didAnything, filterKids, isFastDay, lastDays, monthOf, normalizeName, rankKids, rankKidsByStars, summaryOf, clampStars, monthStars, weekStarsOf, starsText } from '@/react/screens/spiritual-notes/logic';
 
 describe('spiritual notes: the days', () => {
   it('lastDays gives today first and the days before it, across a month change', () => {
@@ -185,5 +185,33 @@ describe('spiritual notes: the stars the servant gives for a week', () => {
   it('starsText writes halves in Arabic digits', () => {
     expect(starsText(2.5)).toBe('٢٫٥');
     expect(starsText(6)).toBe('٦');
+  });
+});
+
+describe('rankKidsByStars', () => {
+  const kids = [{ id: 'a', name: 'بيتر' }, { id: 'b', name: 'مارك' }, { id: 'c', name: 'مينا' }, { id: 'd', name: 'يوسف' }];
+  const today = '2030-10-18';
+
+  it('ranks by the stars of the last 4 weeks, the most first; kids with no stars are left out', () => {
+    const ranked = rankKidsByStars(kids, {
+      a: { starWeeks: [{ week: '2030-10-18', stars: 2 }] },
+      b: { starWeeks: [{ week: '2030-10-18', stars: 3 }, { week: '2030-10-11', stars: 1.5 }] },
+      c: { starWeeks: [] },
+    }, today);
+    expect(ranked.map((k) => [k.id, k.rank, k.stars])).toEqual([['b', 1, 4.5], ['a', 2, 2]]);
+  });
+
+  it('kids with the same stars share the place and the next one is skipped (1, 1, 3), by name inside a place', () => {
+    const ranked = rankKidsByStars(kids, {
+      a: { starWeeks: [{ week: '2030-10-18', stars: 4 }] },
+      b: { starWeeks: [{ week: '2030-10-18', stars: 4 }] },
+      c: { starWeeks: [{ week: '2030-10-18', stars: 1 }] },
+    }, today);
+    expect(ranked.map((k) => [k.name, k.rank])).toEqual([['بيتر', 1], ['مارك', 1], ['مينا', 3]]);
+  });
+
+  it('ignores the weeks outside the last 4 weeks, and works with no data at all', () => {
+    expect(rankKidsByStars(kids, { a: { starWeeks: [{ week: '2030-08-02', stars: 5 }] } }, today)).toEqual([]);
+    expect(rankKidsByStars(kids, {}, today)).toEqual([]);
   });
 });

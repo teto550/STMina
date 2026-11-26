@@ -180,6 +180,28 @@ export function rankKids(kids: { id: string; name: string }[], data: Record<stri
   });
 }
 
+export type StarRankedKid = { id: string; name: string; rank: number; stars: number };
+
+/**
+ * The kids that have stars in the last 4 weeks (the stars of the kid's card, see monthStars), from the first place to the last: the show uses this order.
+ * Kids with the same stars share the same place (1, 1, 3), and are listed by name inside a place. Kids with no stars are left out.
+ */
+export function rankKidsByStars(kids: { id: string; name: string }[], data: Record<string, { starWeeks?: WeekStars[] }>, today: string): StarRankedKid[] {
+  const scored = kids
+    .map((k) => ({ id: k.id, name: k.name, stars: monthStars(data[k.id]?.starWeeks ?? [], today) }))
+    .filter((k) => k.stars > 0)
+    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name, 'ar'));
+  let place = 0;
+  let previous: number | null = null;
+  return scored.map((k, i) => {
+    if (k.stars !== previous) {
+      place = i + 1;
+      previous = k.stars;
+    }
+    return { ...k, rank: place };
+  });
+}
+
 /** "الصبح · بليل · القداس · صام" (what was done that day) */
 export function summaryOf(note: NoteDay): string {
   const parts: string[] = [];

@@ -40,9 +40,9 @@ beforeEach(() => {
   h.fetchKidStarWeeks.mockReset().mockResolvedValue([]);
   h.saveNoteDay.mockReset().mockImplementation(async ({ day, values }: { day: string; values: object }) => ({ day, ...values }));
   h.fetchKidsMonthData.mockResolvedValue({
-    k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false }, // 60
-    k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false }, // 40
-    k3: { days: [mass('2030-10-18')], confessed: false }, // 20
+    k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 2 }, { week: '2030-10-04', stars: 1 }] }, // 60 points, 3 stars
+    k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 3 }, { week: '2030-10-11', stars: 2 }] }, // 40 points, 5 stars: the first place of the show
+    k3: { days: [mass('2030-10-18')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 1.5 }] }, // 20 points, 1.5 stars
     k4: { days: [], confessed: false }, // nothing: not ranked
   });
 });
@@ -60,16 +60,38 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('the show announces the ranking of the list: third place is مينا, with his first two names and the photo of his card', async () => {
+  it('the show goes by the STARS, from the first place down: مارك (5 stars) comes first even though بيتر has more points', async () => {
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.click(await screen.findByRole('button', { name: /^🏆/ }));
     await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
     const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
+    expect(dialog).toHaveTextContent('المركز الأول');
+    expect(dialog).toHaveTextContent('مارك');
+    expect(dialog).toHaveTextContent('⭐ ٥ نجمة');
+    expect(dialog).not.toHaveTextContent('نقطة');
+  });
+
+  it('then the second place (بيتر, 3 stars) and the third (مينا, 1.5 stars, with his first two names and the photo of his card)', async () => {
+    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: /^🏆/ }));
+    await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
+    const next = () => user.click(screen.getByRole('button', { name: 'التالي' }));
+    await next(); // the first place
+    await next(); // the drum roll before the second
+    await next();
+    const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
+    expect(dialog).toHaveTextContent('المركز التاني');
+    expect(dialog).toHaveTextContent('بيتر');
+    expect(dialog).toHaveTextContent('⭐ ٣ نجمة');
+    await next();
+    await next();
+    expect(dialog).toHaveTextContent('المركز التالت');
     expect(dialog).toHaveTextContent('مينا سامح');
     expect(dialog).not.toHaveTextContent('عادل');
-    expect(dialog).toHaveTextContent('⭐ 20 نقطة');
+    expect(dialog).toHaveTextContent('⭐ ١٫٥ نجمة');
     expect(screen.getByRole('img', { name: 'مينا سامح' }).querySelector('img')).toHaveAttribute('src', PHOTO);
   });
 
@@ -87,54 +109,18 @@ describe('SpiritualNotesRanking: the عرض button', () => {
   });
 });
 
-describe('SpiritualNotesRanking: the عرض التشجيع button', () => {
-  it('opens the cheer show for the kids that have points (not the one without), with no places or points on the screen', async () => {
+describe('SpiritualNotesRanking: one show only', () => {
+  it('has no عرض التشجيع button any more', async () => {
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    await user.click(await screen.findByRole('button', { name: /عرض التشجيع/ }));
-    const dialog = screen.getByRole('dialog', { name: 'عرض التشجيع' });
-    expect(dialog).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /يلا نبدأ/ })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
-    await user.click(screen.getByRole('button', { name: 'التالي' }));
-    await user.click(screen.getByRole('button', { name: 'التالي' }));
-    await user.click(screen.getByRole('button', { name: 'التالي' }));
-    // the last screen has the three kids that have points together, and not the kid without points
-    expect(dialog).toHaveTextContent('بيتر');
-    expect(dialog).toHaveTextContent('مارك');
-    expect(dialog).toHaveTextContent('مينا سامح');
-    expect(dialog).not.toHaveTextContent('يوسف');
-    expect(dialog).not.toHaveTextContent('نقطة');
-    expect(dialog).not.toHaveTextContent('المركز');
-    await user.click(screen.getAllByRole('button', { name: 'إغلاق' })[0]!);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('is not there while loading, or when nobody has points', async () => {
-    h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [], confessed: false } });
-    renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    expect(screen.queryByRole('button', { name: /عرض التشجيع/ })).not.toBeInTheDocument();
-    expect(await screen.findByText('لسه مفيش حد عنده نقط في آخر ٤ أسابيع')).toBeInTheDocument();
+    await screen.findByRole('button', { name: /^🏆/ });
     expect(screen.queryByRole('button', { name: /عرض التشجيع/ })).not.toBeInTheDocument();
   });
 
-  it('lights the stars the servant gave for the weeks of the last 4 weeks (at most six) on each kid, and none on a kid without', async () => {
-    h.fetchKidsMonthData.mockResolvedValue({
-      k1: { days: [mass('2030-10-18'), mass('2030-10-17'), mass('2030-10-11')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 2 }, { week: '2030-10-04', stars: 1.5 }] }, // 3.5
-      k2: { days: [mass('2030-10-18'), mass('2030-10-17')], confessed: false, starWeeks: [{ week: '2030-10-18', stars: 5 }, { week: '2030-10-11', stars: 4 }] }, // 9: six
-      k3: { days: [mass('2030-10-18')], confessed: false }, // none
-      k4: { days: [], confessed: false },
-    });
+  it('there is no show while nobody has stars, even if kids have points', async () => {
+    h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [mass('2030-10-18')], confessed: false, starWeeks: [] } });
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    await user.click(await screen.findByRole('button', { name: /عرض التشجيع/ }));
-    await user.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
-    const seen: string[] = [];
-    for (let i = 0; i < 3; i += 1) {
-      seen.push(screen.getByRole('img', { name: /نجوم|مطفية/ }).getAttribute('aria-label') ?? '');
-      await user.click(screen.getByRole('button', { name: 'التالي' }));
-    }
-    expect(seen.sort()).toEqual(['النجوم لسه مطفية', '٣٫٥ من ٦ نجوم', '٦ من ٦ نجوم'].sort());
+    await screen.findByText('بيتر');
+    expect(screen.queryByRole('button', { name: /^🏆/ })).not.toBeInTheDocument();
   });
 });
 

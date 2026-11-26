@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { delayed, PLACES, PODIUM_ORDER, shortName, type PodiumStep } from '../podium';
+import { starsText } from '../../spiritual-notes/logic';
 import { Confetti } from './Confetti';
 import { KidPhoto } from './KidPhoto';
 
@@ -36,7 +37,7 @@ export const FinalView: FC<FinalViewProps> = ({ steps, onReplay, onClose }) => {
                     </div>
                   ))}
                 </div>
-                <span className="tw:text-sm tw:font-bold tw:text-white/80">⭐ {g.kids[0]?.kid.month} نقطة</span>
+                <span className="tw:text-sm tw:font-bold tw:text-white/80">⭐ {starsText(g.kids[0]?.kid.stars ?? 0)} نجمة</span>
               </div>
               <div className={`rx-grow tw:flex tw:w-full tw:items-center tw:justify-center tw:rounded-t-2xl tw:bg-linear-to-b ${look.card} ${look.block} tw:text-5xl`} style={delayed(i * 0.2)} aria-label={look.label}>
                 {look.medal}

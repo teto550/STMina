@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { cheerOf, delayed, isTop, lookOf, shortName, type PodiumStep } from '../podium';
+import { starsText } from '../../spiritual-notes/logic';
 import { Burst } from './Burst';
 import { ClimbPodium } from './ClimbPodium';
 import { Confetti } from './Confetti';
@@ -41,7 +42,7 @@ export const RevealView: FC<RevealViewProps> = ({ step }) => {
       <p className="rx-pop tw:mt-2 tw:rounded-full tw:bg-white/15 tw:px-6 tw:py-1 tw:text-2xl tw:font-bold" style={delayed(0.25)}>{look.label}</p>
       <div className={`rx-pop tw:box-border tw:w-full tw:rounded-3xl tw:bg-linear-to-b ${look.card} ${look.ink} tw:px-6 tw:py-5 tw:shadow-2xl`} style={delayed(0.4)}>
         <span className="tw:block tw:text-4xl tw:font-black tw:md:text-6xl">{name}</span>
-        <span className="tw:mt-1 tw:block tw:text-xl tw:font-bold">⭐ {step.kid.month} نقطة</span>
+        <span className="tw:mt-1 tw:block tw:text-xl tw:font-bold">⭐ {starsText(step.kid.stars)} نجمة</span>
       </div>
       <p className="rx-pop rx-wiggle tw:text-3xl tw:font-black tw:text-amber-200 tw:drop-shadow-lg" style={delayed(0.7)}>{cheerOf(step.place, step.face)}</p>
     </div>

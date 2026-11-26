@@ -19,9 +19,9 @@ import { PodiumShow } from '@/react/screens/spiritual-notes-ranking/podium-show'
 import { faceOf, type PodiumStep } from '@/react/screens/spiritual-notes-ranking/podium';
 
 /** One step of the show: one kid in his place (`face` is also the number of his step). */
-const step = (place: number, face: number, id: string, name: string, month: number, extra: Partial<PodiumStep> = {}): PodiumStep => ({
+const step = (place: number, face: number, id: string, name: string, stars: number, extra: Partial<PodiumStep> = {}): PodiumStep => ({
   place,
-  kid: { id, name, rank: place, month, week: 0 },
+  kid: { id, name, rank: place, stars },
   photo: '',
   again: false,
   face,
@@ -29,9 +29,9 @@ const step = (place: number, face: number, id: string, name: string, month: numb
 });
 
 const full: PodiumStep[] = [
-  step(3, 0, 'c', 'مينا سامح عادل', 50),
-  step(2, 1, 'b', 'مارك عادل فوزي', 70),
-  step(1, 2, 'a', 'بيتر ماهر جرجس', 90, { photo: 'data:image/png;base64,AAA' }),
+  step(3, 0, 'c', 'مينا سامح عادل', 3),
+  step(2, 1, 'b', 'مارك عادل فوزي', 4),
+  step(1, 2, 'a', 'بيتر ماهر جرجس', 5, { photo: 'data:image/png;base64,AAA' }),
 ];
 
 const wait = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
@@ -114,7 +114,7 @@ describe('PodiumShow: automatic or by hand', () => {
 });
 
 describe('PodiumShow: the places under the third, and the round podium', () => {
-  const longShow: PodiumStep[] = [step(5, 0, 'e', 'يوسف مراد حنا', 20), step(4, 1, 'd', 'كيرلس أمير نبيل', 30, { photo: 'data:image/png;base64,BBB' }), ...full.map((st, i) => ({ ...st, face: i + 2 }))];
+  const longShow: PodiumStep[] = [step(5, 0, 'e', 'يوسف مراد حنا', 1), step(4, 1, 'd', 'كيرلس أمير نبيل', 2, { photo: 'data:image/png;base64,BBB' }), ...full.map((st, i) => ({ ...st, face: i + 2 }))];
 
   it('starts from the last place, with his picture, and goes up place by place to the first', () => {
     setup(longShow);
@@ -173,7 +173,7 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
     expect(words.nextElementSibling).toBe(screen.getByTestId('climb-podium'));
     expect(words).toHaveTextContent('المركز التالت');
     expect(words).toHaveTextContent('مينا سامح');
-    expect(words).toHaveTextContent('⭐ 50 نقطة');
+    expect(words).toHaveTextContent('⭐ ٣ نجمة');
     expect(screen.getByRole('img', { name: 'مينا سامح' }).closest('[data-testid="climb-text"]')).toBeNull(); // the picture is on the podium, not in the words
   });
 
@@ -204,7 +204,7 @@ describe('PodiumShow', () => {
     wait(PODIUM_TIMES.suspense[3]);
     expect(screen.getByText('مينا سامح')).toBeInTheDocument();
     expect(screen.queryByText(/عادل/)).not.toBeInTheDocument(); // the third name is never shown
-    expect(screen.getByText('⭐ 50 نقطة')).toBeInTheDocument();
+    expect(screen.getByText('⭐ ٣ نجمة')).toBeInTheDocument();
     expect(sounds.reveal).toHaveBeenLastCalledWith(3, 0);
 
     // second
@@ -247,7 +247,7 @@ describe('PodiumShow', () => {
   });
 
   it('draws the cartoon face when the photo does not load', () => {
-    setup([step(1, 4, 'a', 'بيتر ماهر', 90, { photo: 'https://example.invalid/broken.png' })]);
+    setup([step(1, 4, 'a', 'بيتر ماهر', 5, { photo: 'https://example.invalid/broken.png' })]);
     start();
     wait(PODIUM_TIMES.suspense[1]);
     const photo = screen.getByRole('img', { name: 'بيتر ماهر' });
@@ -339,7 +339,7 @@ describe('PodiumShow', () => {
   });
 
   it('shows the kids of a tie one after the other, each with his own picture, in the same place', () => {
-    const tie = [step(1, 0, 'a', 'بيتر ماهر', 90), step(1, 1, 'b', 'مارك عادل', 90, { again: true })];
+    const tie = [step(1, 0, 'a', 'بيتر ماهر', 5), step(1, 1, 'b', 'مارك عادل', 5, { again: true })];
     setup(tie);
     start();
     expect(screen.getByText('المركز الأول')).toBeInTheDocument();
@@ -357,11 +357,11 @@ describe('PodiumShow', () => {
     wait(PODIUM_TIMES.tie);
     expect(screen.getByText('مارك عادل')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'مارك عادل' })).toHaveTextContent(faceOf(1).emoji);
-    expect(screen.getByText('⭐ 90 نقطة')).toBeInTheDocument();
+    expect(screen.getByText('⭐ ٥ نجمة')).toBeInTheDocument();
   });
 
   it('the finished podium of a tie shows both kids side by side under the same place', () => {
-    const tie = [step(1, 0, 'a', 'بيتر ماهر', 90), step(1, 1, 'b', 'مارك عادل', 90, { again: true })];
+    const tie = [step(1, 0, 'a', 'بيتر ماهر', 5), step(1, 1, 'b', 'مارك عادل', 5, { again: true })];
     setup(tie);
     start();
     waitEach(PODIUM_TIMES.suspense[1], PODIUM_TIMES.reveal[1], PODIUM_TIMES.tie, PODIUM_TIMES.reveal[1]);

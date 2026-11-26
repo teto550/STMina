@@ -9,7 +9,7 @@ import { RevealView } from './RevealView';
 import { SuspenseView } from './SuspenseView';
 
 export type PodiumShowProps = {
-  /** the kids to reveal one by one, the last place first and the first place last (see podiumSteps) */
+  /** the kids to reveal one by one, the first place first and the last place last (see podiumSteps) */
   steps: PodiumStep[];
   onClose: () => void;
 };
@@ -35,8 +35,8 @@ const REVEAL_SKY = { 3: SKY.third, 2: SKY.second, 1: SKY.first } as const;
 const CONTROL = 'tw:h-10 tw:cursor-pointer tw:rounded-full tw:bg-white/15 tw:px-4 tw:text-sm tw:font-bold tw:text-white';
 
 /**
- * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the kids are announced from the LAST place up to
- * the first. From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
+ * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the kids are announced from the FIRST place down to
+ * the last (the places go by the stars of the last 4 weeks). From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
  * fanfare), and the finished podium stays on the screen. Every kid comes on
  * his own with his picture (kids that tie come one after the other, in the same place). It moves on by itself (or by hand, see the switch); "التالي" jumps ahead, the speaker
  * button mutes it.

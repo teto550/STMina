@@ -1,15 +1,12 @@
 import { useMemo, useState, type FC } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { notesErrorMessage } from '@/api/errors';
-import type { WeekStars } from '@/api/spiritual-notes';
 import { Alert } from '@/react/components/ui/alert';
 import { Button } from '@/react/components/ui/button';
 import { Spinner } from '@/react/components/ui/spinner';
 import { useKidsMonthData, useNotePoints } from '@/react/hooks/useSpiritualNotes';
 import { KidFile, type KidRef } from '../spiritual-notes/KidFile';
-import { dateToStr, monthOf, monthRange, monthStars, rankKids } from '../spiritual-notes/logic';
-import { cheerSteps, type CheerStep } from './cheer';
-import { CheerShow } from './cheer-show';
+import { dateToStr, monthOf, monthRange, rankKids, rankKidsByStars } from '../spiritual-notes/logic';
 import { podiumSteps } from './podium';
 import { PodiumShow } from './podium-show';
 
@@ -24,14 +21,9 @@ export type SpiritualNotesRankingProps = {
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-/** The stars the servants gave each kid in the last 4 weeks (by kid id). */
-function starsOf(data: Record<string, { starWeeks?: WeekStars[] }>, today: string): Record<string, number> {
-  return Object.fromEntries(Object.entries(data).map(([id, d]) => [id, monthStars(d.starWeeks ?? [], today)]));
-}
-
 /**
  * Statistics > النوتة الروحية: the kids that have points in the last 4 weeks (Friday to Thursday, this week included), from the first place to the
- * last. Kids with the same score share the same place. The points are the ones of the "نقط الشهر" box in each kid's file.
+ * last. The one 🏆 عرض button opens the show, whose places go by the STARS of the same 4 weeks (first place first), not by the points. Kids with the same score share the same place. The points are the ones of the "نقط الشهر" box in each kid's file.
  * Tapping a kid opens his file of the النوتة الروحية (the same one as in that tab, not his profile) in place of the list; the back arrow returns to the list, with the points read again.
  */
 const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit = false, user }) => {
@@ -42,10 +34,9 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
   const points = useNotePoints();
   const ranked = useMemo(() => (data.data ? rankKids(kids, data.data, today, points) : []), [kids, data.data, today, points]);
   const photos = useMemo(() => Object.fromEntries(kids.filter((k) => k.photo).map((k) => [k.id, k.photo ?? ''])), [kids]);
-  const steps = useMemo(() => podiumSteps(ranked, photos), [ranked, photos]);
+  // the one show: the kids that have stars in the last 4 weeks, announced from the first place down to the last
+  const steps = useMemo(() => podiumSteps(data.data ? rankKidsByStars(kids, data.data, today) : [], photos), [kids, data.data, today, photos]);
   const [showing, setShowing] = useState(false);
-  // the cheer show has no order: its kids are shuffled when the servant opens it, so every time is a different show
-  const [cheer, setCheer] = useState<CheerStep[] | null>(null);
   const [open, setOpen] = useState<KidRef | null>(null);
 
   if (open) {
@@ -62,7 +53,6 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
         <span className="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-dim">
           {data.isSuccess ? `${ranked.length} مخدوم` : ''}
           {steps.length > 0 && <Button size="sm" onClick={() => setShowing(true)}>🏆 عرض</Button>}
-          {ranked.length > 0 && <Button size="sm" variant="secondary" onClick={() => setCheer(cheerSteps(ranked, photos, Math.random, starsOf(data.data ?? {}, today)))}>🎉 عرض التشجيع</Button>}
           <Button size="icon" variant="ghost" aria-label="تحديث" disabled={data.isFetching} onClick={() => void data.refetch()}>
             <RefreshCw className="tw:size-4" aria-hidden="true" />
           </Button>
@@ -87,7 +77,6 @@ const SpiritualNotesRanking: FC<SpiritualNotesRankingProps> = ({ kids, canEdit =
         ))}
       </ol>
       {showing && <PodiumShow steps={steps} onClose={() => setShowing(false)} />}
-      {cheer && <CheerShow steps={cheer} onClose={() => setCheer(null)} />}
     </section>
   );
 };

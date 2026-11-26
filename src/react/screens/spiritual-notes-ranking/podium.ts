@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'react';
-import type { RankedKid } from '../spiritual-notes/logic';
+import type { StarRankedKid } from '../spiritual-notes/logic';
 
 export type PodiumPlace = 1 | 2 | 3;
 
 /** One reveal of the show: ONE kid in his place (1, 2, 3 or lower: the places under the third get a simple reveal). Kids that tie share a place, so the same place comes up once for each of them. */
 export type PodiumStep = {
   place: number;
-  kid: RankedKid;
+  kid: StarRankedKid;
   /** the kid's photo (a data URL or a link); '' = none, a cartoon face is drawn instead */
   photo: string;
   /** a kid that ties with the one revealed just before: the wait before him is short */
@@ -19,12 +19,12 @@ export type PodiumStep = {
 export const isTop = (place: number): place is PodiumPlace => place >= 1 && place <= 3;
 
 /**
- * The reveals of the show, in order: from the LAST place up to the first (each kid of a tie on his own, by name). It uses the same places as the
- * ranking list (a tie shares a place and the next one is skipped: 1, 1, 3), so a place nobody holds is simply not shown.
+ * The reveals of the show, in order: from the FIRST place down to the last (each kid of a tie on his own, by name). The places go by the stars of the last 4 weeks
+ * (a tie shares a place and the next one is skipped: 1, 1, 3), so a place nobody holds is simply not shown.
  */
-export function podiumSteps(ranked: RankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
+export function podiumSteps(ranked: StarRankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
   const steps: PodiumStep[] = [];
-  const places = [...new Set(ranked.map((k) => k.rank))].sort((a, b) => b - a);
+  const places = [...new Set(ranked.map((k) => k.rank))].sort((a, b) => a - b);
   for (const place of places) {
     ranked
       .filter((k) => k.rank === place)
