@@ -68,7 +68,7 @@ export interface WeekStars {
   stars: number;
 }
 
-/** The weeks whose Friday is from `from` to `to` (both YYYY-MM-DD, included) that have stars for one kid: one query for the last 4 weeks. */
+/** The weeks whose Friday is from `from` to `to` (both YYYY-MM-DD, included) that have stars for one kid: one query for the last 5 weeks. */
 export async function fetchKidStarWeeks(childId: string, from: string, to: string): Promise<WeekStars[]> {
   const snap = await getDocs(query(collection(db, 'spiritualNotes', childId, 'weeks'), where(documentId(), '>=', from), where(documentId(), '<=', to)));
   return snap.docs.map((d) => ({ week: d.id, stars: Number((d.data() as { stars?: unknown }).stars) || 0 }));

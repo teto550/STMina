@@ -227,7 +227,7 @@ export const KidFile: FC<KidFileProps> = ({ kid, canEdit, by, onBack }) => {
         <PointsBox label="نقط الأسبوع" points={weekTotal} />
         <PointsBox label="نقط الشهر" points={monthTotal} />
       </div>
-      {starsTotal !== null && starsTotal > 0 && <p className="tw:text-center tw:text-sm tw:font-bold" aria-label="نجوم الشهر">⭐ نجوم آخر ٤ أسابيع: {starsText(starsTotal)} من {starsText(MAX_STARS)}</p>}
+      {starsTotal !== null && starsTotal > 0 && <p className="tw:text-center tw:text-sm tw:font-bold" aria-label="نجوم الشهر">⭐ نجوم آخر ٥ أسابيع: {starsText(starsTotal)} من {starsText(MAX_STARS)}</p>}
       {range.isError && <p className="tw:text-xs tw:text-dim">{notesErrorMessage(range.error)}</p>}
       <p className="tw:text-xs tw:text-dim">اختار اليوم اللي عايز تسجله (الأسبوع من الجمعة للخميس):</p>
       <div className="tw:flex tw:items-center tw:justify-between tw:gap-2">

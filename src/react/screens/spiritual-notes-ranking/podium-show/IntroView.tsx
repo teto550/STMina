@@ -14,7 +14,7 @@ export const IntroView: FC<IntroViewProps> = ({ onStart, auto, onAutoChange }) =
   <div className="tw:flex tw:flex-col tw:items-center tw:gap-6 tw:text-center">
     <div className="rx-beat tw:text-8xl" aria-hidden="true">🏆</div>
     <h2 className="tw:text-4xl tw:font-black">جاهزين نعرف مين الأوائل؟</h2>
-    <p className="tw:text-lg tw:text-white/80">النوتة الروحية — نجوم آخر ٤ أسابيع</p>
+    <p className="tw:text-lg tw:text-white/80">النوتة الروحية — نجوم آخر ٥ أسابيع</p>
     <div role="group" aria-label="طريقة العرض" className="tw:flex tw:w-full tw:max-w-sm tw:gap-2 tw:rounded-full tw:bg-white/10 tw:p-1">
       <button type="button" aria-pressed={auto} onClick={() => onAutoChange(true)} className={`${CHOICE} ${auto ? 'tw:bg-white tw:text-violet-900' : 'tw:text-white'}`}>⏱ أوتوماتيك</button>
       <button type="button" aria-pressed={!auto} onClick={() => onAutoChange(false)} className={`${CHOICE} ${auto ? 'tw:text-white' : 'tw:bg-white tw:text-violet-900'}`}>👆 يدوي</button>

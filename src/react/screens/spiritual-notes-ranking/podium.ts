@@ -20,7 +20,7 @@ export const isTop = (place: number): place is PodiumPlace => place >= 1 && plac
 
 /**
  * The reveals of the show, in order: only the TOP THREE places, from the THIRD up to the FIRST (each kid of a tie on his own, by name). The places go by the
- * stars of the last 4 weeks (a tie shares a place and the next place follows right after it: 1, 1, 2), so every kid of the first three places is in it.
+ * stars of the last 5 weeks (a tie shares a place and the next place follows right after it: 1, 1, 2), so every kid of the first three places is in it.
  */
 export function podiumSteps(ranked: StarRankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
   const steps: PodiumStep[] = [];

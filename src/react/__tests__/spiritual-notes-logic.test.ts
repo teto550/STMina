@@ -71,10 +71,10 @@ describe('spiritual notes: the points', () => {
     expect(weekPoints(notes, '2030-10-20')).toBe(25);
     expect(pointsBetween(notes, '2030-10-01', '2030-10-31')).toBe(65);
   });
-  it('the month is the last 4 weeks (Friday to Thursday) and adds the confession (25) once', () => {
+  it('the month is the last 5 weeks (Friday to Thursday) and adds the confession (25) once', () => {
     const notes = [
-      { day: '2030-09-26', mass: true }, // Thursday before the 4 weeks: out
-      { day: '2030-09-27', mass: true }, // first Friday of the 4 weeks: in
+      { day: '2030-09-19', mass: true }, // Thursday before the 5 weeks: out
+      { day: '2030-09-20', mass: true }, // first Friday of the 5 weeks: in
       { day: '2030-10-18', mass: true }, // the open week
       { day: '2030-10-24', mass: true }, // last Thursday of the open week: in
       { day: '2030-10-25', mass: true }, // the next week: out
@@ -86,14 +86,14 @@ describe('spiritual notes: the points', () => {
     const notes = [{ day: '2030-10-18', mass: true }, { day: '2030-10-20', prayerNight: true }];
     expect(monthPoints(notes, '2030-10-20', false)).toBe(weekPoints(notes, '2030-10-20'));
   });
-  it('the month range is 4 whole weeks ending on the Thursday of the open week, even across months and years', () => {
-    expect(monthRange('2030-10-18')).toEqual({ from: '2030-09-27', to: '2030-10-24' });
-    expect(monthRange('2030-10-30')).toEqual({ from: '2030-10-04', to: '2030-10-31' });
-    expect(monthRange('2031-01-03')).toEqual({ from: '2030-12-13', to: '2031-01-09' });
+  it('the month range is 5 whole weeks ending on the Thursday of the open week, even across months and years', () => {
+    expect(monthRange('2030-10-18')).toEqual({ from: '2030-09-20', to: '2030-10-24' });
+    expect(monthRange('2030-10-30')).toEqual({ from: '2030-09-27', to: '2030-10-31' });
+    expect(monthRange('2031-01-03')).toEqual({ from: '2030-12-06', to: '2031-01-09' });
   });
   it('reads one range that covers both the week and the month', () => {
-    expect(rangeFor('2030-10-18')).toEqual({ from: '2030-09-27', to: '2030-10-24' });
-    expect(rangeFor('2030-10-24')).toEqual({ from: '2030-09-27', to: '2030-10-24' }); // Thursday: same week as Friday 18
+    expect(rangeFor('2030-10-18')).toEqual({ from: '2030-09-20', to: '2030-10-24' });
+    expect(rangeFor('2030-10-24')).toEqual({ from: '2030-09-20', to: '2030-10-24' }); // Thursday: same week as Friday 18
   });
 });
 
@@ -103,7 +103,7 @@ describe('spiritual notes: the ranking', () => {
     a: { days: [{ day: '2030-10-18', mass: true }], confessed: false }, // 20
     b: { days: [{ day: '2030-10-18', mass: true }], confessed: false }, // 20: same place as a
     c: { days: [{ day: '2030-10-04', mass: true }, { day: '2030-10-20', mass: true }], confessed: false }, // 40
-    d: { days: [{ day: '2030-09-26', mass: true }], confessed: false }, // before the 4 weeks: no points
+    d: { days: [{ day: '2030-09-19', mass: true }], confessed: false }, // before the 5 weeks: no points
     // e has nothing written at all
   };
   it('lists the kids with points from the first place, and kids with the same score share the place (1, 2, 2, 4)', () => {
@@ -146,12 +146,12 @@ describe('custom points (set by the admin)', () => {
 
 
 describe('spiritual notes: the stars the servant gives for a week', () => {
-  // Friday 18/10/2030: the last 4 weeks start on Friday 27/9 and end on Thursday 24/10
+  // Friday 18/10/2030: the last 5 weeks start on Friday 20/9 and end on Thursday 24/10
   const weeks = [
     { week: '2030-10-18', stars: 2 },
     { week: '2030-10-04', stars: 1.5 },
     { week: '2030-09-27', stars: 3 },
-    { week: '2030-09-20', stars: 5 }, // the week before the 4 weeks: not counted
+    { week: '2030-09-13', stars: 5 }, // the week before the 5 weeks: not counted
   ];
 
   it('clampStars keeps whole and half stars between 0 and six', () => {
@@ -171,7 +171,7 @@ describe('spiritual notes: the stars the servant gives for a week', () => {
     expect(weekStarsOf([], '2030-10-18')).toBe(0);
   });
 
-  it('monthStars adds up the 4 weeks and never goes over the six of the card', () => {
+  it('monthStars adds up the 5 weeks and never goes over the six of the card', () => {
     expect(monthStars(weeks, '2030-10-18')).toBe(6); // 2 + 1.5 + 3 = 6.5, the card has six
     expect(monthStars(weeks.slice(0, 2), '2030-10-18')).toBe(3.5);
     expect(monthStars([], '2030-10-18')).toBe(0);
@@ -192,7 +192,7 @@ describe('rankKidsByStars', () => {
   const kids = [{ id: 'a', name: 'بيتر' }, { id: 'b', name: 'مارك' }, { id: 'c', name: 'مينا' }, { id: 'd', name: 'يوسف' }];
   const today = '2030-10-18';
 
-  it('ranks by the stars of the last 4 weeks, the most first; kids with no stars are left out', () => {
+  it('ranks by the stars of the last 5 weeks, the most first; kids with no stars are left out', () => {
     const ranked = rankKidsByStars(kids, {
       a: { starWeeks: [{ week: '2030-10-18', stars: 2 }] },
       b: { starWeeks: [{ week: '2030-10-18', stars: 3 }, { week: '2030-10-11', stars: 1.5 }] },
@@ -217,7 +217,7 @@ describe('rankKidsByStars', () => {
     expect(ranked.map((k) => k.rank)).toEqual([1, 1, 1, 1, 2, 3]);
   });
 
-  it('ignores the weeks outside the last 4 weeks, and works with no data at all', () => {
+  it('ignores the weeks outside the last 5 weeks, and works with no data at all', () => {
     expect(rankKidsByStars(kids, { a: { starWeeks: [{ week: '2030-08-02', stars: 5 }] } }, today)).toEqual([]);
     expect(rankKidsByStars(kids, {}, today)).toEqual([]);
   });

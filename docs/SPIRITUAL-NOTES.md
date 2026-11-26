@@ -19,15 +19,15 @@ A button at the top of the نوتة روحية tab, shown to admins only (`canSe
 - Everybody sees the current points as a small line under the title. Until the admin saves, or when the document cannot be read, the starting points count (`cleanPoints` also repairs a hand-edited document). One extra read (cached 5 minutes) per opened screen: `useNotePoints` in `src/react/hooks/useSpiritualNotes.ts`.
 - Tests: `notes-points.test.ts`, the `custom points` block of `spiritual-notes-logic.test.ts`, and the `نقاط النوتة` block of `SpiritualNotesScreen.test.tsx`.
 - Day = the ticks of that day (the confession is not in it). Week = the 7 days Friday→Thursday (the confession is not in it, it has no date).
-  Month = the last 4 weeks (Friday→Thursday, ending with the week of the open day, `monthRange`) + 25 when he confessed in the calendar month of the open day.
-- Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the last 4 weeks, which contain the open week, at most 28 documents).
+  Month = the last 5 weeks (Friday→Thursday, ending with the week of the open day, `monthRange`) + 25 when he confessed in the calendar month of the open day.
+- Reads: one extra query per opened kid/day, `fetchKidDaysBetween` (the last 5 weeks, which contain the open week, at most 35 documents).
 - Older notes that hold the gospel as TEXT count as "read" (15 points); new saves write `gospel: true/false`.
 
 ## Statistics > النوتة الروحية (ranking)
 A sub-tab next to ⭐ النجوم in the statistics tab, shown only for the classes in `SPIRITUAL_NOTES_GRADES` (`initStatsTab` hides the button otherwise).
-Screen `src/react/screens/spiritual-notes-ranking`: the kids with points in the last 4 weeks (the same "نقط الشهر" of the kid's file), highest first; kids
+Screen `src/react/screens/spiritual-notes-ranking`: the kids with points in the last 5 weeks (the same "نقط الشهر" of the kid's file), highest first; kids
 with the same score share the same place (1, 2, 2, 4), by name inside a place; kids with no points are left out. The servant filter of the statistics applies.
-Reads: for each kid one range query (the written days of the last 4 weeks) + 1 confession document, 8 kids at a time (`fetchKidsMonthData`), kept 5 minutes; the 🔄 button reads again.
+Reads: for each kid one range query (the written days of the last 5 weeks) + 1 confession document, 12 kids at a time (all three reads of a kid together) (`fetchKidsMonthData`), kept 5 minutes; the 🔄 button reads again.
 
 ### 🏆 عرض (the winners show)
 A button next to 🔄 in the ranking header, shown only when somebody has points. It opens a full-screen show to put in front of the class (a quiz-game podium):
@@ -57,10 +57,10 @@ until it reaches the top, then the kid's picture lands there with his name above
   `week` equal to the id and `stars` one of the 13 values 0 to 6 in halves. **Deploy the rules (`firebase deploy --only firestore:rules`, or paste `firestore.rules` in the Firebase console and Publish)
   before a servant saves stars**, otherwise that save is refused. A migration to another backend needs the same collection and the same check (a number, a multiple of 0.5, 0 to 6).
 - **Giving them:** in the kid's file (النوتة الروحية) the box "⭐ نجوم الأسبوع" shows the stars of the week of the open day (the same for all its days); − / + change them by half a star and
-  "حفظ نجوم الأسبوع" saves them (it does not save the day, and "حفظ اليوم" does not touch them). Above the file, "نجوم آخر ٤ أسابيع" shows the total of the last 4 weeks, at most six (the six stars of the kid's card).
+  "حفظ نجوم الأسبوع" saves them (it does not save the day, and "حفظ اليوم" does not touch them). Above the file, "نجوم آخر ٥ أسابيع" shows the total of the last 5 weeks, at most six (the six stars of the kid's card).
   One extra read per kid and per screen: `fetchKidStarWeeks(id, from, to)` (a range on the document id, the same 4 weeks as the points); `fetchKidsMonthData` returns it as `starWeeks`.
 - **The cheer show** (statistics > النوتة الروحية > 🎉 عرض التشجيع): every kid that has points comes on his own (random order, picture and name), with no places, no points and no sentence, and at the end all together under one closing line.
-  Under each kid's name are the six stars of the card, big and all dim; the ones he got (his stars of the last 4 weeks added up, at most six, a half star lit on its first half) light up one after the other, each with ONE entrance
+  Under each kid's name are the six stars of the card, big and all dim; the ones he got (his stars of the last 5 weeks added up, at most six, a half star lit on its first half) light up one after the other, each with ONE entrance
   (`rx-star-in`: it spins and grows in with a flash) and then stays a plain star (no beat, no glow, no sparks). A kid without stars keeps the six dim ones.
   Code: `src/react/screens/spiritual-notes-ranking/cheer.ts` (the random order, the closing line `CHEER_CLOSING`), `cheer-show/` (the screens, `StarRow.tsx` the stars),
   `src/react/hooks/useCheerShow.ts` (the timer and the sounds, the same sounds as the winners show).

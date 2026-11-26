@@ -110,8 +110,8 @@ export function weekPoints(notes: NoteDay[], day: string, points: NotePoints = D
   return pointsBetween(notes, days[0] ?? day, days[6] ?? day, points);
 }
 
-/** The "month" of the programme is the last 4 weeks (Friday to Thursday), ending with the week of `day`. */
-export const MONTH_WEEKS = 4;
+/** The "month" of the programme is the last 5 weeks (Friday to Thursday), ending with the week of `day`. */
+export const MONTH_WEEKS = 5;
 
 /** The first (a Friday) and the last (a Thursday) day of the last {@link MONTH_WEEKS} weeks, the week of `day` included. */
 export function monthRange(day: string): { from: string; to: string } {
@@ -119,7 +119,7 @@ export function monthRange(day: string): { from: string; to: string } {
   return { from: addDays(start, -7 * (MONTH_WEEKS - 1)), to: addDays(start, 6) };
 }
 
-/** The points of the month of `day`: the days of the last 4 weeks (Friday to Thursday), plus the confession of the calendar month of `day` when he confessed. */
+/** The points of the month of `day`: the days of the last 5 weeks (Friday to Thursday), plus the confession of the calendar month of `day` when he confessed. */
 export function monthPoints(notes: NoteDay[], day: string, confessed: boolean, points: NotePoints = DEFAULT_POINTS): number {
   const { from, to } = monthRange(day);
   return pointsBetween(notes, from, to, points) + (confessed ? points.confession : 0);
@@ -141,7 +141,7 @@ export function weekStarsOf(weeks: WeekStars[], day: string): number {
   return clampStars(weeks.find((w) => w.week === start)?.stars);
 }
 
-/** The stars of the kid in the last 4 weeks (the same "month" as the points): the stars of those weeks added up, at most the six of the card. The cheer show lights this many. */
+/** The stars of the kid in the last 5 weeks (the same "month" as the points): the stars of those weeks added up, at most the six of the card. The cheer show lights this many. */
 export function monthStars(weeks: WeekStars[], day: string): number {
   const { from, to } = monthRange(day);
   return clampStars(weeks.filter((w) => w.week >= from && w.week <= to).reduce((sum, w) => sum + clampStars(w.stars), 0));
@@ -150,7 +150,7 @@ export function monthStars(weeks: WeekStars[], day: string): number {
 /** "1" / "1.5" written in Arabic digits (١ / ١٫٥). */
 export const starsText = (stars: number): string => stars.toLocaleString('ar-EG');
 
-/** The first and the last day to read so that both the week and the month of `day` are covered (the month contains the week, at most 28 days). */
+/** The first and the last day to read so that both the week and the month of `day` are covered (the month contains the week, at most 35 days). */
 export function rangeFor(day: string): { from: string; to: string } {
   return monthRange(day);
 }
@@ -158,7 +158,7 @@ export function rangeFor(day: string): { from: string; to: string } {
 export type RankedKid = { id: string; name: string; rank: number; month: number; week: number };
 
 /**
- * The kids that have points in the last 4 weeks, from the first place to the last. Kids with the same score share the same place
+ * The kids that have points in the last 5 weeks, from the first place to the last. Kids with the same score share the same place
  * (1, 1, 3: the next place skips as many as shared), and are listed by name inside a place. Kids with no points are left out.
  */
 export function rankKids(kids: { id: string; name: string }[], data: Record<string, { days: NoteDay[]; confessed: boolean }>, today: string, points: NotePoints = DEFAULT_POINTS): RankedKid[] {
@@ -183,7 +183,7 @@ export function rankKids(kids: { id: string; name: string }[], data: Record<stri
 export type StarRankedKid = { id: string; name: string; rank: number; stars: number };
 
 /**
- * The kids that have stars in the last 4 weeks (the stars of the kid's card, see monthStars), from the first place to the last: the show uses this order.
+ * The kids that have stars in the last 5 weeks (the stars of the kid's card, see monthStars), from the first place to the last: the show uses this order.
  * Kids with the same stars share the same place and the next place is NOT skipped (4 kids with 4 stars are all first, the kid with 3.5 is second: 1, 1, 1, 1, 2), and they are listed by name inside a place. Kids with no stars are left out.
  */
 export function rankKidsByStars(kids: { id: string; name: string }[], data: Record<string, { starWeeks?: WeekStars[] }>, today: string): StarRankedKid[] {

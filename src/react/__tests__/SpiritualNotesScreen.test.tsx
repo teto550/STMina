@@ -133,7 +133,7 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
   });
 
   it('shows the points of the day, the week and the month above the file', async () => {
-    // Friday 18/10/2030 (today): morning 5 + night 5 + gospel 15 + mass 20 + fast 10 = 55. Thursday 24 is in the same week. Earlier in the last 4 weeks: 20. Confession: 25.
+    // Friday 18/10/2030 (today): morning 5 + night 5 + gospel 15 + mass 20 + fast 10 = 55. Thursday 24 is in the same week. Earlier in the last 5 weeks: 20. Confession: 25.
     h.fetchKidDay.mockResolvedValue({ day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true });
     h.fetchKidDaysBetween.mockResolvedValue([
       { day: '2030-10-18', prayerMorning: true, prayerNight: true, gospel: true, mass: true, fast: true },
@@ -147,7 +147,7 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
     await waitFor(() => expect(box('نقط الأسبوع')).toHaveTextContent('75'));
     expect(box('نقط اليوم')).toHaveTextContent('55');
     expect(box('نقط الشهر')).toHaveTextContent('120'); // 55 + 20 + 20 + the confession 25
-    expect(h.fetchKidDaysBetween).toHaveBeenCalledWith('k2', '2030-09-27', '2030-10-24'); // the last 4 weeks
+    expect(h.fetchKidDaysBetween).toHaveBeenCalledWith('k2', '2030-09-20', '2030-10-24'); // the last 5 weeks
   });
 
   it('a failed save shows a message and keeps what was ticked', async () => {
@@ -170,7 +170,7 @@ describe('SpiritualNotesScreen: the file of a kid', () => {
 });
 
 describe('SpiritualNotesScreen: the extra stars of a kid (for the whole week)', () => {
-  // Friday 18/10/2030 is today: its week runs from Friday 18/10 to Thursday 24/10, the last 4 weeks from Friday 27/9
+  // Friday 18/10/2030 is today: its week runs from Friday 18/10 to Thursday 24/10, the last 5 weeks from Friday 20/9
   const stars = () => screen.findByRole('status', { name: 'نجوم الأسبوع' });
   const plus = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: 'زوّد نص نجمة' }));
   const openStars = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -232,7 +232,7 @@ describe('SpiritualNotesScreen: the extra stars of a kid (for the whole week)', 
     await waitFor(() => expect(h.saveWeekStars).toHaveBeenCalledWith({ childId: 'k2', week: '2030-10-18', stars: 0, by: 'الخادم' }));
   });
 
-  it('shows the stars of the last 4 weeks above the file, at most six', async () => {
+  it('shows the stars of the last 5 weeks above the file, at most six', async () => {
     h.fetchKidStarWeeks.mockResolvedValue([
       { week: '2030-10-18', stars: 2 },
       { week: '2030-10-04', stars: 1.5 },
@@ -241,7 +241,7 @@ describe('SpiritualNotesScreen: the extra stars of a kid (for the whole week)', 
     const { user } = setup();
     await openStars(user);
     expect(await screen.findByLabelText('نجوم الشهر')).toHaveTextContent('٦ من ٦'); // 6.5 added up, the card has six
-    expect(h.fetchKidStarWeeks).toHaveBeenCalledWith('k2', '2030-09-27', '2030-10-24');
+    expect(h.fetchKidStarWeeks).toHaveBeenCalledWith('k2', '2030-09-20', '2030-10-24');
   });
 
   it('a failed save shows a message and keeps the stars', async () => {

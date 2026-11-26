@@ -24,7 +24,7 @@ import SpiritualNotesRanking from '@/react/screens/spiritual-notes-ranking';
 const PHOTO = 'data:image/png;base64,AAA';
 const kids = [{ id: 'k1', name: 'بيتر' }, { id: 'k2', name: 'مارك' }, { id: 'k3', name: 'مينا سامح عادل', photo: PHOTO }, { id: 'k4', name: 'يوسف' }];
 
-// Friday 18 October 2030: the last 4 weeks run from Friday 27/9 to Thursday 24/10
+// Friday 18 October 2030: the last 5 weeks run from Friday 20/9 to Thursday 24/10
 const mass = (day: string) => ({ day, mass: true });
 
 beforeEach(() => {
@@ -117,7 +117,7 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [], confessed: false } });
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
     expect(screen.queryByRole('button', { name: /عرض/ })).not.toBeInTheDocument();
-    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٤ أسابيع')).toBeInTheDocument();
+    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٥ أسابيع')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /عرض/ })).not.toBeInTheDocument();
   });
 
@@ -137,7 +137,7 @@ describe('SpiritualNotesRanking: one show only', () => {
   it('there is no show while nobody has stars, even if kids have points', async () => {
     h.fetchKidsMonthData.mockResolvedValue({ k1: { days: [mass('2030-10-18')], confessed: false, starWeeks: [] } });
     renderWithQuery(<SpiritualNotesRanking kids={kids} />);
-    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٤ أسابيع')).toBeInTheDocument();
+    expect(await screen.findByText('لسه مفيش حد عنده نجوم في آخر ٥ أسابيع')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^🏆/ })).not.toBeInTheDocument();
   });
 

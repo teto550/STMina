@@ -136,7 +136,7 @@ function renderStarStats() {
   }).join('');
 }
 
-// ترتيب النوتة الروحية: شاشة React (src/react/screens/spiritual-notes-ranking) بتقرا نقط آخر ٤ أسابيع لكل ولد وبترتبهم
+// ترتيب النوتة الروحية: شاشة React (src/react/screens/spiritual-notes-ranking) بتقرا نقط آخر ٥ أسابيع لكل ولد وبترتبهم
 function renderNotesStats() {
   const deacon = document.getElementById('stats-deacon-filter').value;
   const list = deacon ? state.allStudents.filter(s => isDeaconOf(s, deacon)) : state.allStudents;

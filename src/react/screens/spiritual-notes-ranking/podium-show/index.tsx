@@ -36,7 +36,7 @@ const CONTROL = 'tw:h-10 tw:cursor-pointer tw:rounded-full tw:bg-white/15 tw:px-
 
 /**
  * Statistics > النوتة الروحية > عرض: a full-screen show for the kids, like a quiz game's podium. Tap start, then the kids are announced from the FIRST place down to
- * the last (the places go by the stars of the last 4 weeks). From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
+ * the last (the places go by the stars of the last 5 weeks). From the third place on, a question mark hops up a round podium until the name appears on top of it (the winner with confetti and a
  * fanfare), and the finished podium stays on the screen. Every kid comes on
  * his own with his picture (kids that tie come one after the other, in the same place). It moves on by itself (or by hand, see the switch); "التالي" jumps ahead, the speaker
  * button mutes it.

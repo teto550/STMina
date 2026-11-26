@@ -34,7 +34,7 @@ export function useKidRange(id: string, from: string, to: string) {
   return useQuery({ queryKey: notesKeys.range(id, from, to), queryFn: () => fetchKidDaysBetween(id, from, to), staleTime: MINUTE });
 }
 
-/** The stars the servant gave a kid for each week from `from` to `to` (the last 4 weeks of the open day). */
+/** The stars the servant gave a kid for each week from `from` to `to` (the last 5 weeks of the open day). */
 export function useKidStarWeeks(id: string, from: string, to: string) {
   return useQuery({ queryKey: notesKeys.starWeeks(id, from, to), queryFn: () => fetchKidStarWeeks(id, from, to), staleTime: MINUTE });
 }
@@ -75,7 +75,7 @@ export function useSaveNote() {
   });
 }
 
-/** The last 4 weeks of many kids (and the month's confession), for the ranking in the statistics. Kept 5 minutes: the servant refreshes by hand. */
+/** The last 5 weeks of many kids (and the month's confession), for the ranking in the statistics. Kept 5 minutes: the servant refreshes by hand. */
 export function useKidsMonthData(ids: string[], from: string, to: string, month: string) {
   const key = [...ids].sort().join(',');
   return useQuery({ queryKey: notesKeys.ranking(key, from, to, month), queryFn: () => fetchKidsMonthData(ids, from, to, month), staleTime: 5 * MINUTE, enabled: ids.length > 0 });
