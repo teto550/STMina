@@ -19,12 +19,12 @@ export type PodiumStep = {
 export const isTop = (place: number): place is PodiumPlace => place >= 1 && place <= 3;
 
 /**
- * The reveals of the show, in order: from the FIRST place down to the last (each kid of a tie on his own, by name). The places go by the stars of the last 4 weeks
- * (a tie shares a place and the next place follows right after it: 1, 1, 2).
+ * The reveals of the show, in order: only the TOP THREE places, from the THIRD up to the FIRST (each kid of a tie on his own, by name). The places go by the
+ * stars of the last 4 weeks (a tie shares a place and the next place follows right after it: 1, 1, 2), so every kid of the first three places is in it.
  */
 export function podiumSteps(ranked: StarRankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
   const steps: PodiumStep[] = [];
-  const places = [...new Set(ranked.map((k) => k.rank))].sort((a, b) => a - b);
+  const places = [...new Set(ranked.map((k) => k.rank))].filter(isTop).sort((a, b) => b - a);
   for (const place of places) {
     ranked
       .filter((k) => k.rank === place)

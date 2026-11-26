@@ -5,48 +5,42 @@ const places = (steps: { place: number }[]) => steps.map((s) => s.place);
 const ids = (steps: { kid: { id: string } }[]) => steps.map((s) => s.kid.id);
 
 describe('podiumSteps', () => {
-  it('reveals from the FIRST place down to the last, one kid per step', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 3, 2.5), kid('d', 4, 0.5)]);
-    expect(places(steps)).toEqual([1, 2, 3, 4]);
-    expect(ids(steps)).toEqual(['a', 'b', 'c', 'd']);
-    expect(steps[0]?.kid.stars).toBe(6);
+  it('reveals from the THIRD place up to the first, one kid per step', () => {
+    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 3, 2.5)]);
+    expect(places(steps)).toEqual([3, 2, 1]);
+    expect(ids(steps)).toEqual(['c', 'b', 'a']);
+    expect(steps.at(-1)?.kid.stars).toBe(6);
   });
 
-  it('includes every ranked kid, a long list too, starting on the first place', () => {
+  it('is only the first three places: a long list is cut after the third place', () => {
     const ranked = Array.from({ length: 8 }, (_, i) => kid(`k${i + 1}`, i + 1, 6 - i * 0.5));
     const steps = podiumSteps(ranked);
-    expect(places(steps)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(steps[0]?.kid.id).toBe('k1');
-    expect(steps.at(-1)?.kid.id).toBe('k8');
+    expect(places(steps)).toEqual([3, 2, 1]);
+    expect(ids(steps)).toEqual(['k3', 'k2', 'k1']);
   });
 
-  it('gives every kid of a tie his own step in the same place, the later ones marked `again`', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 2, 4), kid('d', 3, 0.5)]);
-    expect(places(steps)).toEqual([1, 2, 2, 3]); // the place after a tie follows right after it (1, 2, 2, 3)
-    expect(ids(steps)).toEqual(['a', 'b', 'c', 'd']);
+  it('keeps every kid of a tie inside the first three places, the later ones marked `again`', () => {
+    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 2, 4), kid('d', 3, 0.5), kid('e', 4, 0.5)]);
+    expect(places(steps)).toEqual([3, 2, 2, 1]);
+    expect(ids(steps)).toEqual(['d', 'b', 'c', 'a']);
     expect(steps.map((s) => s.again)).toEqual([false, false, true, false]);
   });
 
-  it('a place of 3 kids (2, 2, 2) is three steps of the second place', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 2, 2), kid('d', 2, 2), kid('e', 2, 2)]);
-    expect(places(steps)).toEqual([1, 1, 2, 2, 2]);
-    expect(steps.map((s) => s.again)).toEqual([false, true, false, true, true]);
-  });
-
-  it('two kids that share the first place are followed by the SECOND place (1, 1, 2)', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 2, 2)]);
-    expect(places(steps)).toEqual([1, 1, 2]);
+  it('four kids with the same stars are four steps of the first place; nobody is left for the second', () => {
+    const steps = podiumSteps([kid('a', 1, 4), kid('b', 1, 4), kid('c', 1, 4), kid('d', 1, 4), kid('e', 2, 3.5)]);
+    expect(places(steps)).toEqual([2, 1, 1, 1, 1]);
+    expect(steps.map((s) => s.again)).toEqual([false, false, true, true, true]);
   });
 
   it('works with fewer than three kids, and with nobody', () => {
-    expect(places(podiumSteps([kid('a', 1, 4), kid('b', 2, 3)]))).toEqual([1, 2]);
+    expect(places(podiumSteps([kid('a', 1, 4), kid('b', 2, 3)]))).toEqual([2, 1]);
     expect(places(podiumSteps([kid('a', 1, 4)]))).toEqual([1]);
     expect(podiumSteps([])).toEqual([]);
   });
 
   it('takes each kid\'s photo from the card; a kid without one gets an empty photo', () => {
     const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4)], { b: 'data:image/png;base64,AAA' });
-    expect(steps.map((s) => s.photo)).toEqual(['', 'data:image/png;base64,AAA']);
+    expect(steps.map((s) => s.photo)).toEqual(['data:image/png;base64,AAA', '']);
   });
 
   it('numbers the steps, so every kid of the show gets a different face and a different sound', () => {
