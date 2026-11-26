@@ -46,6 +46,7 @@ window.switchStatsSubtab = (subtab, btn) => {
   currentStatsSubtab = subtab;
   document.querySelectorAll('#tab-stats > .tabs .tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  if (btn.scrollIntoView) { btn.scrollIntoView({ inline: 'center', block: 'nearest' }); } // the bar scrolls sideways on a phone: keep the chosen tab in view
   document.getElementById('stats-panel-attendance').style.display = subtab === 'attendance' ? 'block' : 'none';
   document.getElementById('stats-panel-birthdays').style.display  = subtab === 'birthdays'  ? 'block' : 'none';
   document.getElementById('stats-panel-absence').style.display    = subtab === 'absence'    ? 'block' : 'none';
