@@ -119,7 +119,7 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
   it('starts from the last place, with his picture, and goes up place by place to the first', () => {
     setup(longShow);
     start();
-    expect(screen.getByText('المركز ٥')).toBeInTheDocument();
+    expect(screen.queryByText('المركز ٥')).not.toBeInTheDocument(); // the places under the third are not named
     expect(screen.queryByText('يوسف مراد')).not.toBeInTheDocument();
     wait(PODIUM_TIMES.other.suspense);
     expect(screen.getByText('يوسف مراد')).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
     expect(screen.queryByTestId('climb-podium')).not.toBeInTheDocument(); // no podium under the third place
 
     wait(PODIUM_TIMES.other.reveal);
-    expect(screen.getByText('المركز ٤')).toBeInTheDocument();
+    expect(screen.queryByText(/المركز/)).not.toBeInTheDocument();
     wait(PODIUM_TIMES.other.suspense);
     expect(screen.getByRole('img', { name: 'كيرلس أمير' }).querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,BBB');
   });
@@ -173,7 +173,8 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
     expect(words.nextElementSibling).toBe(screen.getByTestId('climb-podium'));
     expect(words).toHaveTextContent('المركز التالت');
     expect(words).toHaveTextContent('مينا سامح');
-    expect(within(words).getByRole('img', { name: '٣ من ٦ نجوم' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '٣ من ٦ نجوم' })).toBeInTheDocument(); // the stars are big, in their own row under the scene
+    expect(words).not.toContainElement(screen.getByRole('img', { name: '٣ من ٦ نجوم' }));
     expect(screen.getByRole('img', { name: 'مينا سامح' }).closest('[data-testid="climb-text"]')).toBeNull(); // the picture is on the podium, not in the words
   });
 
@@ -402,7 +403,22 @@ describe('PodiumShow: the six stars of each kid', () => {
     expect(lit).toEqual([1, 1, 1, 1, 0, 0]);
     const delays = [...row.querySelectorAll<HTMLElement>('.rx-star-in')].map((e) => parseFloat(e.style.getPropertyValue('--rx-delay')));
     expect(delays).toEqual([...delays].sort((a, b) => a - b)); // one after the other, in order
+    expect(row).toHaveAttribute('dir', 'rtl'); // the first star is the one on the RIGHT
     expect(new Set(delays).size).toBe(4);
+    vi.useRealTimers();
+  });
+});
+
+describe('PodiumShow: the places under the third are not named', () => {
+  it('shows no place name in the drum roll or in the reveal of the fifth place, only on the top three', () => {
+    vi.useFakeTimers();
+    render(<PodiumShow steps={[step(5, 0, 'e', 'يوسف مراد حنا', 2), step(1, 1, 'a', 'بيتر ماهر', 5)]} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
+    expect(screen.queryByText(/المركز/)).not.toBeInTheDocument();
+    act(() => void vi.advanceTimersByTime(PODIUM_TIMES.other.suspense));
+    expect(screen.getByText('يوسف مراد')).toBeInTheDocument();
+    expect(screen.queryByText(/المركز/)).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '٢ من ٦ نجوم' })).toBeInTheDocument();
     vi.useRealTimers();
   });
 });

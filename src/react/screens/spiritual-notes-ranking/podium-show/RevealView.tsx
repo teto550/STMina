@@ -39,7 +39,6 @@ export const RevealView: FC<RevealViewProps> = ({ step }) => {
         </div>
         <span className="tw:absolute tw:-bottom-3 tw:-end-3 tw:text-6xl" aria-hidden="true">{look.medal}</span>
       </div>
-      <p className="rx-pop tw:mt-2 tw:rounded-full tw:bg-white/15 tw:px-6 tw:py-1 tw:text-2xl tw:font-bold" style={delayed(0.25)}>{look.label}</p>
       <div className={`rx-pop tw:box-border tw:w-full tw:rounded-3xl tw:bg-linear-to-b ${look.card} ${look.ink} tw:px-6 tw:py-5 tw:shadow-2xl`} style={delayed(0.4)}>
         <span className="tw:block tw:text-4xl tw:font-black tw:md:text-6xl">{name}</span>
         <div className="tw:mt-3"><StarRow stars={step.kid.stars} lightAfter={0.9} /></div>
