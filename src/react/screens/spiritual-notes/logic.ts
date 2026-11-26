@@ -184,7 +184,7 @@ export type StarRankedKid = { id: string; name: string; rank: number; stars: num
 
 /**
  * The kids that have stars in the last 4 weeks (the stars of the kid's card, see monthStars), from the first place to the last: the show uses this order.
- * Kids with the same stars share the same place (1, 1, 3), and are listed by name inside a place. Kids with no stars are left out.
+ * Kids with the same stars share the same place and the next place is NOT skipped (4 kids with 4 stars are all first, the kid with 3.5 is second: 1, 1, 1, 1, 2), and they are listed by name inside a place. Kids with no stars are left out.
  */
 export function rankKidsByStars(kids: { id: string; name: string }[], data: Record<string, { starWeeks?: WeekStars[] }>, today: string): StarRankedKid[] {
   const scored = kids
@@ -193,9 +193,9 @@ export function rankKidsByStars(kids: { id: string; name: string }[], data: Reco
     .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name, 'ar'));
   let place = 0;
   let previous: number | null = null;
-  return scored.map((k, i) => {
+  return scored.map((k) => {
     if (k.stars !== previous) {
-      place = i + 1;
+      place += 1;
       previous = k.stars;
     }
     return { ...k, rank: place };

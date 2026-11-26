@@ -21,21 +21,21 @@ describe('podiumSteps', () => {
   });
 
   it('gives every kid of a tie his own step in the same place, the later ones marked `again`', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 2, 4), kid('d', 4, 0.5)]);
-    expect(places(steps)).toEqual([1, 2, 2, 4]); // the place after a tie is skipped (1, 2, 2, 4)
+    const steps = podiumSteps([kid('a', 1, 6), kid('b', 2, 4), kid('c', 2, 4), kid('d', 3, 0.5)]);
+    expect(places(steps)).toEqual([1, 2, 2, 3]); // the place after a tie follows right after it (1, 2, 2, 3)
     expect(ids(steps)).toEqual(['a', 'b', 'c', 'd']);
     expect(steps.map((s) => s.again)).toEqual([false, false, true, false]);
   });
 
-  it('a place of 3 kids (3, 3, 3) is three steps of the third place', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 3, 2), kid('d', 3, 2), kid('e', 3, 2)]);
-    expect(places(steps)).toEqual([1, 1, 3, 3, 3]);
+  it('a place of 3 kids (2, 2, 2) is three steps of the second place', () => {
+    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 2, 2), kid('d', 2, 2), kid('e', 2, 2)]);
+    expect(places(steps)).toEqual([1, 1, 2, 2, 2]);
     expect(steps.map((s) => s.again)).toEqual([false, true, false, true, true]);
   });
 
-  it('skips second place when two kids share the first (1, 1, 3)', () => {
-    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 3, 2)]);
-    expect(places(steps)).toEqual([1, 1, 3]);
+  it('two kids that share the first place are followed by the SECOND place (1, 1, 2)', () => {
+    const steps = podiumSteps([kid('a', 1, 6), kid('b', 1, 6), kid('c', 2, 2)]);
+    expect(places(steps)).toEqual([1, 1, 2]);
   });
 
   it('works with fewer than three kids, and with nobody', () => {

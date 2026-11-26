@@ -3,7 +3,7 @@ import type { StarRankedKid } from '../spiritual-notes/logic';
 
 export type PodiumPlace = 1 | 2 | 3;
 
-/** One reveal of the show: ONE kid in his place (1, 2, 3 or lower: the places under the third get a simple reveal). Kids that tie share a place, so the same place comes up once for each of them. */
+/** One reveal of the show: ONE kid in his place (1, 2, 3 or lower: the places under the third get a simple reveal). Kids that tie share a place, so the same place comes up once for each of them (the places follow each other: 1, 1, 2, 3). */
 export type PodiumStep = {
   place: number;
   kid: StarRankedKid;
@@ -20,7 +20,7 @@ export const isTop = (place: number): place is PodiumPlace => place >= 1 && plac
 
 /**
  * The reveals of the show, in order: from the FIRST place down to the last (each kid of a tie on his own, by name). The places go by the stars of the last 4 weeks
- * (a tie shares a place and the next one is skipped: 1, 1, 3), so a place nobody holds is simply not shown.
+ * (a tie shares a place and the next place follows right after it: 1, 1, 2).
  */
 export function podiumSteps(ranked: StarRankedKid[], photos: Record<string, string> = {}): PodiumStep[] {
   const steps: PodiumStep[] = [];

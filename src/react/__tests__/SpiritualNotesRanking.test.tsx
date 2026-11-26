@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithQuery } from '@/test/render';
@@ -69,7 +69,7 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
     expect(dialog).toHaveTextContent('المركز الأول');
     expect(dialog).toHaveTextContent('مارك');
-    expect(dialog).toHaveTextContent('⭐ ٥ نجمة');
+    expect(within(dialog).getByRole('img', { name: '٥ من ٦ نجوم' })).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent('نقطة');
   });
 
@@ -85,13 +85,13 @@ describe('SpiritualNotesRanking: the عرض button', () => {
     const dialog = screen.getByRole('dialog', { name: 'عرض الفائزين' });
     expect(dialog).toHaveTextContent('المركز التاني');
     expect(dialog).toHaveTextContent('بيتر');
-    expect(dialog).toHaveTextContent('⭐ ٣ نجمة');
+    expect(within(dialog).getByRole('img', { name: '٣ من ٦ نجوم' })).toBeInTheDocument();
     await next();
     await next();
     expect(dialog).toHaveTextContent('المركز التالت');
     expect(dialog).toHaveTextContent('مينا سامح');
     expect(dialog).not.toHaveTextContent('عادل');
-    expect(dialog).toHaveTextContent('⭐ ١٫٥ نجمة');
+    expect(within(dialog).getByRole('img', { name: '١٫٥ من ٦ نجوم' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'مينا سامح' }).querySelector('img')).toHaveAttribute('src', PHOTO);
   });
 

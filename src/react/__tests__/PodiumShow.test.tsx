@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
 const sounds = vi.hoisted(() => ({
@@ -173,7 +173,7 @@ describe('PodiumShow: the places under the third, and the round podium', () => {
     expect(words.nextElementSibling).toBe(screen.getByTestId('climb-podium'));
     expect(words).toHaveTextContent('المركز التالت');
     expect(words).toHaveTextContent('مينا سامح');
-    expect(words).toHaveTextContent('⭐ ٣ نجمة');
+    expect(within(words).getByRole('img', { name: '٣ من ٦ نجوم' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'مينا سامح' }).closest('[data-testid="climb-text"]')).toBeNull(); // the picture is on the podium, not in the words
   });
 
@@ -204,7 +204,7 @@ describe('PodiumShow', () => {
     wait(PODIUM_TIMES.suspense[3]);
     expect(screen.getByText('مينا سامح')).toBeInTheDocument();
     expect(screen.queryByText(/عادل/)).not.toBeInTheDocument(); // the third name is never shown
-    expect(screen.getByText('⭐ ٣ نجمة')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '٣ من ٦ نجوم' })).toBeInTheDocument();
     expect(sounds.reveal).toHaveBeenLastCalledWith(3, 0);
 
     // second
@@ -357,7 +357,7 @@ describe('PodiumShow', () => {
     wait(PODIUM_TIMES.tie);
     expect(screen.getByText('مارك عادل')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'مارك عادل' })).toHaveTextContent(faceOf(1).emoji);
-    expect(screen.getByText('⭐ ٥ نجمة')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '٥ من ٦ نجوم' })).toBeInTheDocument();
   });
 
   it('the finished podium of a tie shows both kids side by side under the same place', () => {
@@ -387,5 +387,22 @@ describe('PodiumShow', () => {
     expect(sounds.shutdown).toHaveBeenCalled();
     wait(60000);
     expect(sounds.reveal).not.toHaveBeenCalled();
+  });
+});
+
+describe('PodiumShow: the six stars of each kid', () => {
+  it('shows six stars, only as many as the kid has lit one after the other (a half star shows half), the rest dim', () => {
+    vi.useFakeTimers();
+    render(<PodiumShow steps={[step(1, 0, 'a', 'بيتر ماهر', 3.5)]} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /يلا نبدأ/ }));
+    act(() => void vi.advanceTimersByTime(60_000));
+    const row = screen.getByRole('img', { name: '٣٫٥ من ٦ نجوم' });
+    expect(row.children).toHaveLength(6); // six stars, all of them there dim
+    const lit = [...row.children].map((c) => c.querySelectorAll('.rx-star-in').length);
+    expect(lit).toEqual([1, 1, 1, 1, 0, 0]);
+    const delays = [...row.querySelectorAll<HTMLElement>('.rx-star-in')].map((e) => parseFloat(e.style.getPropertyValue('--rx-delay')));
+    expect(delays).toEqual([...delays].sort((a, b) => a - b)); // one after the other, in order
+    expect(new Set(delays).size).toBe(4);
+    vi.useRealTimers();
   });
 });

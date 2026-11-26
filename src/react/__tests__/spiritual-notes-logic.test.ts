@@ -201,13 +201,20 @@ describe('rankKidsByStars', () => {
     expect(ranked.map((k) => [k.id, k.rank, k.stars])).toEqual([['b', 1, 4.5], ['a', 2, 2]]);
   });
 
-  it('kids with the same stars share the place and the next one is skipped (1, 1, 3), by name inside a place', () => {
+  it('kids with the same stars share the place and the next place is NOT skipped (1, 1, 2), by name inside a place', () => {
     const ranked = rankKidsByStars(kids, {
       a: { starWeeks: [{ week: '2030-10-18', stars: 4 }] },
       b: { starWeeks: [{ week: '2030-10-18', stars: 4 }] },
       c: { starWeeks: [{ week: '2030-10-18', stars: 1 }] },
     }, today);
-    expect(ranked.map((k) => [k.name, k.rank])).toEqual([['بيتر', 1], ['مارك', 1], ['مينا', 3]]);
+    expect(ranked.map((k) => [k.name, k.rank])).toEqual([['بيتر', 1], ['مارك', 1], ['مينا', 2]]);
+  });
+
+  it('four kids with 4 stars are all first, the one with 3.5 is second and the one with 3 is third', () => {
+    const four = [...kids, { id: 'e', name: 'كيرلس' }, { id: 'f', name: 'أنطون' }];
+    const star = (stars: number) => ({ starWeeks: [{ week: '2030-10-18', stars }] });
+    const ranked = rankKidsByStars(four, { a: star(4), b: star(4), c: star(4), d: star(4), e: star(3.5), f: star(3) }, today);
+    expect(ranked.map((k) => k.rank)).toEqual([1, 1, 1, 1, 2, 3]);
   });
 
   it('ignores the weeks outside the last 4 weeks, and works with no data at all', () => {
