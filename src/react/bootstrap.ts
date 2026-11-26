@@ -6,6 +6,7 @@ declare global {
   interface Window {
     openReactScreen: (name: string, container?: HTMLElement, props?: Record<string, unknown>) => Promise<void>;
     closeReactOverlay: () => void;
+    preloadReactScreen: (name: string) => void;
   }
 }
 
@@ -28,6 +29,15 @@ window.openReactScreen = async (name, container, props) => {
   }
   const close = container ? undefined : () => window.closeReactOverlay();
   mountIsland(host, createElement(mod.default, { ...props, close }));
+};
+
+// Loads a React screen's JS (and React itself) in the background, without showing anything, so opening it later does not wait for the download.
+window.preloadReactScreen = (name) => {
+  const load = screens[name];
+  if (!load) {
+    return;
+  }
+  void Promise.all([import('./mount'), import('react'), load()]).catch(() => undefined);
 };
 
 window.closeReactOverlay = () => {

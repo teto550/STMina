@@ -13,15 +13,13 @@ import { canManageGrade } from '@/core/session';
 // ===== STATS TAB =====
 let currentStatsSubtab = 'attendance';
 
-export function initStatsTab() {
-  const sel = document.getElementById('stats-deacon-filter');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">كل الخدام</option>' +
-    DEACONS.map(d => `<option${cur===d?' selected':''}>${d}</option>`).join('');
-  // the "النوتة الروحية" sub-tab exists only in the classes that have the notes
+// The "النوتة الروحية" sub-tab exists only in the classes that have the notes. It needs no data (only the open class), so it is shown
+// the moment the statistics tab opens (src/features/shell/tabs.ts calls this before the data arrives) and its screen is downloaded early.
+export function syncNotesSubtab() {
   const hasNotes = hasSpiritualNotes(state.activeGrade, sectionTag());
   const notesBtn = document.getElementById('stats-subtab-notes');
   if (notesBtn) { notesBtn.style.display = hasNotes ? '' : 'none'; }
+  if (hasNotes) { window.preloadReactScreen('spiritual-notes-ranking'); }
   if (!hasNotes && currentStatsSubtab === 'notes') {
     currentStatsSubtab = 'attendance';
     document.querySelectorAll('#tab-stats > .tabs .tab').forEach(b => b.classList.remove('active'));
@@ -30,6 +28,17 @@ export function initStatsTab() {
       document.getElementById('stats-panel-' + p).style.display = p === 'attendance' ? 'block' : 'none';
     });
   }
+  return hasNotes;
+}
+
+export function initStatsTab() {
+  const sel = document.getElementById('stats-deacon-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">كل الخدام</option>' +
+    DEACONS.map(d => `<option${cur===d?' selected':''}>${d}</option>`).join('');
+  const hasNotes = syncNotesSubtab();
+  // the ranking screen's data is read in the background (it is drawn in its hidden panel), so the sub-tab opens with the stars ready
+  if (hasNotes && currentStatsSubtab !== 'notes') { renderNotesStats(); }
   renderStats();
 }
 

@@ -82,17 +82,24 @@ export async function saveWeekStars({ childId, week, stars, by }: { childId: str
 
 export type KidMonthData = { days: NoteDay[]; confessed: boolean; starWeeks: WeekStars[] };
 
-/** For many kids at once: the days from `from` to `to`, whether each confessed in `month` (YYYY-MM) and the stars of their weeks. A few kids are read at a time; a failure reaches the caller. */
+/** For many kids at once: the days from `from` to `to`, whether each confessed in `month` (YYYY-MM) and the stars of their weeks. Several kids are read at a time; a failure reaches the caller. */
 export async function fetchKidsMonthData(kidIds: string[], from: string, to: string, month: string): Promise<Record<string, KidMonthData>> {
   const out: Record<string, KidMonthData> = {};
-  const AT_A_TIME = 8;
-  for (let i = 0; i < kidIds.length; i += AT_A_TIME) {
-    const chunk = kidIds.slice(i, i + AT_A_TIME);
-    const results = await Promise.all(chunk.map(async (id) => ({ id, days: await fetchKidDaysBetween(id, from, to), confessed: await fetchConfession(id, month), starWeeks: await fetchKidStarWeeks(id, from, to) })));
-    for (const r of results) {
-      out[r.id] = { days: r.days, confessed: r.confessed, starWeeks: r.starWeeks };
+  // Every kid's three reads run together, and many kids run at once (a small pool of workers), so the screen waits about one round trip
+  // instead of one per kid. The number of reads is the same as before.
+  const AT_A_TIME = 12;
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < kidIds.length) {
+      const id = kidIds[next++];
+      if (id === undefined) {
+        return;
+      }
+      const [days, confessed, starWeeks] = await Promise.all([fetchKidDaysBetween(id, from, to), fetchConfession(id, month), fetchKidStarWeeks(id, from, to)]);
+      out[id] = { days, confessed, starWeeks };
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(AT_A_TIME, kidIds.length) }, worker));
   return out;
 }
 

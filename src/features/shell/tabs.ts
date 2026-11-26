@@ -5,7 +5,7 @@ import { DEACONS } from '@/features/servants/deacons';
 import { auth } from '@/core/firebase';
 import { canManageGrade } from '@/core/session';
 import { sectionTag } from '@/core/section';
-import { initStatsTab } from '@/features/dashboard/stats';
+import { initStatsTab, syncNotesSubtab } from '@/features/dashboard/stats';
 import { initOnlineTab } from '@/features/servants/online';
 import { renderTodayList, updateStats } from '@/features/attendance/attendance';
 import { classEmoji } from '@/core/class-settings';
@@ -23,6 +23,7 @@ let loadToken = 0;
 async function loadTabData(tab) {
   const mine = ++loadToken;
   if (tab === 'notes' && !hasSpiritualNotes(state.activeGrade, sectionTag())) { window.openTab('home'); return; } // the tab belongs to some classes only
+  if (tab === 'stats') { syncNotesSubtab(); } // the sub-tabs are known now: do not wait for the data to show the notes one
   try {
     if (tab === 'attendance')  { ensureClassSettings(); /* in the background: a slow network must never hold the list */ await ensureStudents(); ensureTodayListener(); if (state.currentAttGrade === 'غاب آخر مرة') await ensureAttendance('recent'); }
     else if (tab === 'students') { await Promise.all([ensureStudents(), ensureDeacons()]); }
